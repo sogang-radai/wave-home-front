@@ -3,11 +3,11 @@ import {
   LayoutDashboard, CalendarDays, Lightbulb, Bot,
   Moon, Heart, Dumbbell, Timer, AlertTriangle,
   Plus, CheckCircle2, Circle, Clock, BrainCircuit,
-  Activity, Music, Bell, Settings, User, TrendingUp,
+  Activity, Music, Bell, Settings, User,
   TrendingDown, ExternalLink, X, Check,
   AlarmClock, Smartphone, Sun, Thermometer, Flame,
   StretchHorizontal, ArrowRight, Play, Pause, SkipForward,
-  Volume2, Wind, Coffee, Lamp, Radio, ChevronLeft,
+  Volume2, Wind, Lamp, Radio, ChevronLeft,
   ChevronRight, Eye, Bed, Zap, Wifi,
   SkipBack, Repeat, Shuffle, Maximize2, Radio as RadarIcon,
   MapPin, Sliders, PlusCircle, Trash2, CheckCheck,
@@ -43,13 +43,13 @@ const W = {
 
 /* ─── Mock Data ─── */
 const sleepData=[{day:"월",h:6.2},{day:"화",h:7.1},{day:"수",h:5.8},{day:"목",h:7.5},{day:"금",h:6.9},{day:"토",h:8.2},{day:"일",h:7.0}];
-const exerciseData=[{d:"6/14",v:1},{d:"6/15",v:0},{d:"6/16",v:2},{d:"6/17",v:1},{d:"6/18",v:0},{d:"6/19",v:3},{d:"6/20",v:2},{d:"6/21",v:1},{d:"6/22",v:0},{d:"6/23",v:2}];
+const postureAlertData=[{d:"6/17",v:6},{d:"6/18",v:5},{d:"6/19",v:7},{d:"6/20",v:4},{d:"6/21",v:5},{d:"6/22",v:3},{d:"6/23",v:4}];
 const hrData=[{t:"00",bpm:58},{t:"03",bpm:54},{t:"06",bpm:62},{t:"09",bpm:71},{t:"12",bpm:78},{t:"15",bpm:82},{t:"18",bpm:75},{t:"21",bpm:66}];
 const initTasks=[
   {id:1,title:"오전 30분 조깅",day:"월",done:true,cat:"운동"},
   {id:2,title:"자정 전 취침",day:"월",done:true,cat:"수면"},
   {id:3,title:"저녁 스트레칭 10분",day:"화",done:false,cat:"운동"},
-  {id:4,title:"카페인 오후 2시 이후 금지",day:"화",done:true,cat:"식습관"},
+  {id:4,title:"저녁 야식 줄이기",day:"화",done:true,cat:"식습관"},
   {id:5,title:"점심 산책 20분",day:"수",done:false,cat:"운동"},
   {id:6,title:"수분 섭취 2L",day:"수",done:false,cat:"식습관"},
   {id:7,title:"명상 5분",day:"목",done:false,cat:"멘탈"},
@@ -508,7 +508,6 @@ function NotificationsPanel({onClose}:{onClose:()=>void}) {
 
 /* ═══ DASHBOARD ═══ */
 function Dashboard() {
-  const [exPeriod, setExPeriod] = useState<"week"|"month">("week");
 
   // SVG donut helper
   const Donut = ({pct, r=38, sw=8, color=W.full, bg=W[10], children}:{pct:number;r?:number;sw?:number;color?:string;bg?:string;children?:React.ReactNode}) => {
@@ -663,47 +662,39 @@ function Dashboard() {
       {/* ── ROW 2: 운동횟수+주간계획(좌) + 어젯밤수면+심박수(우) ── */}
       <div className="grid grid-cols-12 gap-4">
 
-        {/* LEFT column — 운동 횟수 위 / 주간 계획 달성 아래 */}
+        {/* LEFT column — 거북목 감지 추이 위 / 주간 계획 달성 아래 */}
         <div className="col-span-12 md:col-span-7 flex flex-col gap-4">
 
-          {/* 운동 횟수 (주간 계획 달성 위) */}
+          {/* 거북목 감지 추이 (주간 계획 달성 위) */}
           <Card className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide" style={{color:W.sub}}>운동 횟수</p>
-              <div className="flex gap-1">
-                {(["week","month"] as const).map(p=>(
-                  <button key={p} onClick={()=>setExPeriod(p)}
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all"
-                    style={{background:exPeriod===p?W.full:"transparent",color:exPeriod===p?W.ink:W.sub}}>
-                    {p==="week"?"이번 주":"이번 달"}
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{color:W.sub}}>거북목 감지 추이</p>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{background:W[10],color:W.ink}}>최근 7일</span>
             </div>
             <div className="flex items-start gap-8 mb-3">
               <div>
-                <p className="text-[10px] mb-0.5" style={{color:W.sub}}>{exPeriod==="week"?"이번 주":"이번 달"} 총 운동</p>
+                <p className="text-[10px] mb-0.5" style={{color:W.sub}}>오늘 감지</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold" style={{color:W.ink}}>{exPeriod==="week"?3:14}</span>
+                  <span className="text-4xl font-bold" style={{color:W.ink}}>4</span>
                   <span className="text-lg font-semibold" style={{color:W.sub}}>회</span>
                 </div>
               </div>
               <div>
-                <p className="text-[10px] mb-0.5" style={{color:W.sub}}>전{exPeriod==="week"?"주":"월"} 대비</p>
+                <p className="text-[10px] mb-0.5" style={{color:W.sub}}>전주 평균 대비</p>
                 <div className="flex items-baseline gap-1">
-                  <TrendingUp size={16} className="self-center" style={{color:W.full}}/>
-                  <span className="text-4xl font-bold" style={{color:W.full}}>+{exPeriod==="week"?1:3}</span>
+                  <TrendingDown size={16} className="self-center" style={{color:W.full}}/>
+                  <span className="text-4xl font-bold" style={{color:W.full}}>-3.3</span>
                   <span className="text-lg font-semibold" style={{color:W[60]}}>회</span>
                 </div>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={110}>
-              <BarChart id="db-exercise" data={exerciseData} margin={{top:2,right:4,bottom:0,left:-28}}>
+              <BarChart id="db-posture-alert" data={postureAlertData} margin={{top:2,right:4,bottom:0,left:-28}}>
                 <CartesianGrid strokeDasharray="3 3" stroke={W[10]}/>
                 <XAxis dataKey="d" tick={{fontSize:9,fill:W.sub}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fontSize:9,fill:W.sub}} axisLine={false} tickLine={false} allowDecimals={false}/>
-                <Tooltip contentStyle={{fontSize:11,borderRadius:8,border:`1px solid ${W[20]}`}} formatter={(v:any)=>[`${v}회`,"운동"]}/>
-                <Bar dataKey="v" radius={[3,3,0,0]} shape={(props:any)=>{const{x,y,width,height,index}=props;if(height<=0)return<g/>;return<rect x={x} y={y} width={width} height={height} rx={3} fill={index===9?W.full:W[40]}/>;}}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:8,border:`1px solid ${W[20]}`}} formatter={(v:any)=>[`${v}회`,"거북목 감지"]}/>
+                <Bar dataKey="v" radius={[3,3,0,0]} shape={(props:any)=>{const{x,y,width,height,index}=props;if(height<=0)return<g/>;return<rect x={x} y={y} width={width} height={height} rx={3} fill={index===6?W.full:W[40]}/>;}}/>
               </BarChart>
             </ResponsiveContainer>
             <div className="flex items-center justify-between pt-2 border-t mt-2" style={{borderColor:W[10]}}>
@@ -711,11 +702,11 @@ function Dashboard() {
                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background:W.full}}/><span className="text-[10px]" style={{color:W.sub}}>오늘</span></div>
                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{background:W[40]}}/><span className="text-[10px]" style={{color:W.sub}}>이전</span></div>
               </div>
-              <span className="text-[10px]" style={{color:W.sub}}>목표 주 5회</span>
+              <span className="text-[10px]" style={{color:W.sub}}>목표 일 5회 이하</span>
             </div>
           </Card>
 
-          {/* 주간 계획 달성 (운동 횟수 아래) */}
+          {/* 주간 계획 달성 (거북목 감지 추이 아래) */}
           <Card>
             <SHead title="주간 계획 달성" sub="8개 중 5개 완료"/>
             <div className="flex gap-5 items-center mb-4">
@@ -990,22 +981,24 @@ function WeeklyPlan() {
 
 /* ═══ INSIGHTS ═══ */
 const reports=[
-  {agent:"수면 Agent",icon:Moon,summary:"지난 7일 평균 수면 6시간 56분. 목표 대비 4분 부족합니다.",items:["평일 기상 편차: 최대 48분","주말 기상 08:42 — 평일 대비 1시간 32분 늦음","야간 스마트폰 감지: 주 4회 평균 22분","에어컨 자동 조절로 수면 중 25°C 유지"],action:"취침 시간 23:30 고정 알람 설정",features:[{icon:Thermometer,title:"에어컨 자동 조절",on:true},{icon:Lamp,title:"입면 조명 조절",on:true},{icon:AlarmClock,title:"단계별 기상 알람",on:true},{icon:Smartphone,title:"야간 도파민 차단",on:true},{icon:Coffee,title:"카페인 관리",on:false}]},
+  {agent:"수면 Agent",icon:Moon,summary:"지난 7일 평균 수면 6시간 56분. 목표 대비 4분 부족합니다.",items:["평일 기상 편차: 최대 48분","주말 기상 08:42 — 평일 대비 1시간 32분 늦음","야간 스마트폰 감지: 주 4회 평균 22분","에어컨 자동 조절로 수면 중 25°C 유지"],action:"취침 시간 23:30 고정 알람 설정",features:[{icon:Thermometer,title:"에어컨 자동 조절",on:true},{icon:Lamp,title:"입면 조명 조절",on:true},{icon:AlarmClock,title:"단계별 기상 알람",on:true},{icon:Smartphone,title:"야간 도파민 차단",on:true},{icon:AlertTriangle,title:"수면 부채 알림",on:true}]},
   {agent:"자세 교정 Agent",icon:StretchHorizontal,summary:"오늘 책상 체류 평소보다 2시간 길었습니다. 자세 교정 알림 9회 발송.",items:["연속 착석 최장: 3시간 12분","거북목 패턴: 일 평균 7.3회","기지개 수락률: 62%","바른 자세 유지: 71% (전주 +8%)"],action:"매 45분마다 기지개 알림 유지",features:[{icon:AlertTriangle,title:"자세 무너짐 알림",on:true},{icon:StretchHorizontal,title:"기지개 권고",on:true},{icon:Timer,title:"연속 착석 경고",on:true}]},
   {agent:"피트니스 Agent",icon:Dumbbell,summary:"이번 주 운동 3회 완료. 개인화 목표 대비 75% 달성.",items:["총 운동 시간: 95분","권장 강도 대비: 82%","최적 시간대: 오전 7~8시 또는 오후 6~7시","운동 중 에어컨 3회 작동, 평균 22°C 유지"],action:"내일 오전 7시 조깅 30분 예약",features:[{icon:Thermometer,title:"운동 중 에어컨 제어",on:true},{icon:Music,title:"운동 음악 재생",on:true},{icon:Timer,title:"맞춤 운동 타이머",on:true}]},
 ];
 
 function Insights() {
+  // 피트니스 Agent 리포트는 README 범위(자세/수면 케어)에 포함되지 않아 숨김 — reports 데이터 자체는 유지
+  const visibleReports = reports.filter(rep => rep.agent !== "피트니스 Agent");
   const [reportIdx, setReportIdx] = useState(0);
-  const r = reports[reportIdx];
-  const prev = () => setReportIdx(i => (i - 1 + reports.length) % reports.length);
-  const next = () => setReportIdx(i => (i + 1) % reports.length);
+  const r = visibleReports[reportIdx];
+  const prev = () => setReportIdx(i => (i - 1 + visibleReports.length) % visibleReports.length);
+  const next = () => setReportIdx(i => (i + 1) % visibleReports.length);
 
   return (
     <div className="flex flex-col gap-5">
-      {/* 점수 카드 3개 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[{l:"수면 점수",v:82,desc:"전주 대비 +6점",icon:Moon,idx:0},{l:"활동 점수",v:71,desc:"운동 3회 완료",icon:Dumbbell,idx:2},{l:"자세 점수",v:68,desc:"교정 알림 수락 62%",icon:StretchHorizontal,idx:1}].map(s=>(
+      {/* 점수 카드 2개 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {[{l:"수면 점수",v:82,desc:"전주 대비 +6점",icon:Moon,idx:0},{l:"자세 점수",v:68,desc:"교정 알림 수락 62%",icon:StretchHorizontal,idx:1}].map(s=>(
           <button key={s.l} onClick={()=>setReportIdx(s.idx)}
             className="text-left transition-all hover:opacity-90"
             style={{borderRadius:"1rem",outline:reportIdx===s.idx?`2px solid ${W.full}`:"none"}}>
@@ -1044,7 +1037,7 @@ function Insights() {
 
           {/* Agent 탭 인디케이터 */}
           <div className="flex items-center gap-3">
-            {reports.map((rep, i) => (
+            {visibleReports.map((rep, i) => (
               <button key={i} onClick={() => setReportIdx(i)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
                 style={{background: i === reportIdx ? W.full : W[10], color: W.ink}}>
@@ -1114,7 +1107,7 @@ function Insights() {
 
         {/* 페이지 인디케이터 점 */}
         <div className="flex justify-center gap-2 mt-5">
-          {reports.map((_,i)=>(
+          {visibleReports.map((_,i)=>(
             <button key={i} onClick={()=>setReportIdx(i)}
               className="rounded-full transition-all"
               style={{width: i===reportIdx?20:8, height:8,
@@ -1161,13 +1154,14 @@ function SleepAgent({onPlayMusic}:{onPlayMusic:(t:string,a:string)=>void}) {
   const [s3,setS3]=useState(true);
   const [bedtime,setBedtime]=useState("23:30");
   const [wakeTime,setWakeTime]=useState("07:00");
-  const [caffeineOn,setCaffeineOn]=useState(true);
-  const [caffeineCut,setCaffeineCut]=useState("14:00");
-  const [caffLog,setCaffLog]=useState([80,120]);
+  const [debtAlertOn,setDebtAlertOn]=useState(true);
   const [dopamine,setDopamine]=useState(true);
   const [dopSens,setDopSens]=useState(70);
   const [musicOn,setMusicOn]=useState(false);
-  const total=caffLog.reduce((a,b)=>a+b,0);
+  const sleepGoal=7.5;
+  const weeklyDebt=sleepData.reduce((sum,d)=>sum+Math.max(0,sleepGoal-d.h),0);
+  const debtH=Math.floor(weeklyDebt);
+  const debtM=Math.round((weeklyDebt-debtH)*60);
 
   const handleMusicToggle=()=>{
     const next=!musicOn;
@@ -1220,14 +1214,26 @@ function SleepAgent({onPlayMusic}:{onPlayMusic:(t:string,a:string)=>void}) {
         ))}
       </Card>
       <Card>
-        <SHead title="카페인 관리" icon={Coffee} sub={`오늘 섭취: ${total}mg / 제한 200mg`}/>
-        <SRow icon={Bell} title="카페인 알림" desc={`${caffeineCut} 이후 섭취 억제`}><Toggle on={caffeineOn} onChange={setCaffeineOn}/></SRow>
-        {caffeineOn&&<><div className="mt-3 mb-3"><input type="time" value={caffeineCut} onChange={e=>setCaffeineCut(e.target.value)} className="w-full rounded-xl px-3 py-2 text-sm outline-none" style={{border:`1.5px solid ${W[20]}`,background:W[5],color:W.ink}}/></div>
-          <div className="h-2 rounded-full mb-3" style={{background:W[10]}}><div className="h-2 rounded-full transition-all" style={{width:`${Math.min(100,(total/200)*100)}%`,background:total>180?W[60]:W.full}}/></div>
-          <div className="flex gap-2">
-            {[80,40,120].map((mg,i)=><div key={i} className="flex-1 rounded-xl p-2 text-center" style={{background:W[5]}}><p className="text-xs font-bold" style={{color:W.ink}}>{mg}mg</p><p className="text-[10px]" style={{color:W.sub}}>{["아메리카노","녹차","에너지드링크"][i]}</p></div>)}
-            <button onClick={()=>setCaffLog(p=>[...p,80])} className="flex-1 rounded-xl p-2 text-center border-2 border-dashed hover:opacity-70 transition-opacity" style={{borderColor:W[30]}}><Plus size={14} className="mx-auto" style={{color:W.ink}}/><p className="text-[10px]" style={{color:W.sub}}>추가</p></button>
-          </div></>}
+        <SHead title="수면 부채 관리" icon={AlertTriangle} sub={`이번 주 누적 부채 ${debtH}시간 ${debtM}분`}/>
+        <SRow icon={Bell} title="수면 부채 경고" desc="부채가 쌓이면 익일 컨디션 저하를 미리 알림"><Toggle on={debtAlertOn} onChange={setDebtAlertOn}/></SRow>
+        {debtAlertOn&&<div className="mt-3 space-y-3">
+          <div>
+            <div className="flex justify-between text-xs mb-2"><span style={{color:W.sub}}>목표(7.5h) 대비 누적 부채</span><span className="font-bold" style={{color:W.ink}}>{debtH}시간 {debtM}분</span></div>
+            <div className="h-2 rounded-full" style={{background:W[10]}}><div className="h-2 rounded-full transition-all" style={{width:`${Math.min(100,(weeklyDebt/10)*100)}%`,background:weeklyDebt>6?W[60]:W.full}}/></div>
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {sleepData.map(d=>{const deficit=Math.max(0,sleepGoal-d.h);return(
+              <div key={d.day} className="rounded-lg p-1.5 text-center" style={{background:deficit>0?W[10]:W[5]}}>
+                <p className="text-[9px]" style={{color:W.sub}}>{d.day}</p>
+                <p className="text-[10px] font-bold" style={{color:deficit>0?W.ink:W.sub}}>{deficit>0?`-${deficit.toFixed(1)}h`:"✓"}</p>
+              </div>
+            );})}
+          </div>
+          <div className="rounded-xl p-3 flex items-center gap-3" style={{background:W[5],border:`1px solid ${W[15]}`}}>
+            <AlertTriangle size={14} style={{color:W.ink}}/>
+            <p className="text-xs" style={{color:W.ink}}>누적 부채가 {debtH}시간을 넘었어요 — 오늘은 30분 더 일찍 잠들어보세요.</p>
+          </div>
+        </div>}
       </Card>
       <Card>
         <SHead title="야간 도파민 패턴 차단" icon={Smartphone} sub="레이더로 스마트폰 사용 감지"/>
@@ -1416,7 +1422,8 @@ function FitnessAgent({onPlayMusic,onOpenTimer}:{onPlayMusic:(t:string,a:string)
 /* ═══ EXPERT AGENTS PAGE ═══ */
 function ExpertAgents({onPlayMusic,onOpenTimer}:{onPlayMusic:(t:string,a:string)=>void;onOpenTimer:(o:TimerOverlay)=>void}) {
   const [tab,setTab]=useState<AgentTab>("sleep");
-  const tabs:[AgentTab,string,any][]=[["sleep","수면 Agent",Moon],["posture","자세 교정 Agent",StretchHorizontal],["fitness","피트니스 Agent",Dumbbell]];
+  // 피트니스 Agent는 README 범위(자세/수면 케어)에 포함되지 않아 탭에서 숨김 — FitnessAgent 컴포넌트 자체는 유지
+  const tabs:[AgentTab,string,any][]=[["sleep","수면 Agent",Moon],["posture","자세 교정 Agent",StretchHorizontal]];
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-2xl font-bold" style={{color:W.ink}}>전문 Agent</h1>
