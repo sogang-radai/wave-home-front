@@ -113,7 +113,3 @@ This frontend currently uses local mock data inside `src/app/App.tsx`. There is 
 - Health notifications
 
 When backend integration is added, these local arrays should be replaced with API-backed data fetching and shared TypeScript types.
-
-## Package Manager Note
-
-This project currently includes `package-lock.json`, so npm is the recommended package manager for reproducible installs. The `pnpm-workspace.yaml` file is present for workspace/tooling compatibility, but the documented workflow uses npm.
