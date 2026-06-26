@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import './App.css';
 import logo from './img/logo.png';
-import logoWithString from './img/logo_with_string.png';
 
 const pages = [
-  { id: 'main', label: 'Main', icon: 'dashboard' },
+  { id: 'main', label: '대시보드', icon: 'dashboard' },
   { id: 'sleep', label: '수면 관리', icon: 'moon' },
   { id: 'posture', label: '자세 관리', icon: 'posture' },
   { id: 'home', label: '가전 제어', icon: 'power' },
@@ -16,12 +15,17 @@ const notifications = [
   { title: '레이더 상태', time: '어제 23:12', text: '서재 레이더 연결 상태가 안정적으로 유지되고 있습니다.' },
 ];
 
+const initialAccounts = [
+  { id: 'kim', name: '김건강' },
+  { id: 'park', name: '박웰빙' },
+];
+
 const pageTitles = {
-  main: 'Main',
+  main: '대시보드',
   sleep: '수면 관리',
   posture: '자세 관리',
   home: '가전 제어',
-  setting: 'Setting',
+  setting: '설정',
 };
 
 const sleepTrend = [
@@ -32,6 +36,17 @@ const sleepTrend = [
   { day: '금', value: 6.9 },
   { day: '토', value: 8.2 },
   { day: '일', value: 7.0 },
+];
+
+const heartRateTrend = [
+  { day: '00시', value: 58 },
+  { day: '03시', value: 54 },
+  { day: '06시', value: 62 },
+  { day: '09시', value: 75 },
+  { day: '12시', value: 82 },
+  { day: '15시', value: 71 },
+  { day: '18시', value: 69 },
+  { day: '21시', value: 60 },
 ];
 
 const postureBars = [
@@ -53,6 +68,12 @@ const sleepStageLog = [
   { time: '04:40', stage: '깊은 수면', breath: 14, heart: 57, level: 76 },
   { time: '05:40', stage: 'REM', breath: 17, heart: 66, level: 50 },
   { time: '06:40', stage: '기상', breath: 19, heart: 72, level: 28 },
+];
+
+const snoringLog = [
+  { time: '01:12', duration: '4분' },
+  { time: '03:48', duration: '6분' },
+  { time: '05:20', duration: '3분' },
 ];
 
 const postureLog = [
@@ -177,9 +198,19 @@ const iotDevices = [
 
 function App() {
   const [page, setPage] = useState('main');
-  const [sleepTab, setSleepTab] = useState('current');
+  const [sleepTab, setSleepTab] = useState('daily');
   const [postureTab, setPostureTab] = useState('current');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showInsightChat, setShowInsightChat] = useState(false);
+  const [accounts, setAccounts] = useState(initialAccounts);
+  const [accountId, setAccountId] = useState(initialAccounts[0].id);
+  const account = accounts.find((item) => item.id === accountId) || accounts[0];
+  const renameAccount = (id, name) => {
+    setAccounts((current) => current.map((item) => (item.id === id ? { ...item, name } : item)));
+  };
+  const addAccount = (name) => {
+    setAccounts((current) => [...current, { id: `member-${Date.now()}`, name }]);
+  };
 
   const today = useMemo(
     () =>
@@ -194,27 +225,41 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Sidebar page={page} onSelect={setPage} />
+      <InsightChat open={showInsightChat} onClose={() => setShowInsightChat(false)} />
+      <Sidebar page={page} onSelect={setPage} today={today} />
       <section className="workspace">
         <TopBar
           title={pageTitles[page]}
-          today={today}
           showNotifications={showNotifications}
           onToggleNotifications={() => setShowNotifications((value) => !value)}
+          accounts={accounts}
+          account={account}
+          onSwitchAccount={setAccountId}
+          showInsightChat={showInsightChat}
+          onToggleInsightChat={() => setShowInsightChat((value) => !value)}
         />
         <main className="content">
-          {page === 'main' && <MainPage />}
+          {page === 'main' && <MainPage onNavigate={setPage} />}
           {page === 'sleep' && <SleepPage tab={sleepTab} setTab={setSleepTab} />}
           {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
           {page === 'home' && <HomeControlPage />}
-          {page === 'setting' && <SettingPage />}
+          {page === 'setting' && (
+            <SettingPage
+              accounts={accounts}
+              accountId={accountId}
+              account={account}
+              onSwitchAccount={setAccountId}
+              onRenameAccount={renameAccount}
+              onAddAccount={addAccount}
+            />
+          )}
         </main>
       </section>
     </div>
   );
 }
 
-function Sidebar({ page, onSelect }) {
+function Sidebar({ page, onSelect, today }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -248,22 +293,16 @@ function Sidebar({ page, onSelect }) {
       </nav>
 
       <div className="sidebar-bottom">
+        <p className="sidebar-date">{today}</p>
         <button
           className={`nav-item bottom-setting ${page === 'setting' ? 'active' : ''}`}
           onClick={() => onSelect('setting')}
           title={collapsed ? 'Setting' : undefined}
         >
           <span className="nav-icon">⚙</span>
-          <span className="nav-label">Setting</span>
+          <span className="nav-label">설정</span>
           {page === 'setting' && <i />}
         </button>
-        <div className="profile">
-          <div className="avatar">김</div>
-          <div className="profile-text">
-            <strong>김건강</strong>
-            <span>프리미엄 플랜</span>
-          </div>
-        </div>
       </div>
     </aside>
   );
@@ -332,26 +371,84 @@ function BellIcon() {
   );
 }
 
-function TopBar({ title, today, showNotifications, onToggleNotifications }) {
+function TopBar({
+  title,
+  showNotifications,
+  onToggleNotifications,
+  accounts,
+  account,
+  onSwitchAccount,
+  showInsightChat,
+  onToggleInsightChat,
+}) {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   return (
     <header className="topbar">
       <div>
         <h1>{title}</h1>
-        <p>{today}</p>
       </div>
       <div className="top-actions">
-        <div className="connection">
-          <span className="pulse" />
-          레이더 연결됨
-        </div>
+        <button
+          className={`insight-trigger ${showInsightChat ? 'active' : ''}`}
+          aria-label="AI 인사이트 채팅"
+          onClick={onToggleInsightChat}
+        >
+          
+            <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
+          WaveAI
+        </button>
         <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
           <BellIcon />
           <b>2</b>
         </button>
         {showNotifications && <NotificationsPanel />}
-        <div className="mini-avatar">김</div>
+        <button
+          className="profile profile-trigger"
+          aria-label="프로필 메뉴"
+          onClick={() => setShowProfileMenu((value) => !value)}
+        >
+          <span className="mini-avatar">{account.name.charAt(0)}</span>
+          <span className="profile-text">
+            <strong>{account.name}</strong>
+          </span>
+        </button>
+        {showProfileMenu && (
+          <ProfileMenu
+            accounts={accounts}
+            activeId={account.id}
+            onSelect={(id) => {
+              onSwitchAccount(id);
+              setShowProfileMenu(false);
+            }}
+          />
+        )}
       </div>
     </header>
+  );
+}
+
+function ProfileMenu({ accounts, activeId, onSelect }) {
+  return (
+    <div className="profile-menu">
+      <div className="profile-menu-head">
+        <strong>계정 전환</strong>
+      </div>
+      {accounts.map((item) => (
+        <button
+          type="button"
+          key={item.id}
+          className={`profile-menu-item ${item.id === activeId ? 'active' : ''}`}
+          onClick={() => onSelect(item.id)}
+        >
+          <span className="mini-avatar">{item.name.charAt(0)}</span>
+          <span className="profile-text">
+            <strong>{item.name}</strong>
+          </span>
+          {item.id === activeId && <i>✓</i>}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -375,29 +472,124 @@ function NotificationsPanel() {
   );
 }
 
-function MainPage() {
+const insightSuggestions = [
+  '오늘 수면 인사이트 알려줘',
+  '자세 점수가 왜 낮아졌어?',
+  '오늘 심박수 어때?',
+];
+
+function getInsightReply(question) {
+  const q = question.toLowerCase();
+  if (q.includes('수면') || q.includes('잠')) {
+    return '어젯밤 수면 시간은 7.0시간으로 7일 평균(7.2시간)과 비슷했지만 일일 목표인 7.5시간에는 살짝 못 미쳤어요. 입면은 23:42, 기상은 06:42였어요.';
+  }
+  if (q.includes('자세') || q.includes('거북목')) {
+    return '오늘 자세 점수는 68점/100으로 다소 주의가 필요해요. 거북목이 4회 감지되었지만 전주 평균 7.3회보다는 개선된 편이에요.';
+  }
+  if (q.includes('심박') || q.includes('맥박') || q.includes('bpm')) {
+    return '오늘 심박수는 평균 69bpm이고 최저 54bpm·최고 82bpm을 기록했어요. 현재 측정값은 62bpm으로 안정적인 범위예요.';
+  }
+  if (q.includes('레이더') || q.includes('연결')) {
+    return '방 1 레이더는 정상적으로 연결되어 있어요. 기기등록 설정에서 구역별 연결 상태를 확인할 수 있어요.';
+  }
+  return '아직 답변을 준비 중인 질문이에요. 수면, 자세, 심박수에 대해 물어보시면 오늘 데이터를 바탕으로 알려드릴게요!';
+}
+
+function InsightChat({ open, onClose }) {
+  const [messages, setMessages] = useState([
+    { role: 'assistant', text: '안녕하세요! WaveHome AI예요. 오늘의 수면, 자세, 심박 데이터에 대해 무엇이든 물어보세요.' },
+  ]);
+  const [draft, setDraft] = useState('');
+
+  const sendMessage = (text) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setMessages((current) => [
+      ...current,
+      { role: 'user', text: trimmed },
+      { role: 'assistant', text: getInsightReply(trimmed) },
+    ]);
+    setDraft('');
+  };
+
+  return (
+    <aside className={`insight-chat ${open ? 'open' : ''}`} aria-hidden={!open}>
+      <div className="insight-chat-inner">
+        <div className="insight-chat-head">
+          <div className="insight-chat-brand">
+            <span className="insight-chat-spark">✦</span>
+            <strong>WaveAI</strong>
+          </div>
+          <button type="button" className="insight-chat-close" aria-label="채팅 닫기" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className="insight-chat-body">
+          {messages.map((message, index) => (
+            <div className={`insight-chat-bubble ${message.role}`} key={index}>
+              {message.text}
+            </div>
+          ))}
+        </div>
+
+        <div className="insight-chat-suggestions">
+          <p>이런 질문도 해보세요</p>
+          <div className="insight-chat-chip-list">
+            {insightSuggestions.map((suggestion) => (
+              <button type="button" key={suggestion} onClick={() => sendMessage(suggestion)}>
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <form
+          className="insight-chat-input-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            sendMessage(draft);
+          }}
+        >
+          <input
+            type="text"
+            placeholder="인사이트를 물어보세요"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          <button type="submit" aria-label="보내기">↑</button>
+        </form>
+      </div>
+    </aside>
+  );
+}
+
+const dailyMessage = {
+  headline: '오늘도 잘 해내고 있어요',
+  body: '어제 수면 점수는 84점으로, 입면까지 24분이 걸렸고 깊은 수면 비율은 전주 평균보다 8% 높았어요. 자세 점수는 78점으로, 오후 3시 이후 목이 앞으로 나오는 패턴이 반복되었으니 짧은 스트레칭으로 챙겨주세요. 오늘은 취침 1시간 전 조명을 낮추고, 50분 착석마다 1분 목 리셋 루틴을 실행해보세요!',
+};
+
+function MainPage({ onNavigate }) {
   return (
     <div className="page-stack">
       <section className="hero card">
         <div>
-          <p className="eyebrow">WaveHome Care Mode</p>
-          <h2>파도에 몸을 맡기듯 당신의 집이 편안하도록, WaveHome</h2>
-          <p>레이더 기반 생활 패턴 분석으로 AI Agent가 당신을 돌봅니다.</p>
+          <h2>{dailyMessage.headline}</h2>
+          <p>{dailyMessage.body}</p>
         </div>
-        <img src={logoWithString} alt="WaveHome" />
       </section>
 
       <section className="main-grid">
-        <Card title="Current State" action="실시간">
+        <Card title="현재 상태" >
           <div className="state-grid">
-            <Metric label="수면 상태" value="안정" detail="어젯밤 7.0h, 목표 대비 93%" />
-            <Metric label="자세 상태" value="주의" detail="거북목 감지 오늘 4회" />
             <Metric label="실내 환경" value="쾌적" detail="온도 24℃ · 조도 낮음" />
-            <Metric label="케어 모드" value="Desk" detail="집중 모드 진행 중" />
+            <Metric label="가전 제어 모드" value="집중 모드" detail="2시간 전 시작됨" />
+            <Metric label="자세 점수" value="78점" detail="거북목 감지 오늘 4회" />
+            <Metric label="레이더 연결 상태" value="연결됨" detail="방 1 레이더 기준" dot="online" />
           </div>
         </Card>
 
-        <Card title="오늘의 Todo" action="4개">
+        <Card title="오늘 할일" action="4개">
           <div className="todo-list">
             {todos.map((todo) => (
               <div className="todo" key={todo.title}>
@@ -409,27 +601,76 @@ function MainPage() {
         </Card>
       </section>
 
-      <Card title="어제자 AI Care Report 요약" action="AI">
-        <div className="report-grid">
-          <ReportItem label="수면" value="수면 점수 84점" text="입면까지 24분, 깊은 수면 비율이 전주 평균보다 8% 높았습니다." />
-          <ReportItem label="자세" value="자세 점수 78점" text="오후 3시 이후 목이 앞으로 나오는 패턴이 반복되어 짧은 스트레칭이 권장됩니다." />
-          <ReportItem label="추천" value="오늘 액션" text="취침 1시간 전 조명을 낮추고, 50분 착석마다 1분 목 리셋 루틴을 실행하세요." />
-        </div>
-      </Card>
+      <section className="dashboard-grid">
+        <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
+          <div className="stat-trio">
+            <div className="stat-trio-item">
+              <strong>7.0<span>h</span></strong>
+              <small>달성</small>
+            </div>
+            <div className="stat-trio-item">
+              <strong>7.2<span>h</span></strong>
+              <small>7일 평균</small>
+            </div>
+            <div className="stat-trio-item">
+              <p>목표</p>
+              <strong>7.5<span>h</span></strong>
+              <small>일일 목표</small>
+            </div>
+          </div>
+          <InfoList
+            items={[
+              ['입면 시간', '23:42'],
+              ['기상 시간', '06:42'],
+            ]}
+          />
+        </Card>
+
+        <Card title="자세 점수" onClick={() => onNavigate('posture')}>
+          <div className="posture-score-panel">
+            <SemiGauge value={68} max={100} label="주의" tone="warn" />
+            <p className="posture-score-readout">
+              자세 점수 <strong>68점</strong> / 100
+            </p>
+            <div className="posture-score-note">
+              <strong>거북목 감지 오늘 4회</strong>
+              <span>전주 평균 7.3회 대비 개선</span>
+            </div>
+          </div>
+          <div className="split-stats">
+            <Metric label="바른 자세" value="71%" />
+            <Metric label="알림 수락" value="62%" />
+          </div>
+        </Card>
+
+        <Card title="심박수">
+          <div className="big-number">
+            62<span>bpm</span>
+            <small>현재 심박수</small>
+          </div>
+          <p className="section-description">오늘 시간대별</p>
+          <LineChart data={heartRateTrend} min={45} max={95} />
+          <div className="stat-trio">
+            <div className="stat-trio-item">
+              <strong>54</strong>
+              <small>최저</small>
+            </div>
+            <div className="stat-trio-item">
+              <strong>69</strong>
+              <small>평균</small>
+            </div>
+            <div className="stat-trio-item">
+              <strong>82</strong>
+              <small>최고</small>
+            </div>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }
 
 function SleepPage({ tab, setTab }) {
-  const [wakeAlarmSteps, setWakeAlarmSteps] = useState({
-    light: true,
-    audio: true,
-    tvAlarm: false,
-  });
-  const toggleWakeAlarmStep = (key) => {
-    setWakeAlarmSteps((current) => ({ ...current, [key]: !current[key] }));
-  };
-
   return (
     <div className="page-stack">
       <Tabs
@@ -473,28 +714,6 @@ function SleepPage({ tab, setTab }) {
                 <p>권장 실내 온도</p>
                 <b>24℃</b>
               </div>
-            </div>
-          </Card>
-          <Card title="단계별 기상 알람" action="ON/OFF">
-            <div className="wake-alarm-list">
-              <WakeAlarmRow
-                title="1단계 · 조명 서서히 밝히기"
-                time="기상 30분 전"
-                on={wakeAlarmSteps.light}
-                onToggle={() => toggleWakeAlarmStep('light')}
-              />
-              <WakeAlarmRow
-                title="2단계 · 수면 음악 / 라디오 재생"
-                time="기상 15분 전"
-                on={wakeAlarmSteps.audio}
-                onToggle={() => toggleWakeAlarmStep('audio')}
-              />
-              <WakeAlarmRow
-                title="3단계 · TV 켜기 / 알람 울리기"
-                time="기상 시간"
-                on={wakeAlarmSteps.tvAlarm}
-                onToggle={() => toggleWakeAlarmStep('tvAlarm')}
-              />
             </div>
           </Card>
           <Card title="야간 스마트폰 사용 관리">
@@ -560,43 +779,199 @@ function SleepStageGraph({ data }) {
   );
 }
 
+function isSameDay(a, b) {
+  return a.toDateString() === b.toDateString();
+}
+
+function formatReportDateLabel(date, latestDate) {
+  if (isSameDay(date, latestDate)) return '어제';
+  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(date);
+}
+
+function CalendarPopup({ selectedDate, latestDate, onSelect }) {
+  const [viewDate, setViewDate] = useState(new Date(selectedDate));
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells = [...Array(startWeekday).fill(null), ...Array(daysInMonth).keys()].map((d) =>
+    d === null ? null : d + 1
+  );
+
+  return (
+    <div className="calendar-popup">
+      <div className="calendar-popup-head">
+        <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} aria-label="이전 달">
+          ‹
+        </button>
+        <strong>{year}년 {month + 1}월</strong>
+        <button type="button" onClick={() => setViewDate(new Date(year, month + 1, 1))} aria-label="다음 달">
+          ›
+        </button>
+      </div>
+      <div className="calendar-popup-weekdays">
+        {['일', '월', '화', '수', '목', '금', '토'].map((w) => (
+          <span key={w}>{w}</span>
+        ))}
+      </div>
+      <div className="calendar-popup-grid">
+        {cells.map((d, index) => {
+          if (d === null) return <span key={`blank-${index}`} />;
+          const cellDate = new Date(year, month, d);
+          const isSelected = isSameDay(cellDate, selectedDate);
+          const isDisabled = cellDate > latestDate;
+          return (
+            <button
+              type="button"
+              key={d}
+              className={isSelected ? 'selected' : ''}
+              disabled={isDisabled}
+              onClick={() => onSelect(cellDate)}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DateNavigator({ date, latestDate, onChange }) {
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const shiftDay = (delta) => {
+    const next = new Date(date);
+    next.setDate(next.getDate() + delta);
+    onChange(next);
+  };
+
+  return (
+    <div className="date-navigator">
+      <button type="button" onClick={() => shiftDay(-1)} aria-label="이전 날">‹</button>
+      <button type="button" className="date-navigator-label" onClick={() => setShowCalendar((value) => !value)}>
+        {formatReportDateLabel(date, latestDate)}
+      </button>
+      <button type="button" onClick={() => shiftDay(1)} aria-label="다음 날" disabled={isSameDay(date, latestDate)}>
+        ›
+      </button>
+      {showCalendar && (
+        <CalendarPopup
+          selectedDate={date}
+          latestDate={latestDate}
+          onSelect={(value) => {
+            onChange(value);
+            setShowCalendar(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function getYesterday() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function summarizeValues(values) {
+  return {
+    min: Math.min(...values),
+    max: Math.max(...values),
+    avg: Math.round(values.reduce((sum, value) => sum + value, 0) / values.length),
+  };
+}
+
 function SleepDailyReport() {
+  const [reportDate, setReportDate] = useState(getYesterday);
+  const [latestDate] = useState(getYesterday);
+
+  const heartStats = summarizeValues(sleepStageLog.map((d) => d.heart));
+  const breathStats = summarizeValues(sleepStageLog.map((d) => d.breath));
+  const snoringMinutes = snoringLog.reduce((sum, item) => sum + parseInt(item.duration, 10), 0);
+
   return (
     <CareReport
       type="daily"
-      title="어제의 수면 리포트"
+      title={`${formatReportDateLabel(reportDate, latestDate)} 수면 리포트`}
       score="82점"
-      summary="새벽 3시 전후 실내 온도 상승과 뒤척임 증가가 얕은 수면 전환으로 이어졌습니다."
+      summary="새벽 3시쯤 방 온도가 오르면서 뒤척임이 늘었어요. 그 영향으로 얕은 수면으로 자주 넘어간 밤이었어요."
       visual={<SleepStageGraph data={sleepStageLog} />}
+      visualAction="AI 코멘트"
+      dateNav={<DateNavigator date={reportDate} latestDate={latestDate} onChange={setReportDate} />}
+      extra={
+        <div className="dashboard-grid">
+          <Card title="심박수" action={`평균 ${heartStats.avg}bpm`}>
+            <LineChart data={sleepStageLog.map((d) => ({ day: d.time, value: d.heart }))} min={45} max={85} />
+            <div className="stat-trio">
+              <div className="stat-trio-item"><p>최저</p><strong>{heartStats.min}</strong></div>
+              <div className="stat-trio-item"><p>평균</p><strong>{heartStats.avg}</strong></div>
+              <div className="stat-trio-item"><p>최고</p><strong>{heartStats.max}</strong></div>
+            </div>
+          </Card>
+          <Card title="호흡" action={`평균 ${breathStats.avg}회/분`}>
+            <LineChart data={sleepStageLog.map((d) => ({ day: d.time, value: d.breath }))} min={8} max={22} />
+            <div className="stat-trio">
+              <div className="stat-trio-item"><p>최저</p><strong>{breathStats.min}</strong></div>
+              <div className="stat-trio-item"><p>평균</p><strong>{breathStats.avg}</strong></div>
+              <div className="stat-trio-item"><p>최고</p><strong>{breathStats.max}</strong></div>
+            </div>
+          </Card>
+          <Card title="코골이" action={`${snoringLog.length}회 감지`}>
+            <div className="big-number">
+              {snoringMinutes}<span>분</span>
+              <small>오늘 밤 총 코골이 시간</small>
+            </div>
+            <InfoList items={snoringLog.map((item) => [item.time, item.duration])} />
+          </Card>
+        </div>
+      }
       analysis={[
         ['수면 점수', '82점', '전일 대비 +4점'],
         ['총 수면 시간', '6h 52m', '목표 7h 30m 대비 -38분'],
         ['입면 시간', '27분', '스마트폰 사용 후 지연'],
         ['뒤척임 집중 시간', '03:05~03:40', '온도 26℃ 이상 구간'],
-        ['호흡 패턴', '안정', '코골이 의심 2회'],
         ['수면 부채', '2h 10m', '이번 주 안에 회복 권장'],
       ]}
       insights={[
-        ['오늘의 권장 액션', '에어컨 예약을 새벽 4시까지 1시간 연장', '최근 3일간 방 온도가 26℃ 이상일 때 뒤척임이 평소보다 크게 늘었습니다.'],
-        ['취침 전 루틴', '23:00 스마트폰 차단 · 23:20 조도 낮춤 · 23:30 취침', '수면 부채가 더 쌓이지 않도록 화면 사용을 줄이고 조도를 먼저 낮추는 순서를 권장합니다.'],
-        ['주의사항', '새벽 3시 전후 얕은 수면 전환 가능성', '이 시간대에 온도와 소음 변화가 겹치면 다시 잠드는 시간이 길어질 수 있습니다.'],
-        ['자동화 제안', '기상 30분 전 조명 20% → 60%로 서서히 상승', '심박이 안정적으로 올라오는 구간에 빛 자극을 먼저 주면 수면 관성을 줄이는 데 도움이 됩니다.'],
+        ['오늘의 권장 액션', '에어컨 예약을 새벽 4시까지 1시간 연장', '최근 3일 동안 방 온도가 26℃를 넘으면 뒤척임이 눈에 띄게 늘었어요. 에어컨 예약을 새벽 4시까지 1시간 늘려볼게요.'],
+        ['취침 전 루틴', '23:00 스마트폰 차단 · 23:20 조도 낮춤 · 23:30 취침', '화면을 오래 보면 수면 부채가 쌓이기 쉬워요. 23:00엔 스마트폰을 멀리하고 23:20엔 조명을 낮춘 뒤 23:30에 잠들어보세요.'],
+        ['주의사항', '새벽 3시 전후 얕은 수면 전환 가능성', '이 시간대에 온도와 소음이 함께 흔들리면 다시 잠들기 어려워질 수 있어요. 조금만 더 신경 써볼까요?'],
+        ['자동화 제안', '기상 30분 전 조명 20% → 60%로 서서히 상승', '심박이 안정적으로 올라오는 구간에 맞춰 빛을 천천히 늘리면 더 가볍게 깰 수 있어요.'],
       ]}
     />
   );
 }
 
-function CareReport({ type, title, score, summary, analysis, insights, visual, weeklyScores = [], averageScore }) {
+function CareReport({
+  type,
+  title,
+  score,
+  summary,
+  analysis,
+  insights,
+  visual,
+  visualAction = 'Graph',
+  weeklyScores = [],
+  averageScore,
+  dateNav,
+  extra,
+}) {
   const isWeekly = type === 'weekly';
 
   return (
     <div className="care-report-layout">
+      {dateNav}
       {visual && (
-        <Card title={title} action="Graph" wide>
+        <Card title={title} action={visualAction} wide>
           <p className="report-summary-only">{summary}</p>
           {visual}
         </Card>
       )}
+      {extra}
       {isWeekly && (
         <Card title={title} action={score} wide>
           <p className="report-summary-only">{summary}</p>
@@ -605,7 +980,9 @@ function CareReport({ type, title, score, summary, analysis, insights, visual, w
               {weeklyScores.map(([day, value]) => (
                 <div className="weekly-score-bar" key={day} tabIndex={0}>
                   <div className="weekly-score-track">
-                    <i style={{ height: `${value}%` }} />
+                    <i style={{ height: `${value}%` }}>
+                      <span className="weekly-score-value">{value}</span>
+                    </i>
                   </div>
                   <span>{day}</span>
                   <div className="chart-tooltip">
@@ -704,7 +1081,7 @@ function PosturePage({ tab, setTab }) {
       />
       {tab === 'current' && (
         <div className="dashboard-grid">
-          <Card title="현재 자세상태" action="실시간">
+          <Card title="현재 자세상태">
             <div className="posture-face">
               <div>• •</div>
               <span>주의</span>
@@ -1090,79 +1467,525 @@ function HomeControlPage() {
   );
 }
 
-function SettingPage() {
-  const [settings, setSettings] = useState({
-    radar: true,
-    sleepPrep: true,
-    dawnAlarm: true,
-    smartphoneBlock: true,
-    postureVoice: true,
-    postureRest: true,
-    iotConfirm: false,
-    aiReport: true,
-    localOnly: true,
-  });
-  const toggleSetting = (key) => {
-    setSettings((current) => ({ ...current, [key]: !current[key] }));
-  };
+const settingCategories = [
+  { id: 'devices', label: '기기등록', desc: '레이더 연결 상태와 감지 구역을 관리합니다.' },
+  { id: 'sleep', label: '수면 설정', desc: '오늘 밤 수면 계획과 자동 제어를 관리합니다.' },
+  { id: 'account', label: '계정', desc: '가구 구성원의 프로필을 확인합니다.' },
+  { id: 'personal', label: '개인 설정', desc: '내 이름을 변경합니다.' },
+  { id: 'general', label: '일반', desc: '테마와 언어를 설정합니다.' },
+];
+
+function SettingPage({ accounts, accountId, account, onSwitchAccount, onRenameAccount, onAddAccount }) {
+  const [category, setCategory] = useState('devices');
 
   return (
     <div className="settings-page">
       <section className="settings-hero card">
         <div>
-          <p className="eyebrow">WaveHome Settings</p>
-          <h2>수면, 자세, 가전 제어가 같은 리듬으로 움직이도록 설정합니다.</h2>
-          <span>현재 프로필: 김건강 · 프리미엄 플랜 · 로컬 우선 저장</span>
+          <p className="eyebrow">설정</p>
         </div>
       </section>
 
-      <div className="settings-grid">
-        <Card title="레이더 / 공간">
-          <InfoList
-            items={[
-              ['연결 상태', '방 1 · 방 2 · 서재 연결됨'],
-              ['감지 민감도', '중간 · 자세/제스처 공통'],
-              ['야간 모드', '23:00 이후 저전력 감지'],
-            ]}
-          />
-          <SettingToggle label="레이더 자동 재연결" desc="연결이 끊기면 10초 간격으로 재시도합니다." on={settings.radar} onToggle={() => toggleSetting('radar')} />
-        </Card>
+      <div className="settings-layout">
+        <nav className="settings-nav">
+          {settingCategories.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`settings-nav-item ${category === item.id ? 'active' : ''}`}
+              onClick={() => setCategory(item.id)}
+            >
+              <strong>{item.label}</strong>
+              <span>{item.desc}</span>
+            </button>
+          ))}
+        </nav>
 
-        <Card title="AI 리포트 / 데이터">
-          <InfoList
-            items={[
-              ['일간 리포트 생성', '매일 오전 8시'],
-              ['주간 리포트 생성', '월요일 오전 8시'],
-              ['보관 기간', '최근 90일'],
-            ]}
-          />
-          <SettingToggle label="AI Care Report 자동 생성" desc="수면/자세 핵심 분석과 인사이트를 자동 정리합니다." on={settings.aiReport} onToggle={() => toggleSetting('aiReport')} />
-        </Card>
-
-        <Card title="계정 / 접근">
-          <InfoList
-            items={[
-              ['사용자', '김건강'],
-              ['권한', '관리자'],
-              ['마지막 동기화', '오늘 21:42'],
-            ]}
-          />
-        </Card>
+        <div className="settings-detail">
+          {category === 'devices' && <DeviceRegistrationSettings accounts={accounts} />}
+          {category === 'sleep' && <SleepSettings />}
+          {category === 'account' && (
+            <AccountSettings
+              accounts={accounts}
+              accountId={accountId}
+              onSwitchAccount={onSwitchAccount}
+              onAddAccount={onAddAccount}
+            />
+          )}
+          {category === 'personal' && (
+            <PersonalSettings key={accountId} account={account} onRenameAccount={onRenameAccount} />
+          )}
+          {category === 'general' && <GeneralSettings />}
+        </div>
       </div>
     </div>
   );
 }
 
-function SettingToggle({ label, desc, on, onToggle }) {
+const initialRadarZones = [
+  { id: 'room1', name: '방 1', owner: 'kim', active: true, connected: true },
+  { id: 'room2', name: '방 2', owner: 'park', active: true, connected: true },
+  { id: 'study', name: '서재', owner: 'kim', active: false, connected: false },
+];
+
+function DeviceRegistrationSettings({ accounts }) {
+  const [zones, setZones] = useState(initialRadarZones);
+  const [newZoneName, setNewZoneName] = useState('');
+  const [newZoneOwner, setNewZoneOwner] = useState(accounts[0]?.id || '');
+
+  const ownerName = (ownerId) => accounts.find((item) => item.id === ownerId)?.name || '공용';
+  const connectedCount = zones.filter((zone) => zone.connected).length;
+  const allConnected = zones.length > 0 && connectedCount === zones.length;
+
+  const toggleZone = (id) => {
+    setZones((current) => current.map((zone) => (zone.id === id ? { ...zone, active: !zone.active } : zone)));
+  };
+
+  const removeZone = (id) => {
+    setZones((current) => current.filter((zone) => zone.id !== id));
+  };
+
+  const addZone = () => {
+    if (!newZoneName.trim()) return;
+    setZones((current) => [
+      ...current,
+      { id: `zone-${Date.now()}`, name: newZoneName.trim(), owner: newZoneOwner, active: true, connected: true },
+    ]);
+    setNewZoneName('');
+  };
+
   return (
-    <div className="setting-toggle-row">
-      <div>
-        <strong>{label}</strong>
-        <span>{desc}</span>
+    <Card title="레이더 관리" action={`${zones.filter((zone) => zone.active).length}개 활성`}>
+      <div className={`radar-status-row ${allConnected ? '' : 'warn'}`}>
+        <span className="pulse" />
+        <div>
+          <strong>{allConnected ? '레이더 연결됨' : '일부 레이더 연결 끊김'}</strong>
+          <span>등록된 구역 {zones.length}개 · 연결 {connectedCount}개</span>
+        </div>
       </div>
-      <button type="button" className={`toggle-switch ${on ? 'on' : ''}`} onClick={onToggle} aria-label={`${label} 토글`}>
-        <i />
+
+      <div className="zone-list">
+        {zones.map((zone) => (
+          <div className={`zone-row ${zone.active ? 'active' : ''}`} key={zone.id}>
+            <span className={`device-dot ${zone.connected ? 'online' : 'idle'}`} />
+            <div className="zone-info">
+              <strong>{zone.name}</strong>
+              <span>{ownerName(zone.owner)}의 구역 · {zone.connected ? '연결됨' : '연결 끊김'}</span>
+            </div>
+            <div className="zone-actions">
+              <button
+                type="button"
+                className={`toggle-switch ${zone.active ? 'on' : ''}`}
+                onClick={() => toggleZone(zone.id)}
+                aria-label={`${zone.name} 레이더 토글`}
+              >
+                <i />
+              </button>
+              <button
+                type="button"
+                className="zone-delete"
+                onClick={() => removeZone(zone.id)}
+                aria-label={`${zone.name} 삭제`}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="zone-add-row">
+        <input
+          type="text"
+          placeholder="구역 이름 (예: 거실)"
+          value={newZoneName}
+          onChange={(event) => setNewZoneName(event.target.value)}
+        />
+        <select value={newZoneOwner} onChange={(event) => setNewZoneOwner(event.target.value)}>
+          {accounts.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <button type="button" onClick={addZone}>구역 추가</button>
+      </div>
+    </Card>
+  );
+}
+
+function AccountSettings({ accounts, accountId, onSwitchAccount, onAddAccount }) {
+  const [newMemberName, setNewMemberName] = useState('');
+
+  const addMember = () => {
+    if (!newMemberName.trim()) return;
+    onAddAccount(newMemberName.trim());
+    setNewMemberName('');
+  };
+
+  return (
+    <Card title="가구 구성원" action={`${accounts.length}명`}>
+      <div className="household-list">
+        {accounts.map((item) => (
+          <button
+            type="button"
+            key={item.id}
+            className={`household-row ${item.id === accountId ? 'active' : ''}`}
+            onClick={() => onSwitchAccount(item.id)}
+          >
+            <span className="mini-avatar">{item.name.charAt(0)}</span>
+            <strong>{item.name}</strong>
+            {item.id === accountId && <em>현재 사용 중</em>}
+          </button>
+        ))}
+      </div>
+
+      <div className="zone-add-row">
+        <input
+          type="text"
+          placeholder="구성원 이름"
+          value={newMemberName}
+          onChange={(event) => setNewMemberName(event.target.value)}
+        />
+        <button type="button" onClick={addMember}>멤버 추가</button>
+      </div>
+    </Card>
+  );
+}
+
+function PersonalSettings({ account, onRenameAccount }) {
+  const [name, setName] = useState(account.name);
+  const dirty = name.trim().length > 0 && name.trim() !== account.name;
+
+  const save = () => {
+    if (!dirty) return;
+    onRenameAccount(account.id, name.trim());
+  };
+
+  return (
+    <Card title="개인 설정" action="이름 수정">
+      <div className="personal-profile-panel">
+        <div className="personal-profile-avatar">{account.name.charAt(0)}</div>
+        <input
+          type="text"
+          className="personal-profile-input"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+        <button type="button" className="personal-profile-save" disabled={!dirty} onClick={save}>
+          저장
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+const alarmSongs = [
+  { id: 'sign-of-the-times', label: 'Sign of the Times – Harry Styles' },
+  { id: 'love-yourself', label: 'Love Yourself - Justin Bieber' },
+];
+
+function GeneralSettings() {
+  const [theme, setTheme] = useState('light');
+  const [language, setLanguage] = useState('ko');
+  const [notificationSound, setNotificationSound] = useState(alarmSongs[0].id);
+
+  return (
+    <Card title="일반">
+      <div className="general-setting-row">
+        <div>
+          <strong>테마</strong>
+          <span>화면 밝기와 톤을 선택합니다.</span>
+        </div>
+        <div className="segmented">
+          <button type="button" className={theme === 'light' ? 'active' : ''} onClick={() => setTheme('light')}>라이트</button>
+          <button type="button" className={theme === 'dark' ? 'active' : ''} onClick={() => setTheme('dark')}>다크</button>
+        </div>
+      </div>
+
+      <div className="general-setting-row">
+        <div>
+          <strong>언어</strong>
+          <span>앱에서 사용할 언어를 선택합니다.</span>
+        </div>
+        <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+
+      <div className="general-setting-row">
+        <div>
+          <strong>알림음 설정</strong>
+          <span>알림이 울릴 때 재생할 곡을 선택합니다.</span>
+        </div>
+        <select value={notificationSound} onChange={(event) => setNotificationSound(event.target.value)}>
+          {alarmSongs.map((song) => (
+            <option key={song.id} value={song.id}>{song.label}</option>
+          ))}
+        </select>
+      </div>
+    </Card>
+  );
+}
+
+function Stepper({ value, min, max, step = 1, unit = '', onChange }) {
+  const decrease = () => onChange(Math.max(min, value - step));
+  const increase = () => onChange(Math.min(max, value + step));
+
+  return (
+    <div className="stepper">
+      <button type="button" className="stepper-btn" onClick={decrease} disabled={value <= min} aria-label="값 감소">
+        −
       </button>
+      <span className="stepper-value">{value}{unit}</span>
+      <button type="button" className="stepper-btn" onClick={increase} disabled={value >= max} aria-label="값 증가">
+        +
+      </button>
+    </div>
+  );
+}
+
+function getSleepDuration(bedtime, wakeTime) {
+  const [bh, bm] = bedtime.split(':').map(Number);
+  const [wh, wm] = wakeTime.split(':').map(Number);
+  let minutes = wh * 60 + wm - (bh * 60 + bm);
+  if (minutes <= 0) minutes += 24 * 60;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}시간 ${mins}분` : `${hours}시간`;
+}
+
+function SleepSettings() {
+  const [bedtime, setBedtime] = useState('23:30');
+  const [wakeTime, setWakeTime] = useState('07:00');
+  const [acAuto, setAcAuto] = useState(true);
+  const [acTemp, setAcTemp] = useState(25);
+  const [lightAuto, setLightAuto] = useState(true);
+  const [dimStart, setDimStart] = useState(30);
+  const [finalBright, setFinalBright] = useState(10);
+  const [s1, setS1] = useState(true);
+  const [s2, setS2] = useState(true);
+  const [s3, setS3] = useState(true);
+  const [wakeUpSound, setWakeUpSound] = useState(alarmSongs[1].id);
+
+  return (
+    <div className="page-stack">
+      <Card title="오늘 밤 수면 계획">
+        <div className="sleep-settings-time-grid">
+          <div className="sleep-settings-time-field">
+            <p>취침 시간</p>
+            <input type="time" value={bedtime} onChange={(event) => setBedtime(event.target.value)} />
+          </div>
+          <div className="sleep-settings-time-field">
+            <p>기상 시간</p>
+            <input type="time" value={wakeTime} onChange={(event) => setWakeTime(event.target.value)} />
+          </div>
+        </div>
+        <div className="sleep-settings-duration">
+          예상 수면 시간: <strong>{getSleepDuration(bedtime, wakeTime)}</strong>
+        </div>
+        <div className="general-setting-row">
+          <div>
+            <strong>기상음 설정</strong>
+            <span>아침 알람에서 재생할 곡을 선택합니다.</span>
+          </div>
+          <select value={wakeUpSound} onChange={(event) => setWakeUpSound(event.target.value)}>
+            {alarmSongs.map((song) => (
+              <option key={song.id} value={song.id}>{song.label}</option>
+            ))}
+          </select>
+        </div>
+      </Card>
+
+      <Card title="에어컨 자동 온도 조절">
+        <div className="general-setting-row">
+          <div>
+            <strong>자동 온도 조절</strong>
+            <span>수면 단계에 따라 최적 온도 유지</span>
+          </div>
+          <button
+            type="button"
+            className={`toggle-switch ${acAuto ? 'on' : ''}`}
+            onClick={() => setAcAuto((value) => !value)}
+            aria-label="자동 온도 조절 토글"
+          >
+            <i />
+          </button>
+        </div>
+        <div className="general-setting-row">
+          <strong>목표 온도</strong>
+          <Stepper value={acTemp} min={20} max={28} unit="°C" onChange={setAcTemp} />
+        </div>
+        <div className="stat-trio">
+          <div className="stat-trio-item">
+            <p>입면 전</p>
+            <strong>{acTemp + 1}°C</strong>
+          </div>
+          <div className="stat-trio-item">
+            <p>수면 중</p>
+            <strong>{acTemp}°C</strong>
+          </div>
+          <div className="stat-trio-item">
+            <p>기상 전</p>
+            <strong>{acTemp + 2}°C</strong>
+          </div>
+        </div>
+      </Card>
+
+      <Card title="입면 조명 자동 조절">
+        <div className="general-setting-row">
+          <div>
+            <strong>조명 자동 조절</strong>
+            <span>취침 전 조명을 점진적으로 어둡게</span>
+          </div>
+          <button
+            type="button"
+            className={`toggle-switch ${lightAuto ? 'on' : ''}`}
+            onClick={() => setLightAuto((value) => !value)}
+            aria-label="조명 자동 조절 토글"
+          >
+            <i />
+          </button>
+        </div>
+        {lightAuto && (
+          <>
+            <div className="general-setting-row">
+              <strong>조절 시작 (취침 N분 전)</strong>
+              <Stepper value={dimStart} min={10} max={60} step={5} unit="분 전" onChange={setDimStart} />
+            </div>
+            <div className="general-setting-row">
+              <strong>최종 밝기</strong>
+              <Stepper value={finalBright} min={0} max={30} step={5} unit="%" onChange={setFinalBright} />
+            </div>
+            <div className="light-timeline">
+              <p>조명 타임라인</p>
+              <div className="light-timeline-bars">
+                {[100, 80, 60, 40, 20, finalBright].map((b, index) => (
+                  <div key={index} className="light-timeline-bar" style={{ height: `${b}%`, opacity: 0.3 + b / 200 }} />
+                ))}
+              </div>
+              <div className="light-timeline-labels">
+                <span>현재</span>
+                <span>취침 -{dimStart}분</span>
+                <span>취침</span>
+              </div>
+            </div>
+          </>
+        )}
+      </Card>
+
+      <Card title="단계별 기상 알람">
+        <div className="wake-alarm-list">
+          <WakeAlarmRow
+            title="1단계 · 조명 서서히 밝히기"
+            time="기상 30분 전"
+            on={s1}
+            onToggle={() => setS1((value) => !value)}
+          />
+          <WakeAlarmRow
+            title="2단계 · 수면 음악 / 라디오 재생"
+            time="기상 15분 전"
+            on={s2}
+            onToggle={() => setS2((value) => !value)}
+          />
+          <WakeAlarmRow
+            title="3단계 · TV 켜기 / 알람 울리기"
+            time="기상 시간"
+            on={s3}
+            onToggle={() => setS3((value) => !value)}
+          />
+        </div>
+      </Card>
+
+      {/* <Card title="수면 부채 관리" action={`이번 주 누적 부채 ${debtHours}시간 ${debtMinutes}분`}>
+        <div className="general-setting-row">
+          <div>
+            <strong>수면 부채 경고</strong>
+            <span>부채가 쌓이면 익일 컨디션 저하를 미리 알림</span>
+          </div>
+          <button
+            type="button"
+            className={`toggle-switch ${debtAlertOn ? 'on' : ''}`}
+            onClick={() => setDebtAlertOn((value) => !value)}
+            aria-label="수면 부채 경고 토글"
+          >
+            <i />
+          </button>
+        </div>
+        {debtAlertOn && (
+          <>
+            <div className="sleep-settings-slider-block">
+              <div className="sleep-settings-slider-label">
+                <span>목표(7.5h) 대비 누적 부채</span>
+                <strong>{debtHours}시간 {debtMinutes}분</strong>
+              </div>
+              <div className="debt-bar">
+                <i
+                  style={{
+                    width: `${Math.min(100, (weeklyDebt / 10) * 100)}%`,
+                    background: weeklyDebt > 6 ? '#f5b84b' : 'var(--wave)',
+                  }}
+                />
+              </div>
+            </div>
+            <div className="debt-week-grid">
+              {sleepTrend.map((d) => {
+                const deficit = Math.max(0, sleepDebtGoal - d.value);
+                return (
+                  <div className={`debt-day ${deficit > 0 ? 'deficit' : ''}`} key={d.day}>
+                    <span>{d.day}</span>
+                    <strong>{deficit > 0 ? `-${deficit.toFixed(1)}h` : '✓'}</strong>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="sleep-settings-callout">
+              <span>⚠</span>
+              <p>누적 부채가 {debtHours}시간을 넘었어요 — 오늘은 30분 더 일찍 잠들어보세요.</p>
+            </div>
+          </>
+        )}
+      </Card>
+
+      <Card title="야간 도파민 패턴 차단">
+        <div className="general-setting-row">
+          <div>
+            <strong>야간 스마트폰 감지</strong>
+            <span>감지 시 클래식 수면 음악 자동 재생</span>
+          </div>
+          <button
+            type="button"
+            className={`toggle-switch ${dopamine ? 'on' : ''}`}
+            onClick={() => setDopamine((value) => !value)}
+            aria-label="야간 스마트폰 감지 토글"
+          >
+            <i />
+          </button>
+        </div>
+        {dopamine && (
+          <>
+            <div className="sleep-settings-music-row">
+              <div className="sleep-settings-music-text">
+                <strong>Clair de Lune — Debussy</strong>
+                <span>클래식 수면 음악</span>
+              </div>
+              <button
+                type="button"
+                className={`sleep-settings-music-play ${musicOn ? '' : 'off'}`}
+                onClick={() => setMusicOn((value) => !value)}
+                aria-label="클래식 수면 음악 재생/정지"
+              >
+                {musicOn ? '⏸' : '▶'}
+              </button>
+            </div>
+            <div className="sleep-settings-note">
+              <p>마지막 감지</p>
+              <strong>오늘 22:47 · 스마트폰 감지 → 음악 재생됨</strong>
+            </div>
+          </>
+        )}
+      </Card> */}
     </div>
   );
 }
@@ -1179,9 +2002,21 @@ function Tabs({ items, active, onChange }) {
   );
 }
 
-function Card({ title, action, children, wide }) {
+function Card({ title, action, children, wide, onClick }) {
   return (
-    <section className={`card ${wide ? 'wide' : ''}`}>
+    <section
+      className={`card ${wide ? 'wide' : ''} ${onClick ? 'clickable' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') onClick();
+            }
+          : undefined
+      }
+    >
       <div className="card-head">
         <h3>{title}</h3>
         {action && <span>{action}</span>}
@@ -1191,22 +2026,15 @@ function Card({ title, action, children, wide }) {
   );
 }
 
-function Metric({ label, value, detail }) {
+function Metric({ label, value, detail, dot }) {
   return (
     <div className="metric">
       <p>{label}</p>
-      <strong>{value}</strong>
+      <strong>
+        {dot && <span className={`metric-dot ${dot}`} />}
+        {value}
+      </strong>
       <span>{detail}</span>
-    </div>
-  );
-}
-
-function ReportItem({ label, value, text }) {
-  return (
-    <div className="report-item">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <p>{text}</p>
     </div>
   );
 }
@@ -1230,6 +2058,27 @@ function Ring({ value, max, label }) {
     <div className="ring-wrap">
       <div className="ring" style={{ background: `conic-gradient(#95d9f8 ${deg}deg, #eaf6fc 0deg)` }}>
         <div>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function SemiGauge({ value, max, label, tone = 'default' }) {
+  const pct = Math.min(1, Math.max(0, value / max));
+  const deg = pct * 180;
+  const fillColor = tone === 'warn' ? '#f5b84b' : '#95d9f8';
+
+  return (
+    <div className="semi-gauge">
+      <div
+        className="semi-gauge-fill"
+        style={{
+          background: `conic-gradient(from 270deg, ${fillColor} 0deg, ${fillColor} ${deg}deg, #eaf6fc ${deg}deg, #eaf6fc 180deg, transparent 180deg)`,
+        }}
+      />
+      <div className="semi-gauge-hole" />
+      <div className="semi-gauge-label">
+        <strong>{label}</strong>
       </div>
     </div>
   );
