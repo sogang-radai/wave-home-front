@@ -1,18 +1,45 @@
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
+import {
+  LineChart as RechartsLineChart,
+  AreaChart as RechartsAreaChart,
+  BarChart as RechartsBarChart,
+  Area,
+  Bar,
+  Cell,
+  LabelList,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import './App.css';
 import logo from './img/logo.png';
 
+// Lets InsightCard (rendered deep inside sleep/posture reports) and the Weekly Plan page
+// share which AI-recommended actions have been approved, without prop-drilling through
+// SleepPage/PosturePage/WeeklyPlanPage.
+const ApprovedActionsContext = createContext({ approved: {}, toggle: () => {} });
+
+function useApprovedActions() {
+  return useContext(ApprovedActionsContext);
+}
+
 const pages = [
   { id: 'main', label: '대시보드', icon: 'dashboard' },
+  // { id: 'overview', label: '삼성 헬스 예시', icon: 'heart' },
   { id: 'sleep', label: '수면 관리', icon: 'moon' },
   { id: 'posture', label: '자세 관리', icon: 'posture' },
   { id: 'home', label: '가전 제어', icon: 'power' },
+  { id: 'weeklyPlan', label: '주간 계획', icon: 'calendar' }
 ];
 
-const notifications = [
-  { title: '자세 알림', time: '방금 전', text: '목이 앞으로 나온 자세가 8분 이상 지속되었습니다.' },
-  { title: '수면 리포트', time: '오늘 08:00', text: '어제 수면 점수는 84점입니다. 깊은 수면 비율이 개선되었습니다.' },
-  { title: '레이더 상태', time: '어제 23:12', text: '서재 레이더 연결 상태가 안정적으로 유지되고 있습니다.' },
+const initialNotifications = [
+  { id: 1, type: 'timer', msg: '착석 1시간 48분 경과 — 스트레칭을 해보세요', time: '방금 전', read: false },
+  { id: 2, type: 'sleep', msg: '오늘 수면 목표까지 30분 부족합니다', time: '오전 7:12', read: false },
+  { id: 3, type: 'posture', msg: '거북목 패턴 4회 감지됨', time: '오후 2:35', read: true },
+  { id: 4, type: 'temperature', msg: '수면 중 실내 온도 자동 조절 작동 (25°C)', time: '어제 23:12', read: true },
 ];
 
 const initialAccounts = [
@@ -22,6 +49,8 @@ const initialAccounts = [
 
 const pageTitles = {
   main: '대시보드',
+  overview: '삼성헬스 예시',
+  weeklyPlan: '주간 계획',
   sleep: '수면 관리',
   posture: '자세 관리',
   home: '가전 제어',
@@ -38,6 +67,27 @@ const sleepTrend = [
   { day: '일', value: 7.0 },
 ];
 
+// Read-only AI summaries of what's configured in 설정 > 수면 설정. Editing happens there;
+// this just explains in plain sentences what will happen tonight.
+const sleepSettingSummaries = [
+  {
+    title: '에어컨 자동 조절',
+    text: '취침 전엔 26℃로 살짝 낮추고, 수면 중에는 25℃를 유지해요. 기상 30분 전부터는 27℃까지 서서히 올려서 상쾌하게 깨워드려요.',
+  },
+  {
+    title: '입면 조명 조절',
+    text: '취침 30분 전부터 조명이 서서히 어두워지기 시작해서, 취침 시각에는 밝기 10%까지 낮아져요.',
+  },
+  {
+    title: '단계별 기상 알람',
+    text: '기상 30분 전엔 조명이 서서히 밝아지고, 15분 전엔 잔잔한 수면 음악이 흘러나오고, 기상 시각엔 알람이 울려요.',
+  },
+  {
+    title: '야간 도파민 차단',
+    text: '야간에 스마트폰 사용이 감지되면 클래식 수면 음악이 자동으로 재생돼서 다시 잠들기 쉽도록 도와드려요.',
+  },
+];
+
 const heartRateTrend = [
   { day: '00시', value: 58 },
   { day: '03시', value: 54 },
@@ -50,13 +100,13 @@ const heartRateTrend = [
 ];
 
 const postureBars = [
-  { label: '09', value: 78 },
-  { label: '10', value: 84 },
-  { label: '11', value: 68 },
-  { label: '12', value: 73 },
-  { label: '14', value: 88 },
-  { label: '15', value: 71 },
-  { label: '16', value: 76 },
+  { label: '09', value: 78, turtleNeck: 1 },
+  { label: '10', value: 84, turtleNeck: 0 },
+  { label: '11', value: 68, turtleNeck: 3 },
+  { label: '12', value: 73, turtleNeck: 2 },
+  { label: '14', value: 88, turtleNeck: 0 },
+  { label: '15', value: 71, turtleNeck: 2 },
+  { label: '16', value: 76, turtleNeck: 1 },
 ];
 
 const sleepStageLog = [
@@ -70,12 +120,6 @@ const sleepStageLog = [
   { time: '06:40', stage: '기상', breath: 19, heart: 72, level: 28 },
 ];
 
-const snoringLog = [
-  { time: '01:12', duration: '4분' },
-  { time: '03:48', duration: '6분' },
-  { time: '05:20', duration: '3분' },
-];
-
 const postureLog = [
   { time: '09:00', label: '좋음', score: 88 },
   { time: '10:00', label: '주의', score: 74 },
@@ -87,11 +131,118 @@ const postureLog = [
   { time: '17:00', label: '회복', score: 79 },
 ];
 
-const todos = [
-  { title: '오후 10시 이후 화면 밝기 줄이기', done: true },
-  { title: '50분 착석 후 1분 스트레칭', done: true },
-  { title: '취침 전 방 온도 24도로 조정', done: false },
-  { title: '목 스트레칭 루틴 2회', done: false },
+const sleepScoreFactors = [
+  { label: '실제 수면 시간', value: '5시간 36분', tag: '주의', tone: 'attention' },
+  { label: '깊은 수면', value: '45분', tag: '좋음', tone: 'good' },
+  { label: 'REM 수면', value: '1시간 9분', tag: '좋음', tone: 'good' },
+  { label: '각성', value: '49분', tag: '좋음', tone: 'good' },
+  { label: '수면 잠복기', value: '6분', tag: '최고', tone: 'excellent' },
+];
+
+const sleepStageBreakdown = [
+  { label: '각성', pct: 12, time: '49분', tone: 'awake', typical: [4, 9] },
+  { label: 'REM', pct: 17, time: '1시간 9분', tone: 'rem', typical: [19, 26] },
+  { label: '얕은 수면', pct: 60, time: '3시간 42분', tone: 'light', typical: [45, 55] },
+  { label: '깊은 수면', pct: 11, time: '45분', tone: 'deep', typical: [13, 23] },
+];
+
+// Single chronological timeline — every segment (including awake) sits in its own fixed
+// lane (see HYPNOGRAM_LANES) and the chart connects them with vertical lines on transition,
+// like a real hypnogram. Minutes sum to 385 (6h 25m), matching the totals above.
+const sleepHypnogramSegments = [
+  { stage: 'awake', minutes: 12 },
+  { stage: 'light', minutes: 30 },
+  { stage: 'deep', minutes: 22 },
+  { stage: 'light', minutes: 28 },
+  { stage: 'rem', minutes: 9 },
+  { stage: 'awake', minutes: 9 },
+  { stage: 'light', minutes: 34 },
+  { stage: 'deep', minutes: 14 },
+  { stage: 'light', minutes: 32 },
+  { stage: 'rem', minutes: 13 },
+  { stage: 'awake', minutes: 7 },
+  { stage: 'light', minutes: 36 },
+  { stage: 'deep', minutes: 9 },
+  { stage: 'light', minutes: 32 },
+  { stage: 'rem', minutes: 15 },
+  { stage: 'awake', minutes: 8 },
+  { stage: 'light', minutes: 30 },
+  { stage: 'rem', minutes: 17 },
+  { stage: 'awake', minutes: 13 },
+  { stage: 'rem', minutes: 15 },
+];
+
+const hypnogramTimeLabels = ['2:11 AM', '4:19 AM', '6:27 AM', '8:36 AM'];
+
+// Fixed row position (% from the top of the chart) for each stage — row 1 awake, row 2 REM,
+// row 3 light, row 4 deep — so the line always sits at the same height per stage.
+const HYPNOGRAM_LANES = { awake: 14, rem: 38, light: 62, deep: 86 };
+const HYPNOGRAM_BAND_PX = 5;
+
+const stageColorVar = {
+  awake: 'var(--accent-stage-awake)',
+  rem: 'var(--accent-plum)',
+  light: 'var(--accent-stage-light)',
+  deep: 'var(--accent-stage-deep)',
+};
+
+// One tick roughly every 5 minutes across the full 385-minute night, so movement reads as
+// continuous activity for the whole sleep period rather than a short cluster.
+const movementTicks = Array.from({ length: 77 }, (_, i) => 14 + ((i * 37) % 60));
+
+const spo2Trend = [
+  { day: '11PM', value: 97 },
+  { day: '1AM', value: 96 },
+  { day: '3AM', value: 95 },
+  { day: '5AM', value: 96 },
+  { day: '7AM', value: 97 },
+  { day: '8AM', value: 96 },
+];
+
+const snoringEpisodes = [
+  { time: '01:12', duration: 4 },
+  { time: '03:48', duration: 6 },
+  { time: '05:20', duration: 3 },
+];
+
+const overviewBanners = [
+  '오늘도 잘 해내고 있어요. 최근 평균 수면시간이 6시간 25분이에요. 8시간을 목표로 조금씩 늘려보면 에너지 점수가 더 좋아질 거예요. 지금의 활동량을 유지하면서 계속 힘내봐요!',
+  '자세 점수가 어제보다 4점 올랐어요. 오후 3시 이후 거북목 패턴이 줄었으니 같은 루틴을 유지해보세요.',
+  '심박수가 안정적인 범위를 유지하고 있어요. 오늘도 50분 착석마다 1분 스트레칭을 잊지 마세요.',
+];
+
+const energyWeekBars = [
+  { label: '20', value: 58 },
+  { label: '21', value: 64 },
+  { label: '22', value: 60 },
+  { label: '23', value: 70 },
+  { label: '24', value: 66 },
+  { label: '25', value: 72 },
+  { label: '26', value: 77 },
+];
+
+const overviewQuickActions = [
+  { label: '체성분', tone: 'plum' },
+  { label: '수분', tone: 'blue' },
+  { label: '걷기', tone: 'green' },
+  { label: '더보기', tone: 'gray' },
+];
+
+const overviewFeatureTiles = [
+  { id: 'cycle', title: '생리주기 기록', desc: '주기를 기록하고 다음 예상일을 확인하세요.', tone: 'pink', muted: true },
+  { id: 'medication', title: '복약 관리', desc: '복용 중인 약을 등록하고 알림을 받아보세요.', tone: 'mint', muted: true },
+  { id: 'records', title: '건강 기록', desc: '건강검진 결과와 기록을 한 곳에서 모아보세요.', tone: 'gray', muted: true },
+];
+
+const koreanWeekdayLabels = ['일', '월', '화', '수', '목', '금', '토'];
+const todayWeekdayLabel = koreanWeekdayLabels[new Date().getDay()];
+
+const initialTodos = [
+  { id: 1, title: '오후 4시 목 스트레칭', done: false, day: todayWeekdayLabel, cat: '자세' },
+  { id: 2, title: '수분 섭취 2L', done: false, day: todayWeekdayLabel, cat: '식습관' },
+  { id: 3, title: '자정 전 취침', done: false, day: todayWeekdayLabel, cat: '수면' },
+  { id: 4, title: '오후 10시 이후 화면 밝기 줄이기', done: false, day: todayWeekdayLabel, cat: '수면' },
+  { id: 5, title: '저녁 스트레칭 10분', done: false, day: todayWeekdayLabel, cat: '자세' },
 ];
 
 const gestureHistory = [
@@ -198,9 +349,29 @@ const iotDevices = [
 
 function App() {
   const [page, setPage] = useState('main');
-  const [sleepTab, setSleepTab] = useState('daily');
+  const [sleepTab, setSleepTab] = useState('report');
   const [postureTab, setPostureTab] = useState('current');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const markAllNotificationsRead = () => {
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+  };
+  const [todos, setTodos] = useState(initialTodos);
+  const toggleTodo = (id) => {
+    setTodos((current) => current.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
+  };
+  const addTodo = (title, day, cat) => {
+    setTodos((current) => [...current, { id: Date.now(), title, done: false, day, cat }]);
+  };
+  const [approvedActions, setApprovedActions] = useState({});
+  const toggleApprovedAction = (id) => {
+    setApprovedActions((current) => ({ ...current, [id]: !current[id] }));
+  };
+  const [settingCategory, setSettingCategory] = useState('devices');
+  const goToSleepSettings = () => {
+    setPage('setting');
+    setSettingCategory('sleep');
+  };
   const [showInsightChat, setShowInsightChat] = useState(false);
   const [accounts, setAccounts] = useState(initialAccounts);
   const [accountId, setAccountId] = useState(initialAccounts[0].id);
@@ -224,38 +395,56 @@ function App() {
   );
 
   return (
-    <div className="app-shell">
-      <InsightChat open={showInsightChat} onClose={() => setShowInsightChat(false)} />
-      <Sidebar page={page} onSelect={setPage} today={today} />
-      <section className="workspace">
-        <TopBar
-          title={pageTitles[page]}
-          showNotifications={showNotifications}
-          onToggleNotifications={() => setShowNotifications((value) => !value)}
-          accounts={accounts}
-          account={account}
-          onSwitchAccount={setAccountId}
-          showInsightChat={showInsightChat}
-          onToggleInsightChat={() => setShowInsightChat((value) => !value)}
-        />
-        <main className="content">
-          {page === 'main' && <MainPage onNavigate={setPage} />}
-          {page === 'sleep' && <SleepPage tab={sleepTab} setTab={setSleepTab} />}
-          {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
-          {page === 'home' && <HomeControlPage />}
-          {page === 'setting' && (
-            <SettingPage
-              accounts={accounts}
-              accountId={accountId}
-              account={account}
-              onSwitchAccount={setAccountId}
-              onRenameAccount={renameAccount}
-              onAddAccount={addAccount}
-            />
-          )}
-        </main>
-      </section>
-    </div>
+    <ApprovedActionsContext.Provider value={{ approved: approvedActions, toggle: toggleApprovedAction }}>
+      <div className="app-shell">
+        <InsightChat open={showInsightChat} onClose={() => setShowInsightChat(false)} />
+        <Sidebar page={page} onSelect={setPage} today={today} />
+        <section className="workspace">
+          <TopBar
+            title={pageTitles[page]}
+            showNotifications={showNotifications}
+            onToggleNotifications={() => setShowNotifications((value) => !value)}
+            onCloseNotifications={() => setShowNotifications(false)}
+            notifications={notifications}
+            onMarkAllNotificationsRead={markAllNotificationsRead}
+            accounts={accounts}
+            account={account}
+            onSwitchAccount={setAccountId}
+            showInsightChat={showInsightChat}
+            onToggleInsightChat={() => setShowInsightChat((value) => !value)}
+          />
+          <main className="content">
+            {page === 'main' && (
+              <MainPage
+                onNavigate={setPage}
+                todos={todos}
+                onToggleTodo={toggleTodo}
+                onGoToSleepSettings={goToSleepSettings}
+              />
+            )}
+            {page === 'overview' && <OverviewPage onNavigate={setPage} />}
+            {page === 'sleep' && (
+              <SleepPage tab={sleepTab} setTab={setSleepTab} onGoToSleepSettings={goToSleepSettings} />
+            )}
+            {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
+            {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} />}
+            {page === 'home' && <HomeControlPage />}
+            {page === 'setting' && (
+              <SettingPage
+                accounts={accounts}
+                accountId={accountId}
+                account={account}
+                onSwitchAccount={setAccountId}
+                onRenameAccount={renameAccount}
+                onAddAccount={addAccount}
+                category={settingCategory}
+                setCategory={setSettingCategory}
+              />
+            )}
+          </main>
+        </section>
+      </div>
+    </ApprovedActionsContext.Provider>
   );
 }
 
@@ -335,7 +524,26 @@ function SidebarIcon({ name }) {
   if (name === 'moon') {
     return (
       <svg {...common}>
-        <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4a7 7 0 1 0 11.5 11.5Z" />
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+      </svg>
+    );
+  }
+
+  if (name === 'heart') {
+    return (
+      <svg {...common}>
+        <path d="M12 20s-7-4.4-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 5c-2.5 4.6-9.5 9-9.5 9Z" />
+      </svg>
+    );
+  }
+
+  if (name === 'calendar') {
+    return (
+      <svg {...common}>
+        <rect x="3" y="5" width="18" height="16" rx="3" />
+        <path d="M3 10h18" />
+        <path d="M8 3v4" />
+        <path d="M16 3v4" />
       </svg>
     );
   }
@@ -343,21 +551,19 @@ function SidebarIcon({ name }) {
   if (name === 'posture') {
     return (
       <svg {...common}>
-        <path d="M12 3v18" />
-        <path d="M8.5 6.5c2 1.2 5 1.2 7 0" />
-        <path d="M8 11c2.4 1.4 5.6 1.4 8 0" />
-        <path d="M8.5 15.5c2 1.2 5 1.2 7 0" />
-        <path d="M6.5 20.5h11" />
+        <circle cx="12" cy="4.5" r="2" />
+        <path d="M12 6.5v7" />
+        <path d="M8.5 9.5h7" />
+        <path d="M9 21l3-7.5 3 7.5" />
       </svg>
     );
   }
 
   return (
     <svg {...common}>
-      <rect x="6" y="3" width="12" height="18" rx="3" />
-      <path d="M10 7h4" />
-      <circle cx="12" cy="12" r="2" />
-      <path d="M9.5 17h5" />
+      <path d="M4 11.5 12 4l8 7.5" />
+      <path d="M6 10v10h12V10" />
+      <path d="M10 20v-6h4v6" />
     </svg>
   );
 }
@@ -375,6 +581,9 @@ function TopBar({
   title,
   showNotifications,
   onToggleNotifications,
+  onCloseNotifications,
+  notifications,
+  onMarkAllNotificationsRead,
   accounts,
   account,
   onSwitchAccount,
@@ -382,6 +591,7 @@ function TopBar({
   onToggleInsightChat,
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const unreadCount = notifications.filter((item) => !item.read).length;
 
   return (
     <header className="topbar">
@@ -394,15 +604,21 @@ function TopBar({
           aria-label="AI 인사이트 채팅"
           onClick={onToggleInsightChat}
         >
-          
+
             <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
           WaveAI
         </button>
         <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
           <BellIcon />
-          <b>2</b>
+          {unreadCount > 0 && <b>{unreadCount}</b>}
         </button>
-        {showNotifications && <NotificationsPanel />}
+        {showNotifications && (
+          <NotificationsPanel
+            notifications={notifications}
+            onMarkAllRead={onMarkAllNotificationsRead}
+            onClose={onCloseNotifications}
+          />
+        )}
         <button
           className="profile profile-trigger"
           aria-label="프로필 메뉴"
@@ -452,23 +668,125 @@ function ProfileMenu({ accounts, activeId, onSelect }) {
   );
 }
 
-function NotificationsPanel() {
+function CheckCheckIcon() {
   return (
-    <div className="notifications-panel">
-      <div className="notifications-head">
-        <strong>알림 내역</strong>
-        <span>{notifications.length}개</span>
-      </div>
-      {notifications.map((item) => (
-        <div className="notification-item" key={`${item.title}-${item.time}`}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m3 11 4 4L17 5" />
+      <path d="m9 11 4 4L23 5" />
+    </svg>
+  );
+}
+
+function NotificationTypeIcon({ type }) {
+  const common = {
+    width: '13',
+    height: '13',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'var(--ink)',
+    strokeWidth: '2',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': 'true',
+  };
+
+  if (type === 'sleep') {
+    return (
+      <svg {...common}>
+        <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4a7 7 0 1 0 11.5 11.5Z" />
+      </svg>
+    );
+  }
+
+  if (type === 'posture') {
+    return (
+      <svg {...common}>
+        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </svg>
+    );
+  }
+
+  if (type === 'temperature') {
+    return (
+      <svg {...common}>
+        <path d="M14 4v10.5a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <line x1="10" y1="2" x2="14" y2="2" />
+      <line x1="12" y1="14" x2="12" y2="11" />
+      <circle cx="12" cy="14" r="8" />
+    </svg>
+  );
+}
+
+function NotificationsPanel({ notifications, onMarkAllRead, onClose }) {
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-10" onClick={onClose} />
+      <div className="notifications-panel relative z-20">
+        <div className="flex items-center justify-between border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
           <div>
-            <strong>{item.title}</strong>
-            <span>{item.time}</span>
+            <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>알림</p>
+            {unreadCount > 0 && (
+              <p className="text-xs" style={{ color: 'var(--sub)' }}>읽지 않은 알림 {unreadCount}개</p>
+            )}
           </div>
-          <p>{item.text}</p>
+          <div className="flex items-center gap-1.5">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={onMarkAllRead}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--wave-10)]"
+                style={{ color: 'var(--ink)' }}
+              >
+                <CheckCheckIcon />
+                모두 읽음
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="알림 닫기"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-sm transition-colors hover:bg-[var(--wave-10)]"
+              style={{ color: 'var(--sub)' }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
-      ))}
-    </div>
+        <div className="max-h-80 overflow-y-auto">
+          {notifications.map((item) => (
+            <div className="flex items-start gap-3 border-b py-3 last:border-b-0" style={{ borderColor: 'var(--line)' }} key={item.id}>
+              <div className="relative mt-0.5 shrink-0">
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-xl"
+                  style={{ background: item.read ? 'var(--wave-10)' : 'var(--wave-20)' }}
+                >
+                  <NotificationTypeIcon type={item.type} />
+                </div>
+                {!item.read && (
+                  <div className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full" style={{ background: 'var(--danger)' }} />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className={`text-xs leading-snug ${item.read ? '' : 'font-semibold'}`} style={{ color: 'var(--ink)' }}>
+                  {item.msg}
+                </p>
+                <p className="mt-0.5 text-[10px]" style={{ color: 'var(--sub)' }}>{item.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -569,7 +887,110 @@ const dailyMessage = {
   body: '어제 수면 점수는 84점으로, 입면까지 24분이 걸렸고 깊은 수면 비율은 전주 평균보다 8% 높았어요. 자세 점수는 78점으로, 오후 3시 이후 목이 앞으로 나오는 패턴이 반복되었으니 짧은 스트레칭으로 챙겨주세요. 오늘은 취침 1시간 전 조명을 낮추고, 50분 착석마다 1분 목 리셋 루틴을 실행해보세요!',
 };
 
-function MainPage({ onNavigate }) {
+function HeartIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 8.5c0 4.5-8 10.5-8 10.5s-8-6-8-10.5a4.5 4.5 0 0 1 8-2.8 4.5 4.5 0 0 1 8 2.8Z" />
+    </svg>
+  );
+}
+
+function Donut({ pct, r = 38, sw = 8, color = 'var(--wave)', bg = 'var(--wave-10)', children }) {
+  const circ = 2 * Math.PI * r;
+  const sz = (r + sw) * 2 + 4;
+  return (
+    <div className="relative inline-flex items-center justify-center" style={{ width: sz, height: sz }}>
+      <svg width={sz} height={sz} className="-rotate-90" viewBox={`0 0 ${sz} ${sz}`}>
+        <circle cx={sz / 2} cy={sz / 2} r={r} fill="none" stroke={bg} strokeWidth={sw} />
+        <circle
+          cx={sz / 2}
+          cy={sz / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={sw}
+          strokeDasharray={`${circ * pct} ${circ * (1 - pct)}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+function PostureScoreGauge({ score }) {
+  const pct = score / 100;
+  const cx = 100;
+  const cy = 72;
+  const r = 65;
+  const ang = Math.PI * (1 - pct);
+  const nx = cx + r * Math.cos(ang);
+  const ny = cy - r * Math.sin(ang);
+  const bgArc = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  const fgArc =
+    pct <= 0
+      ? ''
+      : pct >= 1
+      ? `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`
+      : `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${nx.toFixed(2)} ${ny.toFixed(2)}`;
+  const status = score > 80 ? '양호!' : score > 60 ? '주의' : '위험';
+  const sparkles = [
+    { x: 50, y: 32, s: 9 },
+    { x: 152, y: 42, s: 7 },
+    { x: 100, y: 6, s: 6 },
+    { x: 66, y: 14, s: 5 },
+    { x: 140, y: 16, s: 5 },
+  ];
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <svg viewBox="0 0 200 78" className="mb-3 w-44 overflow-visible">
+        <path d={bgArc} fill="none" stroke="var(--wave-20)" strokeWidth="11" strokeLinecap="round" />
+        {fgArc && <path d={fgArc} fill="none" stroke="var(--wave)" strokeWidth="11" strokeLinecap="round" />}
+        <circle cx={nx.toFixed(2)} cy={ny.toFixed(2)} r="7" fill="var(--surface)" stroke="var(--wave)" strokeWidth="3" />
+
+        {sparkles.map((sp, i) => (
+          <text key={i} x={sp.x} y={sp.y} fontSize={sp.s} fill="var(--wave)" textAnchor="middle" dominantBaseline="middle" opacity="0.8">
+            ✦
+          </text>
+        ))}
+
+        <circle cx={cx} cy={cy} r="30" fill="var(--wave)" />
+        <circle cx={cx} cy={cy} r="30" fill="rgba(255,255,255,0.15)" />
+
+        {score > 80 ? (
+          <>
+            <path d={`M ${cx - 13} ${cy - 8} Q ${cx - 9} ${cy - 13} ${cx - 5} ${cy - 8}`} fill="none" stroke="var(--ink)" strokeWidth="2.5" strokeLinecap="round" />
+            <path d={`M ${cx + 5} ${cy - 8} Q ${cx + 9} ${cy - 13} ${cx + 13} ${cy - 8}`} fill="none" stroke="var(--ink)" strokeWidth="2.5" strokeLinecap="round" />
+          </>
+        ) : (
+          <>
+            <circle cx={cx - 9} cy={cy - 8} r="3.5" fill="var(--ink)" />
+            <circle cx={cx + 9} cy={cy - 8} r="3.5" fill="var(--ink)" />
+          </>
+        )}
+
+        {score > 80 ? (
+          <path d={`M ${cx - 11} ${cy + 6} Q ${cx} ${cy + 17} ${cx + 11} ${cy + 6}`} fill="none" stroke="var(--ink)" strokeWidth="2.5" strokeLinecap="round" />
+        ) : score > 60 ? (
+          <line x1={cx - 11} y1={cy + 10} x2={cx + 11} y2={cy + 10} stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" />
+        ) : (
+          <path d={`M ${cx - 11} ${cy + 10} Q ${cx} ${cy + 4} ${cx + 11} ${cy + 10}`} fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" />
+        )}
+      </svg>
+
+      <p className="mt-5 text-2xl font-bold" style={{ color: 'var(--wave)' }}>
+        {status}
+      </p>
+      <p className="mt-0.5 text-sm" style={{ color: 'var(--sub)' }}>
+        자세 점수 <span className="font-bold" style={{ color: 'var(--ink)' }}>{score}점</span> / 100
+      </p>
+    </div>
+  );
+}
+
+function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
+  const remaining = todos.filter((todo) => !todo.done).length;
   return (
     <div className="page-stack">
       <section className="hero card">
@@ -589,115 +1010,229 @@ function MainPage({ onNavigate }) {
           </div>
         </Card>
 
-        <Card title="오늘 할일" action="4개">
+        <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')}>
           <div className="todo-list">
             {todos.map((todo) => (
-              <div className="todo" key={todo.title}>
+              <button
+                type="button"
+                className={`todo ${todo.done ? 'done' : ''}`}
+                key={todo.id}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleTodo(todo.id);
+                }}
+              >
                 <span className={todo.done ? 'checked' : ''}>{todo.done ? '✓' : ''}</span>
                 <p>{todo.title}</p>
-              </div>
+              </button>
             ))}
           </div>
         </Card>
       </section>
 
-      <section className="dashboard-grid">
-        <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
-          <div className="stat-trio">
-            <div className="stat-trio-item">
-              <strong>7.0<span>h</span></strong>
-              <small>달성</small>
+      <section className="grid grid-cols-3 gap-5">
+        <div className="col-span-2 flex flex-col gap-5">
+          <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
+            <div className="flex items-center gap-4">
+              <Donut pct={0.933} r={48} sw={11}>
+                <div className="flex flex-col items-center">
+                  <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>7.0</span>
+                  <span className="text-xs" style={{ color: 'var(--sub)' }}>h</span>
+                </div>
+              </Donut>
+              <div className="flex-1">
+                <div className="mb-3 flex items-center gap-14">
+                  <div>
+                    <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>7.0</span>
+                      <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 달성량</p>
+                  </div>
+                  <div>
+                    <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>목표</p>
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="text-2xl font-bold" style={{ color: 'var(--sub)' }}>7.5</span>
+                      <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                    </div>
+                    <p className="text-xs" style={{ color: 'var(--sub)' }}>일일 목표</p>
+                  </div>
+                </div>
+                <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
+                  <div className="flex items-center gap-14 text-xs">
+                    <span className="w-16" style={{ color: 'var(--sub)' }}>입면 시간</span>
+                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>23:42</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-14 text-xs">
+                    <span className="w-16" style={{ color: 'var(--sub)' }}>기상 시간</span>
+                    <span className="font-semibold" style={{ color: 'var(--ink)' }}>06:42</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="stat-trio-item">
-              <strong>7.2<span>h</span></strong>
-              <small>7일 평균</small>
-            </div>
-            <div className="stat-trio-item">
-              <p>목표</p>
-              <strong>7.5<span>h</span></strong>
-              <small>일일 목표</small>
-            </div>
-          </div>
-          <InfoList
-            items={[
-              ['입면 시간', '23:42'],
-              ['기상 시간', '06:42'],
-            ]}
-          />
-        </Card>
+          </Card>
 
-        <Card title="자세 점수" onClick={() => onNavigate('posture')}>
-          <div className="posture-score-panel">
-            <SemiGauge value={68} max={100} label="주의" tone="warn" />
-            <p className="posture-score-readout">
-              자세 점수 <strong>68점</strong> / 100
+          <Card
+            title="심박수"
+            action={
+              <span className="inline-flex items-center gap-1.5">
+                <HeartIcon />
+                62 bpm
+              </span>
+            }
+          >
+            <p className="mb-3 text-sm" style={{ color: 'var(--sub)' }}>오늘 시간대별</p>
+            <ResponsiveContainer width="100%" height={115}>
+              <RechartsLineChart data={heartRateTrend} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[45, 95]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                  itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                  labelStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                  formatter={(value) => [`${value} bpm`, '심박']}
+                />
+                <Line type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} dot={{ fill: 'var(--wave)', r: 3, strokeWidth: 0 }} />
+              </RechartsLineChart>
+            </ResponsiveContainer>
+            <div className="mt-3 flex gap-2">
+              {[{ l: '최저', v: '54' }, { l: '평균', v: '69' }, { l: '최고', v: '82' }].map((s) => (
+                <div key={s.l} className="flex-1 rounded-xl py-1.5 text-center" style={{ background: 'var(--wave-05)' }}>
+                  <p className="text-base font-bold" style={{ color: 'var(--ink)' }}>{s.v}</p>
+                  <p className="text-xs" style={{ color: 'var(--sub)' }}>{s.l}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-5">
+          <Card title="자세 점수" onClick={() => onNavigate('posture')}>
+            <PostureScoreGauge score={68} />
+            <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
+              거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>4회</span>
             </p>
-            <div className="posture-score-note">
-              <strong>거북목 감지 오늘 4회</strong>
-              <span>전주 평균 7.3회 대비 개선</span>
+            <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>전주 평균 7.3회 대비 개선</p>
+            <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div>
+                  <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>71%</p>
+                  <p className="text-xs" style={{ color: 'var(--sub)' }}>바른 자세</p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>62%</p>
+                  <p className="text-xs" style={{ color: 'var(--sub)' }}>알림 수락</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="split-stats">
-            <Metric label="바른 자세" value="71%" />
-            <Metric label="알림 수락" value="62%" />
-          </div>
-        </Card>
+          </Card>
 
-        <Card title="심박수">
-          <div className="big-number">
-            62<span>bpm</span>
-            <small>현재 심박수</small>
-          </div>
-          <p className="section-description">오늘 시간대별</p>
-          <LineChart data={heartRateTrend} min={45} max={95} />
-          <div className="stat-trio">
-            <div className="stat-trio-item">
-              <strong>54</strong>
-              <small>최저</small>
-            </div>
-            <div className="stat-trio-item">
-              <strong>69</strong>
-              <small>평균</small>
-            </div>
-            <div className="stat-trio-item">
-              <strong>82</strong>
-              <small>최고</small>
-            </div>
-          </div>
-        </Card>
+          <button type="button" className="promo-card blue w-full cursor-pointer border-0 text-left" onClick={() => onNavigate('sleep')}>
+            <strong>취침 가이드</strong>
+            <p>가장 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
+          </button>
+
+          <button type="button" className="promo-card orange w-full cursor-pointer border-0 text-left" onClick={onGoToSleepSettings}>
+            <strong>수면 환경</strong>
+            <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
+          </button>
+        </div>
       </section>
     </div>
   );
 }
 
-function SleepPage({ tab, setTab }) {
+function OverviewPage({ onNavigate }) {
+  const [bannerIndex, setBannerIndex] = useState(0);
+
+  return (
+    <div className="page-stack">
+      <section className="hero card overview-banner">
+        <div>
+          <h2>오늘도 좋은 하루예요</h2>
+          <p>{overviewBanners[bannerIndex]}</p>
+        </div>
+        <div className="overview-banner-dots">
+          {overviewBanners.map((_, index) => (
+            <button
+              type="button"
+              key={index}
+              className={index === bannerIndex ? 'active' : ''}
+              aria-label={`메시지 ${index + 1}`}
+              onClick={() => setBannerIndex(index)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="overview-score-row">
+        <Card title="에너지 점수" action="Good">
+          <div className="overview-score-number">
+            77<small>점</small>
+          </div>
+          <BarChart data={energyWeekBars} />
+        </Card>
+
+        <Card title="활동 링">
+          <div className="activity-rings">
+            <i className="ring-outer" />
+            <i className="ring-mid" />
+            <i className="ring-inner" />
+          </div>
+        </Card>
+
+        <Card title="수면 점수" action="Good" onClick={() => onNavigate('sleep')}>
+          <SemiGauge value={75} max={100} label="75점" />
+        </Card>
+      </section>
+
+      <section className="overview-tile-row">
+        <button type="button" className="feature-tile orange" onClick={() => {}}>
+          <strong>식사 기록</strong>
+          <span>첫 식사를 기록할 준비가 되셨나요?</span>
+        </button>
+
+        <div className="overview-quick-grid">
+          {overviewQuickActions.map((item) => (
+            <button type="button" className={`overview-quick-item ${item.tone}`} key={item.label}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <button type="button" className="feature-tile purple" onClick={() => {}}>
+          <strong>심장 건강</strong>
+          <span>심장 건강 점수와 주요 인사이트를 한 곳에서 확인하세요.</span>
+        </button>
+      </section>
+
+      <section className="overview-tile-row">
+        {overviewFeatureTiles.map((tile) => (
+          <button type="button" className={`feature-tile ${tile.tone} ${tile.muted ? 'muted' : ''}`} key={tile.id}>
+            <strong>{tile.title}</strong>
+            <span>{tile.desc}</span>
+          </button>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function SleepPage({ tab, setTab, onGoToSleepSettings }) {
   return (
     <div className="page-stack">
       <Tabs
         active={tab}
         onChange={setTab}
         items={[
-          ['current', '현재 상태'],
-          ['daily', '일간 리포트'],
-          ['weekly', '주간 리포트'],
+          ['current', '오늘의 수면준비'],
+          ['report', '수면 리포트'],
         ]}
       />
       {tab === 'current' && (
         <div className="dashboard-grid">
-          <Card title="수면 추세" action="최근 7일" wide>
-            <div className="big-number">
-              7.0<span>h</span>
-              <small>목표 7.5h 대비 93%</small>
-            </div>
-            <LineChart data={sleepTrend} min={4} max={9} />
-          </Card>
-          <Card title="이번 주 누적 수면 시간">
-            <Ring value={47.7} max={52.5} label="47.7h" />
-            <div className="split-stats">
-              <Metric label="평균" value="6.8h" detail="7일 평균" />
-              <Metric label="규칙성" value="82%" detail="기상 시간 안정" />
-            </div>
-          </Card>
           <Card title="오늘 밤 수면 계획" action="Plan">
             <div className="sleep-plan">
               <strong>23:30 → 06:40</strong>
@@ -731,13 +1266,19 @@ function SleepPage({ tab, setTab }) {
               />
             </div>
           </Card>
+
+          {sleepSettingSummaries.map((item) => (
+            <Card key={item.title} title={item.title} action="적용 중" onClick={onGoToSleepSettings}>
+              <p className="report-summary-only">{item.text}</p>
+            </Card>
+          ))}
         </div>
       )}
-      {tab === 'daily' && (
-        <SleepDailyReport />
-      )}
-      {tab === 'weekly' && (
-        <SleepWeeklyReport />
+      {tab === 'report' && (
+        <>
+          <SleepDailyReport />
+          <SleepWeeklyReport />
+        </>
       )}
     </div>
   );
@@ -757,25 +1298,337 @@ function WakeAlarmRow({ title, time, on, onToggle }) {
   );
 }
 
-function SleepStageGraph({ data }) {
+function SleepHypnogram({ segments, timeLabels }) {
+  const total = segments.reduce((sum, seg) => sum + seg.minutes, 0);
+
+  let cursor = 0;
+  const points = segments.map((seg) => {
+    const x0 = cursor;
+    cursor += seg.minutes;
+    return { ...seg, x0, x1: cursor, y: HYPNOGRAM_LANES[seg.stage] };
+  });
+
   return (
-    <div className="sleep-stage-graph">
-      <div className="sleep-stage-bars">
-        {data.map((item) => (
-          <div className="sleep-stage-column" key={item.time} tabIndex={0}>
-            <div className="sleep-stage-track">
-              <i style={{ height: `${item.level}%` }} />
+    <div>
+      <div className="relative h-24 w-full">
+        {Object.values(HYPNOGRAM_LANES).map((y) => (
+          <div key={y} className="absolute inset-x-0 border-t border-[var(--line)]" style={{ top: `${y}%` }} />
+        ))}
+        {points.map((seg, index) => {
+          const prev = points[index - 1];
+          const topY = prev ? Math.min(prev.y, seg.y) : seg.y;
+          const bottomY = prev ? Math.max(prev.y, seg.y) : seg.y;
+          const topColor = prev && prev.y > seg.y ? stageColorVar[seg.stage] : prev && stageColorVar[prev.stage];
+          const bottomColor = prev && prev.y > seg.y ? stageColorVar[prev.stage] : prev && stageColorVar[seg.stage];
+
+          return (
+            <div key={index}>
+              {prev && (
+                <div
+                  className="absolute rounded-full"
+                  style={{
+                    left: `${(seg.x0 / total) * 100}%`,
+                    top: `${topY}%`,
+                    height: `${bottomY - topY}%`,
+                    width: HYPNOGRAM_BAND_PX,
+                    transform: 'translateX(-50%)',
+                    background: `linear-gradient(to bottom, ${topColor}, ${bottomColor})`,
+                  }}
+                />
+              )}
+              <div
+                className="absolute rounded-full"
+                style={{
+                  left: `${(seg.x0 / total) * 100}%`,
+                  width: `${((seg.x1 - seg.x0) / total) * 100}%`,
+                  top: `${seg.y}%`,
+                  height: HYPNOGRAM_BAND_PX,
+                  transform: 'translateY(-50%)',
+                  background: stageColorVar[seg.stage],
+                }}
+              />
             </div>
-            <span>{item.time}</span>
-            <div className="chart-tooltip">
-              <strong>{item.time} · {item.stage}</strong>
-              <span>호흡 {item.breath}회/분</span>
-              <span>심박 {item.heart}bpm</span>
-            </div>
-          </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 border-t border-[var(--line)] pt-2">
+        <p className="mb-1.5 text-[11px] font-bold text-[var(--sub)]">움직임</p>
+        <div className="flex h-3 w-full items-end justify-between">
+          {movementTicks.map((height, index) => (
+            <div
+              key={index}
+              className="w-px rounded-sm bg-[var(--neutral-dot)]"
+              style={{ height: `${height}%` }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="mt-2 flex justify-between border-t border-[var(--line)] pt-2 text-[11px] text-[var(--sub)]">
+        {timeLabels.map((label) => (
+          <span key={label}>{label}</span>
         ))}
       </div>
+      <div className="mt-2 flex items-center justify-end gap-1.5 text-[11px] text-[var(--sub)]">
+        <span className="inline-block h-2.5 w-4 rounded-sm bg-[repeating-linear-gradient(45deg,#cbd8df_0px,#cbd8df_2px,transparent_2px,transparent_4px)]" />
+        일반적인 범위
+      </div>
     </div>
+  );
+}
+
+function SleepStageBreakdownRow({ stage }) {
+  const [typicalStart, typicalEnd] = stage.typical;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2 text-xs">
+        <span className="h-2 w-2 rounded-full" style={{ background: stageColorVar[stage.tone] }} />
+        <strong className="text-[13px] font-extrabold text-[var(--ink)]">{stage.label}</strong>
+        <em className="font-extrabold not-italic text-[var(--sub)]">{stage.pct}%</em>
+        <small className="ml-auto text-[var(--sub)]">{stage.time}</small>
+      </div>
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-[var(--line)]">
+        <div
+          className="absolute inset-y-0 bg-[repeating-linear-gradient(45deg,#cbd8df_0px,#cbd8df_2px,transparent_2px,transparent_4px)]"
+          style={{ left: `${typicalStart}%`, width: `${typicalEnd - typicalStart}%` }}
+        />
+        <div
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ width: `${stage.pct}%`, background: stageColorVar[stage.tone] }}
+        />
+      </div>
+    </div>
+  );
+}
+
+let insightIdCounter = 0;
+function withInsightIds(items) {
+  return items.map(([label, title, text]) => ({ id: ++insightIdCounter, label, title, text }));
+}
+
+const sleepDailyInsights = withInsightIds([
+  ['오늘의 권장 액션', '에어컨 예약을 새벽 4시까지 1시간 연장', '최근 3일 동안 방 온도가 26℃를 넘으면 뒤척임이 눈에 띄게 늘었어요. 에어컨 예약을 새벽 4시까지 1시간 늘려볼게요.'],
+  ['취침 전 루틴', '23:00 스마트폰 차단 · 23:20 조도 낮춤 · 23:30 취침', '화면을 오래 보면 수면 부채가 쌓이기 쉬워요. 23:00엔 스마트폰을 멀리하고 23:20엔 조명을 낮춘 뒤 23:30에 잠들어보세요.'],
+  ['자동화 제안', '기상 30분 전 조명 20% → 60%로 서서히 상승', '심박이 안정적으로 올라오는 구간에 맞춰 빛을 천천히 늘리면 더 가볍게 깰 수 있어요.'],
+]);
+
+function SleepDailyReport() {
+  return (
+    <CareReport
+      type="daily"
+      header={<SleepStatusReport />}
+      analysis={[
+        ['수면 점수', '82점', '전일 대비 +4점'],
+        ['총 수면 시간', '6h 52m', '목표 7h 30m 대비 -38분'],
+        ['입면 시간', '27분', '스마트폰 사용 후 지연'],
+        ['뒤척임 집중 시간', '03:05~03:40', '온도 26℃ 이상 구간'],
+        ['수면 부채', '2h 10m', '이번 주 안에 회복 권장'],
+      ]}
+      insights={sleepDailyInsights}
+    />
+  );
+}
+
+function weeklyScoreStatus(value) {
+  return value >= 85 ? '좋음' : value >= 78 ? '보통 이상' : '관리 필요';
+}
+
+function weeklyHoursColor(hours) {
+  return hours >= 7 ? 'var(--wave)' : hours >= 6 ? 'var(--wave-40)' : 'var(--wave-20)';
+}
+
+function WeeklyTrendSummary({ trendData }) {
+  const goalHours = 7.5;
+  const avgHours = trendData.reduce((sum, d) => sum + d.hours, 0) / trendData.length;
+  const goalPercent = Math.round((avgHours / goalHours) * 100);
+
+  return (
+    <div className="mb-2 mt-3">
+      <p className="mb-1 text-xs font-semibold" style={{ color: 'var(--sub)' }}>7일 평균 수면 시간</p>
+      <div className="mb-2 flex items-end gap-6">
+        <div className="flex items-baseline gap-1">
+          <span className="text-5xl font-bold" style={{ color: 'var(--ink)' }}>{avgHours.toFixed(1)}</span>
+          <span className="text-xl font-semibold" style={{ color: 'var(--sub)' }}>h</span>
+        </div>
+        <p className="mb-1 text-xs" style={{ color: 'var(--sub)' }}>
+          목표 {goalHours}h 대비 <span className="font-bold" style={{ color: 'var(--ink)' }}>{goalPercent}%</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyTrendTooltip({ active, payload }) {
+  if (!active || !payload || !payload.length) return null;
+  const point = payload[0].payload;
+
+  return (
+    <div className="rounded-lg border bg-[var(--surface)] px-3 py-2 text-xs shadow-md" style={{ borderColor: 'var(--wave-20)' }}>
+      <p className="font-extrabold" style={{ color: 'var(--ink)' }}>{point.day}</p>
+      <p style={{ color: 'var(--ink)' }}>수면: {point.hours}h</p>
+      <p style={{ color: 'var(--ink)' }}>수면점수: {point.score}점</p>
+      <p style={{ color: 'var(--sub)' }}>{weeklyScoreStatus(point.score)}</p>
+    </div>
+  );
+}
+
+function InsightCard({ id, label, title, text }) {
+  const { approved, toggle } = useApprovedActions();
+  const isApproved = !!approved[id];
+
+  return (
+    <div className={`insight-card ${isApproved ? 'applied' : ''}`}>
+      <span className="insight-card-label">{label}</span>
+      <strong>{title}</strong>
+      <p>{text}</p>
+      <button type="button" className="insight-card-action" onClick={() => toggle(id)}>
+        {isApproved ? '✓ 적용됨' : '실행'}
+      </button>
+    </div>
+  );
+}
+
+function CareReport({
+  type,
+  title,
+  score,
+  summary,
+  analysis,
+  insights,
+  visual,
+  visualAction = 'Graph',
+  weeklyScores = [],
+  trendData,
+  averageScore,
+  dateNav,
+  extra,
+  header,
+}) {
+  const isWeekly = type === 'weekly';
+
+  return (
+    <div className="care-report-layout">
+      {header || (
+        <>
+          {dateNav}
+          {visual && (
+            <Card title={title} action={visualAction} wide>
+              <p className="report-summary-only">{summary}</p>
+              {visual}
+            </Card>
+          )}
+          {extra}
+        </>
+      )}
+      {isWeekly && (
+        <Card title={title} action={score} wide>
+          <p className="report-summary-only">{summary}</p>
+          {trendData && <WeeklyTrendSummary trendData={trendData} />}
+          <div className="weekly-score-chart">
+            {trendData ? (
+              <div className="weekly-trend-chart">
+                <ResponsiveContainer width="100%" height={210}>
+                  <RechartsBarChart data={trendData} margin={{ top: 16, right: 12, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
+                    <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 9]} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<WeeklyTrendTooltip />} cursor={{ fill: 'var(--wave-10)' }} />
+                    <Bar dataKey="hours" radius={[8, 8, 0, 0]} maxBarSize={36}>
+                      <LabelList dataKey="hours" position="top" formatter={(value) => `${value}h`} style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }} />
+                      {trendData.map((d) => (
+                        <Cell key={d.day} fill={weeklyHoursColor(d.hours)} />
+                      ))}
+                    </Bar>
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="weekly-score-bars">
+                {weeklyScores.map(([day, value]) => (
+                  <div className="weekly-score-bar" key={day} tabIndex={0}>
+                    <div className="weekly-score-track">
+                      <i style={{ height: `${value}%` }}>
+                        <span className="weekly-score-value">{value}</span>
+                      </i>
+                    </div>
+                    <span>{day}</span>
+                    <div className="chart-tooltip">
+                      <strong>{day}요일 · {value}점</strong>
+                      <span>{weeklyScoreStatus(value)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="weekly-score-average">
+              <span>평균 점수</span>
+              <strong>{averageScore || score}</strong>
+              <p>7일 점수 기준</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Card title="인사이트">
+        <div className="care-analysis-grid">
+          {analysis.map(([label, value, detail]) => (
+            <Metric key={label} label={label} value={value} detail={detail} />
+          ))}
+        </div>
+      </Card>
+
+      <Card title="권장 액션">
+        <div className="insight-list">
+          {insights.map((item) => (
+            <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+const sleepWeeklyScores = [
+  ['월', 74],
+  ['화', 76],
+  ['수', 79],
+  ['목', 80],
+  ['금', 82],
+  ['토', 87],
+  ['일', 89],
+];
+
+const sleepWeeklyTrendData = sleepTrend.map((item, index) => ({
+  day: item.day,
+  hours: item.value,
+  score: sleepWeeklyScores[index][1],
+}));
+
+const sleepWeeklyInsights = withInsightIds([
+  ['다음 주 목표', '평일 23:30 이전 취침 4회 달성', '주말 회복 수면에 의존하지 않도록 평일 수면 총량을 먼저 올려야 합니다.'],
+  ['수면 부채 회복 플랜', '월~목 20분씩 추가 수면, 금요일은 7시간 30분 확보', '한 번에 몰아서 자는 것보다 평일에 조금씩 갚는 쪽이 리듬 유지에 유리합니다.'],
+  ['환경 자동화', '새벽 1시~4시 냉방 유지, 기상 30분 전 조명 알람', '온도와 기상 리듬을 같이 고정하면 뒤척임과 수면 관성을 줄일 가능성이 큽니다.'],
+]);
+
+function SleepWeeklyReport() {
+  return (
+    <CareReport
+      type="weekly"
+      title="지난 한 주 수면 리포트"
+      score="81점"
+      summary="평균 수면 시간은 줄었지만, 기상 규칙성과 깊은 수면 비율은 후반으로 갈수록 개선되었습니다."
+      weeklyScores={sleepWeeklyScores}
+      trendData={sleepWeeklyTrendData}
+      averageScore="81점"
+      analysis={[
+        ['점수 변화', '74→89점', '주 후반 회복세'],
+        ['총합 수면 시간', '46.8h', '전주 대비 18% 감소'],
+        ['수면 부채', '2h 10m', '평일 누적 부족'],
+        ['온도 민감 구간', '3회', '26℃ 이상에서 뒤척임 증가'],
+        ['기상 규칙성', '82%', '전주 대비 +6%'],
+      ]}
+      insights={sleepWeeklyInsights}
+    />
   );
 }
 
@@ -783,9 +1636,15 @@ function isSameDay(a, b) {
   return a.toDateString() === b.toDateString();
 }
 
-function formatReportDateLabel(date, latestDate) {
-  if (isSameDay(date, latestDate)) return '어제';
+function formatStatusDateLabel(date, latestDate) {
+  if (isSameDay(date, latestDate)) return '오늘';
   return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(date);
+}
+
+function getToday() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
 function CalendarPopup({ selectedDate, latestDate, onSelect }) {
@@ -838,7 +1697,7 @@ function CalendarPopup({ selectedDate, latestDate, onSelect }) {
   );
 }
 
-function DateNavigator({ date, latestDate, onChange }) {
+function StatusDateNavigator({ date, latestDate, onChange }) {
   const [showCalendar, setShowCalendar] = useState(false);
 
   const shiftDay = (delta) => {
@@ -851,7 +1710,7 @@ function DateNavigator({ date, latestDate, onChange }) {
     <div className="date-navigator">
       <button type="button" onClick={() => shiftDay(-1)} aria-label="이전 날">‹</button>
       <button type="button" className="date-navigator-label" onClick={() => setShowCalendar((value) => !value)}>
-        {formatReportDateLabel(date, latestDate)}
+        {formatStatusDateLabel(date, latestDate)}
       </button>
       <button type="button" onClick={() => shiftDay(1)} aria-label="다음 날" disabled={isSameDay(date, latestDate)}>
         ›
@@ -870,191 +1729,139 @@ function DateNavigator({ date, latestDate, onChange }) {
   );
 }
 
-function getYesterday() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function summarizeValues(values) {
-  return {
-    min: Math.min(...values),
-    max: Math.max(...values),
-    avg: Math.round(values.reduce((sum, value) => sum + value, 0) / values.length),
-  };
-}
-
-function SleepDailyReport() {
-  const [reportDate, setReportDate] = useState(getYesterday);
-  const [latestDate] = useState(getYesterday);
-
-  const heartStats = summarizeValues(sleepStageLog.map((d) => d.heart));
-  const breathStats = summarizeValues(sleepStageLog.map((d) => d.breath));
-  const snoringMinutes = snoringLog.reduce((sum, item) => sum + parseInt(item.duration, 10), 0);
+function SleepStatusReport() {
+  const [reportDate, setReportDate] = useState(getToday);
+  const [latestDate] = useState(getToday);
 
   return (
-    <CareReport
-      type="daily"
-      title={`${formatReportDateLabel(reportDate, latestDate)} 수면 리포트`}
-      score="82점"
-      summary="새벽 3시쯤 방 온도가 오르면서 뒤척임이 늘었어요. 그 영향으로 얕은 수면으로 자주 넘어간 밤이었어요."
-      visual={<SleepStageGraph data={sleepStageLog} />}
-      visualAction="AI 코멘트"
-      dateNav={<DateNavigator date={reportDate} latestDate={latestDate} onChange={setReportDate} />}
-      extra={
-        <div className="dashboard-grid">
-          <Card title="심박수" action={`평균 ${heartStats.avg}bpm`}>
-            <LineChart data={sleepStageLog.map((d) => ({ day: d.time, value: d.heart }))} min={45} max={85} />
-            <div className="stat-trio">
-              <div className="stat-trio-item"><p>최저</p><strong>{heartStats.min}</strong></div>
-              <div className="stat-trio-item"><p>평균</p><strong>{heartStats.avg}</strong></div>
-              <div className="stat-trio-item"><p>최고</p><strong>{heartStats.max}</strong></div>
-            </div>
-          </Card>
-          <Card title="호흡" action={`평균 ${breathStats.avg}회/분`}>
-            <LineChart data={sleepStageLog.map((d) => ({ day: d.time, value: d.breath }))} min={8} max={22} />
-            <div className="stat-trio">
-              <div className="stat-trio-item"><p>최저</p><strong>{breathStats.min}</strong></div>
-              <div className="stat-trio-item"><p>평균</p><strong>{breathStats.avg}</strong></div>
-              <div className="stat-trio-item"><p>최고</p><strong>{breathStats.max}</strong></div>
-            </div>
-          </Card>
-          <Card title="코골이" action={`${snoringLog.length}회 감지`}>
-            <div className="big-number">
-              {snoringMinutes}<span>분</span>
-              <small>오늘 밤 총 코골이 시간</small>
-            </div>
-            <InfoList items={snoringLog.map((item) => [item.time, item.duration])} />
-          </Card>
+    <>
+      <StatusDateNavigator date={reportDate} latestDate={latestDate} onChange={setReportDate} />
+
+      <section className="sleep-score-hero">
+        <div className="sleep-score-hero-top">
+          <div className="sleep-score-hero-number">
+            75<span className="tag good">Good</span>
+          </div>
+          <button type="button" className="sleep-score-details-btn">Details</button>
         </div>
-      }
-      analysis={[
-        ['수면 점수', '82점', '전일 대비 +4점'],
-        ['총 수면 시간', '6h 52m', '목표 7h 30m 대비 -38분'],
-        ['입면 시간', '27분', '스마트폰 사용 후 지연'],
-        ['뒤척임 집중 시간', '03:05~03:40', '온도 26℃ 이상 구간'],
-        ['수면 부채', '2h 10m', '이번 주 안에 회복 권장'],
-      ]}
-      insights={[
-        ['오늘의 권장 액션', '에어컨 예약을 새벽 4시까지 1시간 연장', '최근 3일 동안 방 온도가 26℃를 넘으면 뒤척임이 눈에 띄게 늘었어요. 에어컨 예약을 새벽 4시까지 1시간 늘려볼게요.'],
-        ['취침 전 루틴', '23:00 스마트폰 차단 · 23:20 조도 낮춤 · 23:30 취침', '화면을 오래 보면 수면 부채가 쌓이기 쉬워요. 23:00엔 스마트폰을 멀리하고 23:20엔 조명을 낮춘 뒤 23:30에 잠들어보세요.'],
-        ['주의사항', '새벽 3시 전후 얕은 수면 전환 가능성', '이 시간대에 온도와 소음이 함께 흔들리면 다시 잠들기 어려워질 수 있어요. 조금만 더 신경 써볼까요?'],
-        ['자동화 제안', '기상 30분 전 조명 20% → 60%로 서서히 상승', '심박이 안정적으로 올라오는 구간에 맞춰 빛을 천천히 늘리면 더 가볍게 깰 수 있어요.'],
-      ]}
-    />
-  );
-}
+        <div className="sleep-score-hero-times">
+          <strong>6시간 25분</strong>
+          <span>수면 시간 · 2:11 AM - 8:36 AM</span>
+        </div>
+        <div className="sleep-score-hero-actual">
+          <strong>5시간 36분</strong>
+          <span>실제 수면 시간</span>
+        </div>
+      </section>
 
-function CareReport({
-  type,
-  title,
-  score,
-  summary,
-  analysis,
-  insights,
-  visual,
-  visualAction = 'Graph',
-  weeklyScores = [],
-  averageScore,
-  dateNav,
-  extra,
-}) {
-  const isWeekly = type === 'weekly';
+      <Card title="수면 점수 요인">
+        <div className="factor-grid">
+          {sleepScoreFactors.map((factor) => (
+            <div className={`factor-card ${factor.tone}`} key={factor.label}>
+              <span>{factor.label}</span>
+              <strong>{factor.value}</strong>
+              <em className={`factor-tag ${factor.tone}`}>{factor.tag}</em>
+            </div>
+          ))}
+        </div>
+      </Card>
 
-  return (
-    <div className="care-report-layout">
-      {dateNav}
-      {visual && (
-        <Card title={title} action={visualAction} wide>
-          <p className="report-summary-only">{summary}</p>
-          {visual}
+      <Card title="수면 단계" action="상세 보기">
+        <SleepHypnogram segments={sleepHypnogramSegments} timeLabels={hypnogramTimeLabels} />
+        <div className="mt-6 flex flex-col gap-4">
+          {sleepStageBreakdown.map((stage) => (
+            <SleepStageBreakdownRow stage={stage} key={stage.label} />
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-5">
+        <Card title="혈중 산소" action="평균 96%">
+          <ResponsiveContainer width="100%" height={140}>
+            <RechartsAreaChart data={spo2Trend} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+              <defs>
+                <linearGradient id="spo2Fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--wave)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--wave)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[88, 100]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
+                itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                formatter={(value) => [`${value}%`, '혈중 산소']}
+              />
+              <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="url(#spo2Fill)" dot={{ fill: 'var(--wave)', r: 3, strokeWidth: 0 }} />
+            </RechartsAreaChart>
+          </ResponsiveContainer>
+          <p className="section-description">90% 미만 지속 시간: 0초</p>
         </Card>
-      )}
-      {extra}
-      {isWeekly && (
-        <Card title={title} action={score} wide>
-          <p className="report-summary-only">{summary}</p>
-          <div className="weekly-score-chart">
-            <div className="weekly-score-bars">
-              {weeklyScores.map(([day, value]) => (
-                <div className="weekly-score-bar" key={day} tabIndex={0}>
-                  <div className="weekly-score-track">
-                    <i style={{ height: `${value}%` }}>
-                      <span className="weekly-score-value">{value}</span>
-                    </i>
-                  </div>
-                  <span>{day}</span>
-                  <div className="chart-tooltip">
-                    <strong>{day}요일 · {value}점</strong>
-                    <span>{value >= 85 ? '좋음' : value >= 78 ? '보통 이상' : '관리 필요'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="weekly-score-average">
-              <span>평균 점수</span>
-              <strong>{averageScore || score}</strong>
-              <p>7일 점수 기준</p>
-            </div>
+
+        <Card title="코골이" action={`${snoringEpisodes.length}회 감지`}>
+          <div className="big-number">
+            {snoringEpisodes.reduce((sum, item) => sum + item.duration, 0)}<span>분</span>
+            <small>오늘 밤 총 코골이 시간</small>
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            {snoringEpisodes.map((item) => (
+              <div key={item.time} className="flex items-center justify-between rounded-xl px-3 py-2 text-xs" style={{ background: 'var(--wave-05)' }}>
+                <span style={{ color: 'var(--sub)' }}>{item.time}</span>
+                <span className="font-bold" style={{ color: 'var(--ink)' }}>{item.duration}분</span>
+              </div>
+            ))}
           </div>
         </Card>
-      )}
 
-      <Card title="핵심 분석">
-        <div className="care-analysis-grid">
-          {analysis.map(([label, value, detail]) => (
-            <Metric key={label} label={label} value={value} detail={detail} />
-          ))}
-        </div>
-      </Card>
+        <Card title="심박수" action="평균 61bpm">
+          <ResponsiveContainer width="100%" height={140}>
+            <RechartsAreaChart data={sleepStageLog.map((d) => ({ day: d.time, value: d.heart }))} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+              <defs>
+                <linearGradient id="heartFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--wave)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--wave)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[45, 85]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
+                itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                formatter={(value) => [`${value} bpm`, '심박']}
+              />
+              <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="url(#heartFill)" dot={{ fill: 'var(--wave)', r: 3, strokeWidth: 0 }} />
+            </RechartsAreaChart>
+          </ResponsiveContainer>
+        </Card>
 
-      <Card title="인사이트">
-        <div className="insight-list">
-          {insights.map(([label, titleText, text]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{titleText}</strong>
-              <p>{text}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function SleepWeeklyReport() {
-  return (
-    <CareReport
-      type="weekly"
-      title="지난 한 주 수면 리포트"
-      score="81점"
-      summary="평균 수면 시간은 줄었지만, 기상 규칙성과 깊은 수면 비율은 후반으로 갈수록 개선되었습니다."
-      weeklyScores={[
-        ['월', 74],
-        ['화', 76],
-        ['수', 79],
-        ['목', 80],
-        ['금', 82],
-        ['토', 87],
-        ['일', 89],
-      ]}
-      averageScore="81점"
-      analysis={[
-        ['점수 변화', '74→89점', '주 후반 회복세'],
-        ['총합 수면 시간', '46.8h', '전주 대비 18% 감소'],
-        ['수면 부채', '2h 10m', '평일 누적 부족'],
-        ['온도 민감 구간', '3회', '26℃ 이상에서 뒤척임 증가'],
-        ['기상 규칙성', '82%', '전주 대비 +6%'],
-      ]}
-      insights={[
-        ['다음 주 목표', '평일 23:30 이전 취침 4회 달성', '주말 회복 수면에 의존하지 않도록 평일 수면 총량을 먼저 올려야 합니다.'],
-        ['수면 부채 회복 플랜', '월~목 20분씩 추가 수면, 금요일은 7시간 30분 확보', '한 번에 몰아서 자는 것보다 평일에 조금씩 갚는 쪽이 리듬 유지에 유리합니다.'],
-        ['환경 자동화', '새벽 1시~4시 냉방 유지, 기상 30분 전 조명 알람', '온도와 기상 리듬을 같이 고정하면 뒤척임과 수면 관성을 줄일 가능성이 큽니다.'],
-        ['주의사항', '주말 늦잠은 1시간 이내로 제한', '토요일 보상 수면이 길어지면 일요일 밤 입면 시간이 다시 밀릴 수 있습니다.'],
-      ]}
-    />
+        <Card title="호흡수" action="평균 14.0회/분">
+          <ResponsiveContainer width="100%" height={140}>
+            <RechartsAreaChart data={sleepStageLog.map((d) => ({ day: d.time, value: d.breath }))} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+              <defs>
+                <linearGradient id="breathFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--wave)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--wave)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[8, 22]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
+                itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                formatter={(value) => [`${value}회/분`, '호흡']}
+              />
+              <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="url(#breathFill)" dot={{ fill: 'var(--wave)', r: 3, strokeWidth: 0 }} />
+            </RechartsAreaChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+    </>
   );
 }
 
@@ -1082,9 +1889,8 @@ function PosturePage({ tab, setTab }) {
       {tab === 'current' && (
         <div className="dashboard-grid">
           <Card title="현재 자세상태">
-            <div className="posture-face">
-              <div>• •</div>
-              <span>주의</span>
+            <div className="gesture-placeholder mb-4 rounded-2xl">
+              <span>사진 없음</span>
             </div>
             <InfoList
               items={[
@@ -1132,7 +1938,7 @@ function PosturePage({ tab, setTab }) {
               />
             </div>
           </Card>
-          <Card title="시간대별 바른 자세 퍼센트" wide>
+          <Card title="오늘의 자세 흐름" wide>
             <BarChart data={postureBars} />
           </Card>
         </div>
@@ -1146,6 +1952,13 @@ function PosturePage({ tab, setTab }) {
     </div>
   );
 }
+
+const postureDailyInsights = withInsightIds([
+  ['오늘의 권장 액션', '50분마다 목 스트레칭, 오후 3시 전 모니터 높이 재확인', '목이 먼저 무너지는 날은 허리를 펴기보다 시선 높이를 먼저 맞추는 편이 좋습니다.'],
+  ['추천 루틴', '턱 당기기 20초 · 어깨 열기 20초 · 1분 기지개', '장시간 움직임이 없을 때는 자세 교정보다 짧은 휴식 제안이 우선입니다.'],
+  ['알림 조정', '거북목은 8분 지속 시 음성 안내, 허리는 반복 3회부터 안내', '가벼운 흔들림은 대시보드 알림으로 두고 반복 패턴만 음성으로 올리는 구성이 적절합니다.'],
+  ['추천 루틴', '45분마다 기지개 알림', '오후 3시~5시에는 집중도가 높아질수록 고개가 앞으로 나오는 패턴이 반복되었습니다. 45분마다 기지개 알림을 받아 목과 허리 자세를 함께 리셋해보세요.'],
+]);
 
 function PostureDailyReport() {
   return (
@@ -1163,15 +1976,18 @@ function PostureDailyReport() {
         ['허리 굽음 시간', '1h 10m', '골반 세우기 피드백 필요'],
         ['가장 무너진 시간대', '15:00~17:00', '목 전방 자세 반복'],
       ]}
-      insights={[
-        ['오늘의 권장 액션', '50분마다 목 스트레칭, 오후 3시 전 모니터 높이 재확인', '목이 먼저 무너지는 날은 허리를 펴기보다 시선 높이를 먼저 맞추는 편이 좋습니다.'],
-        ['추천 루틴', '턱 당기기 20초 · 어깨 열기 20초 · 1분 기지개', '장시간 움직임이 없을 때는 자세 교정보다 짧은 휴식 제안이 우선입니다.'],
-        ['알림 조정', '거북목은 8분 지속 시 음성 안내, 허리는 반복 3회부터 안내', '가벼운 흔들림은 대시보드 알림으로 두고 반복 패턴만 음성으로 올리는 구성이 적절합니다.'],
-        ['주의사항', '오후 3시~5시에는 허리보다 목 자세를 먼저 체크', '해당 시간대에는 집중도가 높아질수록 고개가 앞으로 나오는 패턴이 반복되었습니다.'],
-      ]}
+      insights={postureDailyInsights}
     />
   );
 }
+
+const postureWeeklyInsights = withInsightIds([
+  ['다음 주 목표', '50분 착석 후 1분 휴식 4회, 오후 3시 이후 거북목 20% 감소', '가장 무너지는 시간대가 고정되어 있어 선제 알림을 앞당기는 편이 좋습니다.'],
+  ['추천 루틴', '허리 리셋 하루 2회 · 목 리셋 하루 2회 · 1분 걷기', '허리 굽음은 증가했으므로 목 교정 루틴과 별도로 골반 세우기 루틴을 추가하세요.'],
+  ['알림 전략', '1단계는 화면 표시, 2단계부터 음성 안내, 3단계는 휴식 제안', '계속 교정만 요구하면 피로도가 커지므로 장시간 무움직임에는 휴식 제안이 더 적합합니다.'],
+  ['추천 루틴', '45분마다 기지개 알림', '허리 굽음 빈도가 9% 늘었어요. 목 지표는 좋아졌지만 골반이 무너지며 허리가 말리는 보상 패턴이 생겼으니, 45분마다 기지개 알림으로 허리도 함께 챙겨보세요.'],
+  ['다음 주 체크포인트', '휴식 루틴 수행률 64% → 80%', '루틴 수행률이 올라가면 장시간 착석 알림과 거북목 지속 시간이 함께 줄 가능성이 높습니다.'],
+]);
 
 function PostureWeeklyReport() {
   return (
@@ -1197,14 +2013,217 @@ function PostureWeeklyReport() {
         ['휴식 루틴 수행률', '64%', '목표 80%까지 16%p 부족'],
         ['장시간 착석 알림', '7회', '50분 이상 같은 자세 유지'],
       ]}
-      insights={[
-        ['다음 주 목표', '50분 착석 후 1분 휴식 4회, 오후 3시 이후 거북목 20% 감소', '가장 무너지는 시간대가 고정되어 있어 선제 알림을 앞당기는 편이 좋습니다.'],
-        ['추천 루틴', '허리 리셋 하루 2회 · 목 리셋 하루 2회 · 1분 걷기', '허리 굽음은 증가했으므로 목 교정 루틴과 별도로 골반 세우기 루틴을 추가하세요.'],
-        ['알림 전략', '1단계는 화면 표시, 2단계부터 음성 안내, 3단계는 휴식 제안', '계속 교정만 요구하면 피로도가 커지므로 장시간 무움직임에는 휴식 제안이 더 적합합니다.'],
-        ['주의사항', '허리 굽음 빈도 9% 증가', '목 지표는 좋아졌지만 골반이 무너지며 허리가 말리는 보상 패턴이 생겼습니다.'],
-        ['다음 주 체크포인트', '휴식 루틴 수행률 64% → 80%', '루틴 수행률이 올라가면 장시간 착석 알림과 거북목 지속 시간이 함께 줄 가능성이 높습니다.'],
-      ]}
+      insights={postureWeeklyInsights}
     />
+  );
+}
+
+const allRecommendedActions = [
+  ...sleepDailyInsights,
+  ...sleepWeeklyInsights,
+  ...postureDailyInsights,
+  ...postureWeeklyInsights,
+];
+
+const weeklyPlanCategories = ['자세', '수면', '식습관', '멘탈'];
+
+function getWeekDates() {
+  const today = new Date();
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+
+  return koreanWeekdayLabels.slice(1).concat(koreanWeekdayLabels[0]).map((label, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return { label, date: date.getDate(), isToday: date.toDateString() === today.toDateString() };
+  });
+}
+
+function RecommendedActionRow({ item, approved }) {
+  const { toggle } = useApprovedActions();
+
+  return (
+    <div className={`insight-card ${approved ? 'applied' : ''}`}>
+      <span className="insight-card-label">{item.label}</span>
+      <strong>{item.title}</strong>
+      <p>{item.text}</p>
+      <button type="button" className="insight-card-action" onClick={() => toggle(item.id)}>
+        {approved ? '✓ 적용됨' : '승인'}
+      </button>
+    </div>
+  );
+}
+
+function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
+  const weekDates = useMemo(getWeekDates, []);
+  const { approved } = useApprovedActions();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftCat, setDraftCat] = useState('자세');
+
+  const approvedItems = allRecommendedActions.filter((item) => approved[item.id]);
+  const pendingItems = allRecommendedActions.filter((item) => !approved[item.id]);
+
+  const submitNewTask = () => {
+    if (!draftTitle.trim()) return;
+    onAddTodo(draftTitle.trim(), todayWeekdayLabel, draftCat);
+    setDraftTitle('');
+    setModalOpen(false);
+  };
+
+  return (
+    <div className="page-stack">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>주간 건강 계획</h2>
+          <p className="text-xs" style={{ color: 'var(--sub)' }}>
+            {weekDates[0].label} {weekDates[0].date}일 ~ {weekDates[6].label} {weekDates[6].date}일
+          </p>
+        </div>
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+          style={{ background: 'var(--wave)', color: 'var(--ink)' }}
+          onClick={() => setModalOpen(true)}
+        >
+          + 계획 추가
+        </button>
+      </div>
+
+      <Card>
+        <div className="grid grid-cols-8 border-b" style={{ borderColor: 'var(--line)' }}>
+          <div className="p-3 text-xs font-semibold" style={{ color: 'var(--sub)' }}>구분</div>
+          {weekDates.map((d) => (
+            <div key={d.label} className="px-1 py-2 text-center" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
+              <p className="text-[10px] font-medium" style={{ color: d.isToday ? 'var(--wave)' : 'var(--sub)' }}>{d.label}</p>
+              <p className="mt-0.5 text-sm font-bold" style={{ color: d.isToday ? 'var(--ink)' : 'var(--sub)' }}>{d.date}</p>
+            </div>
+          ))}
+        </div>
+        {weeklyPlanCategories.map((cat) => (
+          <div key={cat} className="grid grid-cols-8 border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex items-center p-2">
+              <span className="status-chip">{cat}</span>
+            </div>
+            {weekDates.map((d) => {
+              const items = todos.filter((t) => t.day === d.label && t.cat === cat);
+              return (
+                <div key={d.label} className="min-h-[52px] p-1.5" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
+                  {items.map((t) => (
+                    <button
+                      type="button"
+                      key={t.id}
+                      onClick={() => onToggleTodo(t.id)}
+                      className="mb-1 w-full rounded-lg px-1.5 py-1 text-left text-[10px] leading-snug"
+                      style={{
+                        background: t.done ? 'var(--wave-20)' : 'var(--wave-10)',
+                        color: 'var(--ink)',
+                        opacity: t.done ? 0.6 : 1,
+                        textDecoration: t.done ? 'line-through' : 'none',
+                      }}
+                    >
+                      {t.title}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </Card>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <Card title="오늘의 할일" action={`${todos.filter((t) => t.done).length}/${todos.length} 완료`}>
+          <div className="flex flex-col gap-1">
+            {todos.map((t) => (
+              <button
+                type="button"
+                key={t.id}
+                onClick={() => onToggleTodo(t.id)}
+                className="flex items-center gap-3 rounded-xl p-2.5 text-left"
+                style={{ background: 'var(--wave-05)' }}
+              >
+                <span
+                  className="h-4 w-4 shrink-0 rounded-full border-2"
+                  style={{ borderColor: t.done ? 'var(--wave)' : 'var(--wave-20)', background: t.done ? 'var(--wave)' : 'transparent' }}
+                />
+                <span className={`flex-1 text-sm ${t.done ? 'line-through' : ''}`} style={{ color: t.done ? 'var(--sub)' : 'var(--ink)' }}>
+                  {t.title}
+                </span>
+                <span className="status-chip">{t.cat}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="AI 맞춤 추천 계획" action="데이터 기반 개인화 제안">
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="mb-2 text-xs font-bold" style={{ color: 'var(--good-text)' }}>승인됨 ({approvedItems.length})</p>
+              {approvedItems.length === 0 ? (
+                <p className="text-xs" style={{ color: 'var(--sub)' }}>아직 승인한 권장 액션이 없어요.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {approvedItems.map((item) => (
+                    <RecommendedActionRow key={item.id} item={item} approved />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-bold" style={{ color: 'var(--sub)' }}>승인 대기 ({pendingItems.length})</p>
+              <div className="flex flex-col gap-2">
+                {pendingItems.map((item) => (
+                  <RecommendedActionRow key={item.id} item={item} approved={false} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setModalOpen(false)}>
+          <div className="w-80 rounded-2xl p-6 shadow-xl" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>새 계획 추가 · {todayWeekdayLabel}요일</p>
+              <button type="button" onClick={() => setModalOpen(false)} style={{ color: 'var(--sub)' }}>✕</button>
+            </div>
+            <input
+              type="text"
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              placeholder="계획 내용을 입력하세요"
+              className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+              style={{ border: '1.5px solid var(--line)', background: 'var(--wave-05)' }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') submitNewTask();
+              }}
+            />
+            <select
+              value={draftCat}
+              onChange={(event) => setDraftCat(event.target.value)}
+              className="mt-2 w-full rounded-xl px-3 py-2 text-sm"
+              style={{ border: '1.5px solid var(--line)' }}
+            >
+              {weeklyPlanCategories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={submitNewTask}
+              className="mt-3 w-full rounded-xl py-2 text-sm font-semibold"
+              style={{ background: 'var(--wave)', color: 'var(--ink)' }}
+            >
+              추가
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1475,14 +2494,16 @@ const settingCategories = [
   { id: 'general', label: '일반', desc: '테마와 언어를 설정합니다.' },
 ];
 
-function SettingPage({ accounts, accountId, account, onSwitchAccount, onRenameAccount, onAddAccount }) {
-  const [category, setCategory] = useState('devices');
-
+function SettingPage({ accounts, accountId, account, onSwitchAccount, onRenameAccount, onAddAccount, category, setCategory }) {
   return (
     <div className="settings-page">
       <section className="settings-hero card">
-        <div>
-          <p className="eyebrow">설정</p>
+        <div className="settings-hero-profile">
+          <span className="settings-hero-avatar">{account.name.charAt(0)}</span>
+          <div>
+            <p className="eyebrow">설정</p>
+            <h2 className="settings-hero-name">{account.name}</h2>
+          </div>
         </div>
       </section>
 
@@ -1663,7 +2684,7 @@ function PersonalSettings({ account, onRenameAccount }) {
   };
 
   return (
-    <Card title="개인 설정" action="이름 수정">
+    <Card title="개인 설정">
       <div className="personal-profile-panel">
         <div className="personal-profile-avatar">{account.name.charAt(0)}</div>
         <input
@@ -2084,40 +3105,12 @@ function SemiGauge({ value, max, label, tone = 'default' }) {
   );
 }
 
-function LineChart({ data, min, max }) {
-  const width = 700;
-  const height = 190;
-  const points = data
-    .map((item, index) => {
-      const x = 20 + (index / (data.length - 1)) * (width - 40);
-      const y = height - 24 - ((item.value - min) / (max - min)) * (height - 48);
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  return (
-    <div className="chart line-chart">
-      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-        <polyline points={points} fill="none" stroke="#95d9f8" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        {points.split(' ').map((point) => {
-          const [cx, cy] = point.split(',');
-          return <circle key={point} cx={cx} cy={cy} r="5" fill="#c8ebfb" stroke="#95d9f8" strokeWidth="2" />;
-        })}
-      </svg>
-      <div className="chart-labels">
-        {data.map((item) => (
-          <span key={item.day}>{item.day}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function BarChart({ data }) {
   return (
     <div className="bar-chart">
       {data.map((item) => (
         <div key={item.label}>
+          {item.turtleNeck !== undefined && <b className="bar-chart-note">거북목 {item.turtleNeck}회</b>}
           <i style={{ height: `${item.value}%` }} />
           <span>{item.label}</span>
         </div>
