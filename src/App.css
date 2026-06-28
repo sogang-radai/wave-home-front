@@ -4,7 +4,7 @@
   --ink-soft: #41637a;
   --ink-16: rgba(11, 30, 45, 0.16);
   --ink-65: rgba(11, 30, 45, 0.65);
-  --sub: #5a7184;
+  --sub: #44596d;
   --line: #e5f4fb;
   --bg: #f5fafd;
   --surface: #fff;
@@ -41,6 +41,7 @@
   --excellent-text: #1b6fa3;
   --danger: #e85d6e;
   --danger-strong: #e8496a;
+  --danger-18: rgba(232, 93, 110, 0.18);
 
   /* Accent palette (overview tiles, promo cards, sleep stage chart) */
   --accent-plum: #b9a4f0;
@@ -128,7 +129,7 @@ button {
 }
 
 .insight-chat-spark {
-  color: var(--wave);
+  color: var(--excellent-text);
   font-size: 16px;
 }
 
@@ -514,7 +515,7 @@ button {
 
 .profile-menu-item i {
   margin-left: auto;
-  color: var(--wave);
+  color: var(--excellent-text);
   font-style: normal;
   font-weight: 800;
 }
@@ -547,6 +548,10 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.top-actions-mobile {
+  display: none;
 }
 
 .insight-trigger {
@@ -670,6 +675,22 @@ button {
   font-weight: 800;
 }
 
+.card-head span:has(.card-action-btn) {
+  padding: 0;
+  background: none;
+}
+
+.card-action-btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .hero {
   display: flex;
   align-items: center;
@@ -681,8 +702,13 @@ button {
     var(--surface);
 }
 
+.hero > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .hero h2 {
-  max-width: 680px;
+  max-width: 900px;
   margin: 8px 0 12px;
   font-size: 30px;
   line-height: 1.28;
@@ -690,9 +716,12 @@ button {
 }
 
 .hero p {
-  max-width: 640px;
+  max-width: 900px;
   margin: 0;
   color: var(--sub);
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: -0.01em;
 }
 
 .ai-message-avatar {
@@ -729,7 +758,7 @@ button {
 }
 
 .eyebrow {
-  color: var(--wave) !important;
+  color: var(--excellent-text) !important;
   font-size: 13px;
   font-weight: 900;
 }
@@ -893,12 +922,12 @@ button {
   align-items: baseline;
   gap: 8px;
   margin-bottom: 8px;
-  font-size: 58px;
-  font-weight: 900;
+  font-size: 40px;
+  font-weight: 700;
 }
 
 .big-number span {
-  font-size: 22px;
+  font-size: 16px;
   color: var(--ink-soft);
 }
 
@@ -1019,31 +1048,6 @@ button {
   font-size: 12px;
 }
 
-.ring-wrap {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0 18px;
-}
-
-.ring {
-  width: 136px;
-  height: 136px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-}
-
-.ring div {
-  width: 104px;
-  height: 104px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--surface);
-  font-size: 28px;
-  font-weight: 900;
-}
-
 .sleep-plan strong,
 .phone-care strong {
   display: block;
@@ -1143,7 +1147,7 @@ button {
 .sitting-time strong {
   display: block;
   margin-bottom: 8px;
-  font-size: 42px;
+  font-size: 30px;
 }
 
 .sitting-time span,
@@ -1424,7 +1428,7 @@ button {
   align-items: center;
   gap: 10px;
   font-size: 40px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .sleep-score-details-btn {
@@ -1435,6 +1439,19 @@ button {
   background: var(--surface);
   font-weight: 700;
   font-size: 12px;
+  cursor: pointer;
+}
+
+.sleep-plan-settings-btn {
+  width: 100%;
+  height: 40px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--wave-05);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -1470,6 +1487,19 @@ button {
 .tag.good { background: var(--good-18); color: var(--good-text); }
 .tag.attention { background: var(--warn-20); color: var(--warn-text); }
 .tag.excellent { background: var(--wave-20); color: var(--excellent-text); }
+.tag.danger { background: var(--danger-18); color: var(--danger-strong); }
+
+.posture-status-pill {
+  display: inline-block;
+  padding: 6px 20px;
+  border-radius: 999px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.posture-status-pill.good { background: var(--good-18); color: var(--good-text); }
+.posture-status-pill.attention { background: var(--warn-20); color: var(--warn-text); }
+.posture-status-pill.danger { background: var(--danger-18); color: var(--danger-strong); }
 
 .factor-grid {
   display: grid;
@@ -1601,68 +1631,6 @@ button {
   background: var(--wave-05);
 }
 
-.weekly-score-bars {
-  min-height: 210px;
-  display: flex;
-  align-items: end;
-  gap: 14px;
-  padding: 24px 16px 14px;
-  border-radius: 16px;
-  background:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    var(--wave-05);
-  background-size: 100% 48px;
-  overflow: visible;
-}
-
-.weekly-score-bar {
-  position: relative;
-  flex: 1;
-  height: 166px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: end;
-  gap: 8px;
-  outline: none;
-}
-
-.weekly-score-track {
-  width: 100%;
-  max-width: 48px;
-  height: 128px;
-  display: flex;
-  align-items: end;
-  border-radius: 999px;
-  background: var(--surface);
-  overflow: visible;
-}
-
-.weekly-score-track i {
-  position: relative;
-  width: 100%;
-  min-height: 18px;
-  border-radius: inherit;
-  background: linear-gradient(180deg, var(--wave), var(--wave-35));
-}
-
-.weekly-score-value {
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.weekly-score-bar > span {
-  color: var(--sub);
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .weekly-score-average {
   display: grid;
   align-content: center;
@@ -1688,102 +1656,6 @@ button {
   margin: 0;
 }
 
-.posture-log-graph {
-  display: grid;
-  gap: 16px;
-  margin-top: 18px;
-}
-
-.posture-log-bars {
-  min-height: 220px;
-  display: flex;
-  align-items: end;
-  gap: 12px;
-  padding: 42px 14px 14px;
-  border-radius: 16px;
-  background:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    var(--wave-05);
-  background-size: 100% 48px;
-  overflow: visible;
-}
-
-.posture-log-column {
-  position: relative;
-  flex: 1;
-  height: 164px;
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
-  align-items: center;
-  gap: 8px;
-  outline: none;
-}
-
-.posture-log-track {
-  width: 100%;
-  max-width: 42px;
-  height: 128px;
-  display: flex;
-  align-items: end;
-  border-radius: 999px;
-  background: var(--surface);
-  overflow: hidden;
-}
-
-.posture-log-track i {
-  width: 100%;
-  min-height: 18px;
-  border-radius: inherit;
-  background: linear-gradient(180deg, var(--wave), var(--wave-35));
-}
-
-.posture-log-track i {
-  background: linear-gradient(180deg, var(--wave), var(--warn));
-}
-
-.posture-log-column span {
-  color: var(--sub);
-  font-size: 11px;
-}
-
-.chart-tooltip {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% - 10px);
-  z-index: 5;
-  width: max-content;
-  max-width: 190px;
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: var(--surface);
-  box-shadow: 0 12px 30px var(--shadow);
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, 8px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-.chart-tooltip strong {
-  font-size: 13px;
-}
-
-.chart-tooltip span {
-  color: var(--sub);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.posture-log-column:hover .chart-tooltip,
-.posture-log-column:focus .chart-tooltip,
-.weekly-score-bar:hover .chart-tooltip,
-.weekly-score-bar:focus .chart-tooltip {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
 
 .care-report-layout {
   display: grid;
@@ -2251,7 +2123,7 @@ button {
 
 .household-row em {
   margin-left: auto;
-  color: var(--wave);
+  color: var(--excellent-text);
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
@@ -3040,12 +2912,58 @@ button {
     padding: 16px;
   }
 
+  .top-actions-desktop {
+    display: none;
+  }
+
+  .top-actions-mobile {
+    display: flex;
+    margin-left: auto;
+    gap: 6px;
+  }
+
+  .brand {
+    height: auto;
+  }
+
+  .brand-text span {
+    display: none;
+  }
+
+  .top-actions-mobile .insight-trigger-label,
+  .top-actions-mobile .profile-text {
+    display: none;
+  }
+
+  .insight-trigger {
+    padding: 0 10px;
+  }
+
+  .notifications-panel {
+    position: fixed;
+    top: 64px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    margin: 0;
+  }
+
   .content {
+    padding: 16px;
+  }
+
+  .card {
     padding: 16px;
   }
 
   .hero h2 {
     font-size: 24px;
+  }
+
+  .hero p {
+    max-width: none;
+    font-size: 14px;
+    line-height: 1.7;
   }
 
   .state-grid,
@@ -3055,8 +2973,24 @@ button {
   .insight-list,
   .gesture-card-grid,
   .gesture-set-list,
-  .gesture-picker {
+  .gesture-picker,
+  .factor-grid,
+  .care-analysis-grid,
+  .overview-score-row,
+  .overview-tile-row {
     grid-template-columns: 1fr;
+  }
+
+  .sleep-score-hero {
+    padding: 20px;
+  }
+
+  .sleep-score-hero-number {
+    font-size: 32px;
+  }
+
+  .big-number {
+    font-size: 32px;
   }
 
   .tabs {

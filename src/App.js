@@ -398,7 +398,21 @@ function App() {
     <ApprovedActionsContext.Provider value={{ approved: approvedActions, toggle: toggleApprovedAction }}>
       <div className="app-shell">
         <InsightChat open={showInsightChat} onClose={() => setShowInsightChat(false)} />
-        <Sidebar page={page} onSelect={setPage} today={today} />
+        <Sidebar
+          page={page}
+          onSelect={setPage}
+          today={today}
+          showNotifications={showNotifications}
+          onToggleNotifications={() => setShowNotifications((value) => !value)}
+          onCloseNotifications={() => setShowNotifications(false)}
+          notifications={notifications}
+          onMarkAllNotificationsRead={markAllNotificationsRead}
+          accounts={accounts}
+          account={account}
+          onSwitchAccount={setAccountId}
+          showInsightChat={showInsightChat}
+          onToggleInsightChat={() => setShowInsightChat((value) => !value)}
+        />
         <section className="workspace">
           <TopBar
             title={pageTitles[page]}
@@ -448,7 +462,21 @@ function App() {
   );
 }
 
-function Sidebar({ page, onSelect, today }) {
+function Sidebar({
+  page,
+  onSelect,
+  today,
+  showNotifications,
+  onToggleNotifications,
+  onCloseNotifications,
+  notifications,
+  onMarkAllNotificationsRead,
+  accounts,
+  account,
+  onSwitchAccount,
+  showInsightChat,
+  onToggleInsightChat,
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -464,6 +492,19 @@ function Sidebar({ page, onSelect, today }) {
         <button className="collapse-button" aria-label="collapse sidebar" onClick={() => setCollapsed((value) => !value)}>
           {collapsed ? '›' : '‹'}
         </button>
+        <TopActionsCluster
+          variant="mobile"
+          showNotifications={showNotifications}
+          onToggleNotifications={onToggleNotifications}
+          onCloseNotifications={onCloseNotifications}
+          notifications={notifications}
+          onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+          accounts={accounts}
+          account={account}
+          onSwitchAccount={onSwitchAccount}
+          showInsightChat={showInsightChat}
+          onToggleInsightChat={onToggleInsightChat}
+        />
       </div>
 
       <nav className="nav-list">
@@ -577,8 +618,19 @@ function BellIcon() {
   );
 }
 
-function TopBar({
-  title,
+function TopBar({ title, ...actionProps }) {
+  return (
+    <header className="topbar">
+      <div>
+        <h1>{title}</h1>
+      </div>
+      <TopActionsCluster variant="desktop" {...actionProps} />
+    </header>
+  );
+}
+
+function TopActionsCluster({
+  variant,
   showNotifications,
   onToggleNotifications,
   onCloseNotifications,
@@ -594,53 +646,47 @@ function TopBar({
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   return (
-    <header className="topbar">
-      <div>
-        <h1>{title}</h1>
-      </div>
-      <div className="top-actions">
-        <button
-          className={`insight-trigger ${showInsightChat ? 'active' : ''}`}
-          aria-label="AI 인사이트 채팅"
-          onClick={onToggleInsightChat}
-        >
-
-            <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
-          WaveAI
-        </button>
-        <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
-          <BellIcon />
-          {unreadCount > 0 && <b>{unreadCount}</b>}
-        </button>
-        {showNotifications && (
-          <NotificationsPanel
-            notifications={notifications}
-            onMarkAllRead={onMarkAllNotificationsRead}
-            onClose={onCloseNotifications}
-          />
-        )}
-        <button
-          className="profile profile-trigger"
-          aria-label="프로필 메뉴"
-          onClick={() => setShowProfileMenu((value) => !value)}
-        >
-          <span className="mini-avatar">{account.name.charAt(0)}</span>
-          <span className="profile-text">
-            <strong>{account.name}</strong>
-          </span>
-        </button>
-        {showProfileMenu && (
-          <ProfileMenu
-            accounts={accounts}
-            activeId={account.id}
-            onSelect={(id) => {
-              onSwitchAccount(id);
-              setShowProfileMenu(false);
-            }}
-          />
-        )}
-      </div>
-    </header>
+    <div className={`top-actions top-actions-${variant}`}>
+      <button
+        className={`insight-trigger ${showInsightChat ? 'active' : ''}`}
+        aria-label="AI 인사이트 채팅"
+        onClick={onToggleInsightChat}
+      >
+        <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
+        <span className="insight-trigger-label">WaveAI</span>
+      </button>
+      <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
+        <BellIcon />
+        {unreadCount > 0 && <b>{unreadCount}</b>}
+      </button>
+      {showNotifications && (
+        <NotificationsPanel
+          notifications={notifications}
+          onMarkAllRead={onMarkAllNotificationsRead}
+          onClose={onCloseNotifications}
+        />
+      )}
+      <button
+        className="profile profile-trigger"
+        aria-label="프로필 메뉴"
+        onClick={() => setShowProfileMenu((value) => !value)}
+      >
+        <span className="mini-avatar">{account.name.charAt(0)}</span>
+        <span className="profile-text">
+          <strong>{account.name}</strong>
+        </span>
+      </button>
+      {showProfileMenu && (
+        <ProfileMenu
+          accounts={accounts}
+          activeId={account.id}
+          onSelect={(id) => {
+            onSwitchAccount(id);
+            setShowProfileMenu(false);
+          }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -934,6 +980,7 @@ function PostureScoreGauge({ score }) {
       ? `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`
       : `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${nx.toFixed(2)} ${ny.toFixed(2)}`;
   const status = score > 80 ? '양호!' : score > 60 ? '주의' : '위험';
+  const statusTone = score > 80 ? 'good' : score > 60 ? 'attention' : 'danger';
   const sparkles = [
     { x: 50, y: 32, s: 9 },
     { x: 152, y: 42, s: 7 },
@@ -979,7 +1026,7 @@ function PostureScoreGauge({ score }) {
         )}
       </svg>
 
-      <p className="mt-5 text-2xl font-bold" style={{ color: 'var(--wave)' }}>
+      <p className={`posture-status-pill ${statusTone} mt-5`}>
         {status}
       </p>
       <p className="mt-0.5 text-sm" style={{ color: 'var(--sub)' }}>
@@ -1030,8 +1077,8 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
         </Card>
       </section>
 
-      <section className="grid grid-cols-3 gap-5">
-        <div className="col-span-2 flex flex-col gap-5">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="flex flex-col gap-5 md:col-span-2">
           <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
             <div className="flex items-center gap-4">
               <Donut pct={0.933} r={48} sw={11}>
@@ -1040,8 +1087,8 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
                   <span className="text-xs" style={{ color: 'var(--sub)' }}>h</span>
                 </div>
               </Donut>
-              <div className="flex-1">
-                <div className="mb-3 flex items-center gap-14">
+              <div className="min-w-0 flex-1">
+                <div className="mb-3 flex items-center gap-6 sm:gap-14">
                   <div>
                     <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
                     <div className="flex items-baseline gap-0.5">
@@ -1060,12 +1107,12 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
                   </div>
                 </div>
                 <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
-                  <div className="flex items-center gap-14 text-xs">
-                    <span className="w-16" style={{ color: 'var(--sub)' }}>입면 시간</span>
+                  <div className="flex items-center gap-6 text-xs sm:gap-14">
+                    <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
                     <span className="font-semibold" style={{ color: 'var(--ink)' }}>23:42</span>
                   </div>
-                  <div className="mt-1 flex items-center gap-14 text-xs">
-                    <span className="w-16" style={{ color: 'var(--sub)' }}>기상 시간</span>
+                  <div className="mt-1 flex items-center gap-6 text-xs sm:gap-14">
+                    <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
                     <span className="font-semibold" style={{ color: 'var(--ink)' }}>06:42</span>
                   </div>
                 </div>
@@ -1112,7 +1159,7 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
           <Card title="자세 점수" onClick={() => onNavigate('posture')}>
             <PostureScoreGauge score={68} />
             <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
-              거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>4회</span>
+              거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>9회</span>
             </p>
             <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>전주 평균 7.3회 대비 개선</p>
             <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
@@ -1129,12 +1176,12 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
             </div>
           </Card>
 
-          <button type="button" className="promo-card blue w-full cursor-pointer border-0 text-left" onClick={() => onNavigate('sleep')}>
+          <button type="button" className="promo-card navy w-full cursor-pointer border-0 text-left" onClick={() => onNavigate('sleep')}>
             <strong>취침 가이드</strong>
             <p>가장 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
           </button>
 
-          <button type="button" className="promo-card orange w-full cursor-pointer border-0 text-left" onClick={onGoToSleepSettings}>
+          <button type="button" className="promo-card plum w-full cursor-pointer border-0 text-left" onClick={onGoToSleepSettings}>
             <strong>수면 환경</strong>
             <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
           </button>
@@ -1233,7 +1280,7 @@ function SleepPage({ tab, setTab, onGoToSleepSettings }) {
       />
       {tab === 'current' && (
         <div className="dashboard-grid">
-          <Card title="오늘 밤 수면 계획" action="Plan">
+          <Card title="오늘 밤 수면 계획">
             <div className="sleep-plan">
               <strong>23:30 → 06:40</strong>
               <span>목표 수면 7시간 10분</span>
@@ -1250,6 +1297,9 @@ function SleepPage({ tab, setTab, onGoToSleepSettings }) {
                 <b>24℃</b>
               </div>
             </div>
+            <button type="button" className="sleep-plan-settings-btn" onClick={onGoToSleepSettings}>
+              수면 설정 바로가기
+            </button>
           </Card>
           <Card title="야간 스마트폰 사용 관리">
             <div className="phone-care">
@@ -1437,38 +1487,73 @@ function weeklyHoursColor(hours) {
   return hours >= 7 ? 'var(--wave)' : hours >= 6 ? 'var(--wave-40)' : 'var(--wave-20)';
 }
 
-function WeeklyTrendSummary({ trendData }) {
-  const goalHours = 7.5;
-  const avgHours = trendData.reduce((sum, d) => sum + d.hours, 0) / trendData.length;
-  const goalPercent = Math.round((avgHours / goalHours) * 100);
+function postureScoreColor(score) {
+  return score >= 85 ? 'var(--wave)' : score >= 78 ? 'var(--wave-40)' : 'var(--wave-20)';
+}
+
+function WeeklyTrendSummary({ trendData, valueKey = 'hours', unit = 'h', label = '7일 평균 수면 시간', goal = 7.5, decimals = 1 }) {
+  const avgValue = trendData.reduce((sum, d) => sum + d[valueKey], 0) / trendData.length;
+  const goalPercent = Math.round((avgValue / goal) * 100);
 
   return (
-    <div className="mb-2 mt-3">
-      <p className="mb-1 text-xs font-semibold" style={{ color: 'var(--sub)' }}>7일 평균 수면 시간</p>
-      <div className="mb-2 flex items-end gap-6">
-        <div className="flex items-baseline gap-1">
-          <span className="text-5xl font-bold" style={{ color: 'var(--ink)' }}>{avgHours.toFixed(1)}</span>
-          <span className="text-xl font-semibold" style={{ color: 'var(--sub)' }}>h</span>
-        </div>
-        <p className="mb-1 text-xs" style={{ color: 'var(--sub)' }}>
-          목표 {goalHours}h 대비 <span className="font-bold" style={{ color: 'var(--ink)' }}>{goalPercent}%</span>
-        </p>
-      </div>
+    <div className="mb-2 mt-3 flex flex-wrap items-baseline gap-2">
+      <span className="text-sm font-medium" style={{ color: 'var(--sub)' }}>{label}</span>
+      <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{avgValue.toFixed(decimals)}</span>
+      <span className="text-sm font-medium" style={{ color: 'var(--sub)' }}>{unit}</span>
+      <span className="block w-full text-xs" style={{ color: 'var(--sub)' }}>
+        목표 {goal}{unit} 대비 <span className="font-bold" style={{ color: 'var(--ink)' }}>{goalPercent}%</span>
+      </span>
     </div>
   );
 }
 
-function WeeklyTrendTooltip({ active, payload }) {
+function WeeklyTrendTooltip({ active, payload, valueKey = 'hours', unit = 'h', valueLabel = '수면', scoreKey = 'score' }) {
+  if (!active || !payload || !payload.length) return null;
+  const point = payload[0].payload;
+  const score = point[scoreKey];
+
+  return (
+    <div className="rounded-lg border bg-[var(--surface)] px-3 py-2 text-xs shadow-md" style={{ borderColor: 'var(--wave-20)' }}>
+      <p className="font-extrabold" style={{ color: 'var(--ink)' }}>{point.day}</p>
+      <p style={{ color: 'var(--ink)' }}>{valueLabel}: {point[valueKey]}{unit}</p>
+      {score !== undefined && score !== point[valueKey] && <p style={{ color: 'var(--ink)' }}>점수: {score}점</p>}
+      {score !== undefined && <p style={{ color: 'var(--sub)' }}>{weeklyScoreStatus(score)}</p>}
+    </div>
+  );
+}
+
+function PostureScoreTooltip({ active, payload, xKey, valueKey, noteKey }) {
   if (!active || !payload || !payload.length) return null;
   const point = payload[0].payload;
 
   return (
     <div className="rounded-lg border bg-[var(--surface)] px-3 py-2 text-xs shadow-md" style={{ borderColor: 'var(--wave-20)' }}>
-      <p className="font-extrabold" style={{ color: 'var(--ink)' }}>{point.day}</p>
-      <p style={{ color: 'var(--ink)' }}>수면: {point.hours}h</p>
-      <p style={{ color: 'var(--ink)' }}>수면점수: {point.score}점</p>
-      <p style={{ color: 'var(--sub)' }}>{weeklyScoreStatus(point.score)}</p>
+      <p className="font-extrabold" style={{ color: 'var(--ink)' }}>
+        {point[xKey]}{point.label ? ` · ${point.label}` : ''}
+      </p>
+      <p style={{ color: 'var(--ink)' }}>자세 점수: {point[valueKey]}점</p>
+      {noteKey && point[noteKey] !== undefined && <p style={{ color: 'var(--ink)' }}>거북목 {point[noteKey]}회</p>}
+      <p style={{ color: 'var(--sub)' }}>{weeklyScoreStatus(point[valueKey])}</p>
     </div>
+  );
+}
+
+function PostureScoreChart({ data, xKey, valueKey = 'value', noteKey }) {
+  return (
+    <ResponsiveContainer width="100%" height={210}>
+      <RechartsBarChart data={data} margin={{ top: 16, right: 12, bottom: 0, left: -20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
+        <XAxis dataKey={xKey} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+        <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+        <Tooltip content={<PostureScoreTooltip xKey={xKey} valueKey={valueKey} noteKey={noteKey} />} cursor={{ fill: 'var(--wave-10)' }} />
+        <Bar dataKey={valueKey} radius={[8, 8, 0, 0]} maxBarSize={36}>
+          <LabelList dataKey={valueKey} position="top" formatter={(value) => `${value}점`} style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }} />
+          {data.map((d) => (
+            <Cell key={d[xKey]} fill={postureScoreColor(d[valueKey])} />
+          ))}
+        </Bar>
+      </RechartsBarChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -1497,8 +1582,16 @@ function CareReport({
   insights,
   visual,
   visualAction = 'Graph',
-  weeklyScores = [],
   trendData,
+  trendValueKey = 'hours',
+  trendUnit = 'h',
+  trendDomain = [0, 9],
+  trendSummaryLabel = '7일 평균 수면 시간',
+  trendGoal = 7.5,
+  trendDecimals = 1,
+  trendColorFn = weeklyHoursColor,
+  trendTooltipLabel = '수면',
+  showTrendSummary = true,
   averageScore,
   dateNav,
   extra,
@@ -1521,45 +1614,43 @@ function CareReport({
         </>
       )}
       {isWeekly && (
-        <Card title={title} action={score} wide>
+        <Card title={title} wide>
           <p className="report-summary-only">{summary}</p>
-          {trendData && <WeeklyTrendSummary trendData={trendData} />}
+          {showTrendSummary && (
+            <WeeklyTrendSummary
+              trendData={trendData}
+              valueKey={trendValueKey}
+              unit={trendUnit}
+              label={trendSummaryLabel}
+              goal={trendGoal}
+              decimals={trendDecimals}
+            />
+          )}
           <div className="weekly-score-chart">
-            {trendData ? (
-              <div className="weekly-trend-chart">
-                <ResponsiveContainer width="100%" height={210}>
-                  <RechartsBarChart data={trendData} margin={{ top: 16, right: 12, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
-                    <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 9]} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                    <Tooltip content={<WeeklyTrendTooltip />} cursor={{ fill: 'var(--wave-10)' }} />
-                    <Bar dataKey="hours" radius={[8, 8, 0, 0]} maxBarSize={36}>
-                      <LabelList dataKey="hours" position="top" formatter={(value) => `${value}h`} style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }} />
-                      {trendData.map((d) => (
-                        <Cell key={d.day} fill={weeklyHoursColor(d.hours)} />
-                      ))}
-                    </Bar>
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="weekly-score-bars">
-                {weeklyScores.map(([day, value]) => (
-                  <div className="weekly-score-bar" key={day} tabIndex={0}>
-                    <div className="weekly-score-track">
-                      <i style={{ height: `${value}%` }}>
-                        <span className="weekly-score-value">{value}</span>
-                      </i>
-                    </div>
-                    <span>{day}</span>
-                    <div className="chart-tooltip">
-                      <strong>{day}요일 · {value}점</strong>
-                      <span>{weeklyScoreStatus(value)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="weekly-trend-chart">
+              <ResponsiveContainer width="100%" height={210}>
+                <RechartsBarChart data={trendData} margin={{ top: 16, right: 12, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={trendDomain} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    content={<WeeklyTrendTooltip valueKey={trendValueKey} unit={trendUnit} valueLabel={trendTooltipLabel} />}
+                    cursor={{ fill: 'var(--wave-10)' }}
+                  />
+                  <Bar dataKey={trendValueKey} radius={[8, 8, 0, 0]} maxBarSize={36}>
+                    <LabelList
+                      dataKey={trendValueKey}
+                      position="top"
+                      formatter={(value) => `${value}${trendUnit}`}
+                      style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }}
+                    />
+                    {trendData.map((d) => (
+                      <Cell key={d.day} fill={trendColorFn(d[trendValueKey])} />
+                    ))}
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </div>
             <div className="weekly-score-average">
               <span>평균 점수</span>
               <strong>{averageScore || score}</strong>
@@ -1617,7 +1708,6 @@ function SleepWeeklyReport() {
       title="지난 한 주 수면 리포트"
       score="81점"
       summary="평균 수면 시간은 줄었지만, 기상 규칙성과 깊은 수면 비율은 후반으로 갈수록 개선되었습니다."
-      weeklyScores={sleepWeeklyScores}
       trendData={sleepWeeklyTrendData}
       averageScore="81점"
       analysis={[
@@ -1732,6 +1822,8 @@ function StatusDateNavigator({ date, latestDate, onChange }) {
 function SleepStatusReport() {
   const [reportDate, setReportDate] = useState(getToday);
   const [latestDate] = useState(getToday);
+  const [showFactors, setShowFactors] = useState(false);
+  const [showStages, setShowStages] = useState(false);
 
   return (
     <>
@@ -1742,7 +1834,9 @@ function SleepStatusReport() {
           <div className="sleep-score-hero-number">
             75<span className="tag good">Good</span>
           </div>
-          <button type="button" className="sleep-score-details-btn">Details</button>
+          <button type="button" className="sleep-score-details-btn" onClick={() => setShowFactors((current) => !current)}>
+            {showFactors ? '접기' : '상세 보기'}
+          </button>
         </div>
         <div className="sleep-score-hero-times">
           <strong>6시간 25분</strong>
@@ -1754,28 +1848,39 @@ function SleepStatusReport() {
         </div>
       </section>
 
-      <Card title="수면 점수 요인">
-        <div className="factor-grid">
-          {sleepScoreFactors.map((factor) => (
-            <div className={`factor-card ${factor.tone}`} key={factor.label}>
-              <span>{factor.label}</span>
-              <strong>{factor.value}</strong>
-              <em className={`factor-tag ${factor.tone}`}>{factor.tag}</em>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {showFactors && (
+        <Card title="수면 점수 요인">
+          <div className="factor-grid">
+            {sleepScoreFactors.map((factor) => (
+              <div className={`factor-card ${factor.tone}`} key={factor.label}>
+                <span>{factor.label}</span>
+                <strong>{factor.value}</strong>
+                <em className={`factor-tag ${factor.tone}`}>{factor.tag}</em>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
-      <Card title="수면 단계" action="상세 보기">
+      <Card
+        title="수면 단계"
+        action={
+          <button type="button" className="card-action-btn" onClick={() => setShowStages((current) => !current)}>
+            {showStages ? '접기' : '상세 보기'}
+          </button>
+        }
+      >
         <SleepHypnogram segments={sleepHypnogramSegments} timeLabels={hypnogramTimeLabels} />
-        <div className="mt-6 flex flex-col gap-4">
-          {sleepStageBreakdown.map((stage) => (
-            <SleepStageBreakdownRow stage={stage} key={stage.label} />
-          ))}
-        </div>
+        {showStages && (
+          <div className="mt-6 flex flex-col gap-4">
+            {sleepStageBreakdown.map((stage) => (
+              <SleepStageBreakdownRow stage={stage} key={stage.label} />
+            ))}
+          </div>
+        )}
       </Card>
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Card title="혈중 산소" action="평균 96%">
           <ResponsiveContainer width="100%" height={140}>
             <RechartsAreaChart data={spo2Trend} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
@@ -1899,14 +2004,21 @@ function PosturePage({ tab, setTab }) {
               ]}
             />
           </Card>
-          <Card title="오늘의 자세 점수" action="현재">
-            <Ring value={78} max={100} label="78점" />
+          <Card title="오늘의 자세 점수">
+            <div className="flex justify-center">
+              <Donut pct={0.78} r={48} sw={11}>
+                <div className="flex flex-col items-center">
+                  <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>78</span>
+                  <span className="text-xs" style={{ color: 'var(--sub)' }}>점</span>
+                </div>
+              </Donut>
+            </div>
             <div className="split-stats">
               <Metric label="바른자세" value="71%" detail="목표 80%" />
               <Metric label="알림 수락" value="62%" detail="전주 대비 개선" />
             </div>
           </Card>
-          <Card title="오늘 누적 착석 시간" action="현재">
+          <Card title="오늘 누적 착석 시간">
             <div className="sitting-time">
               <strong>5h 20m</strong>
               <span>권장 최대 연속 착석 90분</span>
@@ -1938,8 +2050,9 @@ function PosturePage({ tab, setTab }) {
               />
             </div>
           </Card>
-          <Card title="오늘의 자세 흐름" wide>
-            <BarChart data={postureBars} />
+          <Card title="오늘의 시간대별 자세 점수" wide>
+            <p className="mb-3 text-sm" style={{ color: 'var(--sub)' }}>시간대별 자세 점수 변화 (시간 · 점)</p>
+            <PostureScoreChart data={postureBars} xKey="label" valueKey="value" noteKey="turtleNeck" />
           </Card>
         </div>
       )}
@@ -1967,7 +2080,8 @@ function PostureDailyReport() {
       title="어제의 자세 리포트"
       score="82점"
       summary="오래 앉아 있을수록 허리보다 목 자세가 먼저 무너지는 패턴이 반복되었습니다."
-      visual={<PostureLogGraph data={postureLog} />}
+      visual={<PostureScoreChart data={postureLog} xKey="time" valueKey="score" />}
+      visualAction={null}
       analysis={[
         ['자세 점수', '82점', '어제보다 6점 상승'],
         ['책상 앞 체류 시간', '5h 20m', '오후 업무 구간 집중'],
@@ -1989,6 +2103,16 @@ const postureWeeklyInsights = withInsightIds([
   ['다음 주 체크포인트', '휴식 루틴 수행률 64% → 80%', '루틴 수행률이 올라가면 장시간 착석 알림과 거북목 지속 시간이 함께 줄 가능성이 높습니다.'],
 ]);
 
+const postureWeeklyTrendData = [
+  { day: '월', score: 74 },
+  { day: '화', score: 76 },
+  { day: '수', score: 78 },
+  { day: '목', score: 80 },
+  { day: '금', score: 81 },
+  { day: '토', score: 86 },
+  { day: '일', score: 92 },
+];
+
 function PostureWeeklyReport() {
   return (
     <CareReport
@@ -1996,15 +2120,13 @@ function PostureWeeklyReport() {
       title="지난 한 주 자세 리포트"
       score="81점"
       summary="자세 점수는 상승했지만 허리 굽음 빈도는 늘어, 목 리셋과 허리 리셋을 분리해서 관리해야 합니다."
-      weeklyScores={[
-        ['월', 74],
-        ['화', 76],
-        ['수', 78],
-        ['목', 80],
-        ['금', 81],
-        ['토', 86],
-        ['일', 92],
-      ]}
+      trendData={postureWeeklyTrendData}
+      trendValueKey="score"
+      trendUnit="점"
+      trendDomain={[0, 100]}
+      trendColorFn={postureScoreColor}
+      trendTooltipLabel="자세 점수"
+      showTrendSummary={false}
       averageScore="81점"
       analysis={[
         ['점수 변화', '74→81점', '주간 평균 기준 개선'],
@@ -2084,7 +2206,7 @@ function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
         </div>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold sm:w-auto"
           style={{ background: 'var(--wave)', color: 'var(--ink)' }}
           onClick={() => setModalOpen(true)}
         >
@@ -2093,45 +2215,49 @@ function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
       </div>
 
       <Card>
-        <div className="grid grid-cols-8 border-b" style={{ borderColor: 'var(--line)' }}>
-          <div className="p-3 text-xs font-semibold" style={{ color: 'var(--sub)' }}>구분</div>
-          {weekDates.map((d) => (
-            <div key={d.label} className="px-1 py-2 text-center" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
-              <p className="text-[10px] font-medium" style={{ color: d.isToday ? 'var(--wave)' : 'var(--sub)' }}>{d.label}</p>
-              <p className="mt-0.5 text-sm font-bold" style={{ color: d.isToday ? 'var(--ink)' : 'var(--sub)' }}>{d.date}</p>
-            </div>
-          ))}
-        </div>
-        {weeklyPlanCategories.map((cat) => (
-          <div key={cat} className="grid grid-cols-8 border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-            <div className="flex items-center p-2">
-              <span className="status-chip">{cat}</span>
-            </div>
-            {weekDates.map((d) => {
-              const items = todos.filter((t) => t.day === d.label && t.cat === cat);
-              return (
-                <div key={d.label} className="min-h-[52px] p-1.5" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
-                  {items.map((t) => (
-                    <button
-                      type="button"
-                      key={t.id}
-                      onClick={() => onToggleTodo(t.id)}
-                      className="mb-1 w-full rounded-lg px-1.5 py-1 text-left text-[10px] leading-snug"
-                      style={{
-                        background: t.done ? 'var(--wave-20)' : 'var(--wave-10)',
-                        color: 'var(--ink)',
-                        opacity: t.done ? 0.6 : 1,
-                        textDecoration: t.done ? 'line-through' : 'none',
-                      }}
-                    >
-                      {t.title}
-                    </button>
-                  ))}
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-8 border-b" style={{ borderColor: 'var(--line)' }}>
+              <div className="p-3 text-xs font-semibold" style={{ color: 'var(--sub)' }}>구분</div>
+              {weekDates.map((d) => (
+                <div key={d.label} className="px-1 py-2 text-center" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
+                  <p className="text-[10px] font-medium" style={{ color: d.isToday ? 'var(--excellent-text)' : 'var(--sub)' }}>{d.label}</p>
+                  <p className="mt-0.5 text-sm font-bold" style={{ color: d.isToday ? 'var(--ink)' : 'var(--sub)' }}>{d.date}</p>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+            {weeklyPlanCategories.map((cat) => (
+              <div key={cat} className="grid grid-cols-8 border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
+                <div className="flex items-center p-2">
+                  <span className="status-chip">{cat}</span>
+                </div>
+                {weekDates.map((d) => {
+                  const items = todos.filter((t) => t.day === d.label && t.cat === cat);
+                  return (
+                    <div key={d.label} className="min-h-[52px] p-1.5" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
+                      {items.map((t) => (
+                        <button
+                          type="button"
+                          key={t.id}
+                          onClick={() => onToggleTodo(t.id)}
+                          className="mb-1 w-full rounded-lg px-1.5 py-1 text-left text-[10px] leading-snug"
+                          style={{
+                            background: t.done ? 'var(--wave-20)' : 'var(--wave-10)',
+                            color: 'var(--ink)',
+                            opacity: t.done ? 0.6 : 1,
+                            textDecoration: t.done ? 'line-through' : 'none',
+                          }}
+                        >
+                          {t.title}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </Card>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -2149,16 +2275,17 @@ function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
                   className="h-4 w-4 shrink-0 rounded-full border-2"
                   style={{ borderColor: t.done ? 'var(--wave)' : 'var(--wave-20)', background: t.done ? 'var(--wave)' : 'transparent' }}
                 />
-                <span className={`flex-1 text-sm ${t.done ? 'line-through' : ''}`} style={{ color: t.done ? 'var(--sub)' : 'var(--ink)' }}>
+                <span className={`min-w-0 flex-1 truncate text-sm ${t.done ? 'line-through' : ''}`} style={{ color: t.done ? 'var(--sub)' : 'var(--ink)' }}>
                   {t.title}
                 </span>
-                <span className="status-chip">{t.cat}</span>
+                <span className="status-chip shrink-0">{t.cat}</span>
               </button>
             ))}
           </div>
         </Card>
 
-        <Card title="AI 맞춤 추천 계획" action="데이터 기반 개인화 제안">
+        <Card title="AI 맞춤 추천 계획">
+          <p className="section-description">최근 수면, 자세, 환경 데이터를 분석해 오늘 도움이 될 행동을 맞춤으로 추천해드려요.</p>
           <div className="flex flex-col gap-4">
             <div>
               <p className="mb-2 text-xs font-bold" style={{ color: 'var(--good-text)' }}>승인됨 ({approvedItems.length})</p>
@@ -2186,7 +2313,7 @@ function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setModalOpen(false)}>
-          <div className="w-80 rounded-2xl p-6 shadow-xl" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="w-[90vw] max-w-80 rounded-2xl p-6 shadow-xl" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }} onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>새 계획 추가 · {todayWeekdayLabel}요일</p>
               <button type="button" onClick={() => setModalOpen(false)} style={{ color: 'var(--sub)' }}>✕</button>
@@ -2223,28 +2350,6 @@ function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function PostureLogGraph({ data }) {
-  return (
-    <div className="posture-log-graph">
-      <div className="posture-log-bars">
-        {data.map((item) => (
-          <div className="posture-log-column" key={item.time} tabIndex={0}>
-            <div className="posture-log-track">
-              <i style={{ height: `${item.score}%` }} />
-            </div>
-            <span>{item.time}</span>
-            <div className="chart-tooltip">
-              <strong>{item.time} · {item.label}</strong>
-              <span>자세 점수 {item.score}</span>
-              <span>{item.score < 60 ? '휴식 또는 교정 권장' : '관찰 유지'}</span>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -3069,17 +3174,6 @@ function InfoList({ items }) {
           <strong>{value}</strong>
         </div>
       ))}
-    </div>
-  );
-}
-
-function Ring({ value, max, label }) {
-  const deg = Math.min(360, (value / max) * 360);
-  return (
-    <div className="ring-wrap">
-      <div className="ring" style={{ background: `conic-gradient(#95d9f8 ${deg}deg, #eaf6fc 0deg)` }}>
-        <div>{label}</div>
-      </div>
     </div>
   );
 }

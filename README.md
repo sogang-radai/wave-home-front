@@ -1,70 +1,90 @@
-# Getting Started with Create React App
+# WaveHome Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A home health intelligence dashboard that brings sleep, posture, and smart-home control into one place.
 
-## Available Scripts
+The current frontend is a Create React App prototype for a desktop-first, responsive health dashboard. It combines daily wellness metrics, AI-generated sleep and posture reports, a weekly action plan, and gesture-based smart-home control in a single app.
 
-In the project directory, you can run:
-### `npm i`
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js 18 or newer
+- npm
 
-### `npm test`
+### Install Dependencies
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+npm install
+```
 
-### `npm run build`
+### Run the Development Server
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser. The page reloads on changes.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Build for Production
 
-### `npm run eject`
+```bash
+npm run build
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The production build is generated in `build/`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Features
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- **Dashboard**: sleep, heart-rate, posture, and today's-tasks summary, plus a quick-look "통합 현황" overview page
+- **Sleep management**: a connected hypnogram (lane-based, color-coded by sleep stage), blood-oxygen/heart-rate/respiratory charts, sleep score factors, and daily/weekly AI reports
+- **Posture management**: a live posture gauge with an expression that changes with score, sitting-time tracking, posture-break alerts, and daily/weekly AI reports
+- **Weekly plan**: a 7-day × category (운동/수면/식습관/멘탈) task grid, a shared todo list with the dashboard, and an AI-recommended-actions list split into approved vs. pending
+- **권장 액션 (recommended actions)**: "실행"/"승인" on a report card or in the weekly plan updates the same approval state everywhere, via a small React context
+- **Smart-home control**: gesture recognition history, gesture-set management, and gesture-to-IoT-device binding
+- **Notifications & accounts**: a read/unread notification panel with "mark all read", and multi-account (household member) switching
+- **WaveAI insight chat**: a side panel that answers canned questions about today's sleep/posture/heart-rate data
+- **Settings**: radar/device registration, sleep automation settings (AC, lighting, wake alarms), account and theme/language preferences
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Tech Stack
 
-## Learn More
+- React 19
+- Create React App (`react-scripts` 5)
+- Tailwind CSS 3 (utilities only — `preflight` disabled so it layers on top of the existing CSS instead of resetting it)
+- Recharts, for area/bar/line charts
+- Plain CSS (`src/App.css`) for the design-token system and most component styling
+- Hand-rolled inline SVG icons (no icon library)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Project Structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```text
+wave-home-front/
+├── public/
+│   ├── index.html
+│   ├── manifest.json
+│   └── favicon.ico, favicon-16.png, favicon-32.png, logo192.png, logo512.png
+├── src/
+│   ├── index.js          # React entry point
+│   ├── index.css         # Tailwind utilities import + global font/body styles
+│   ├── App.js             # Entire app: pages, components, and mock data
+│   ├── App.css            # Design tokens (:root) and component styles
+│   └── img/                # Logo assets
+├── tailwind.config.js
+├── postcss.config.js
+└── package.json
+```
 
-### Code Splitting
+Nearly all UI, routing (simple `page` state, no router library), and mock data currently live in the single `src/App.js` file.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Design Principles
 
-### Analyzing the Bundle Size
+- **Tailwind-first for new UI**: layout, spacing, typography, and interaction states for new screens/components are expressed with Tailwind utility classes directly in JSX. `src/App.css` stays focused on design tokens (CSS variables), global resets, and the older component styles it already owns.
+- **Single base color**: `#95d9f8` (`var(--wave)` in `App.css`), used through opacity variants (`var(--wave-05)` … `var(--wave-35)`) for depth and hierarchy instead of introducing new hues. Status colors (good/warn/excellent/danger) are tokenized separately in `:root`.
+- **Status text sits on a tinted pill, never bare on a surface**: status words (Good/주의/위험 등) use a `<tone>-18`/`<tone>-20` light background with the matching darker `<tone>-text` color (see `.tag`, `.posture-status-pill`), so saturated colors stay readable without breaking the pastel palette.
+- **Clean and intuitive**: minimal chrome, one clear primary action per card, generous whitespace.
+- **One thing to do first**: dashboards surface the day's single most actionable item (today's plan, a recommended action) before letting users drill into the underlying daily/weekly report.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Current Data Model
 
-### Making a Progressive Web App
+This frontend currently uses local mock data declared as constants at the top of `src/App.js` (sleep trends, posture logs, gesture sets, IoT devices, notifications, weekly-plan tasks, AI-recommended actions, account list, etc.). There is no backend integration yet — state for todos, notifications, accounts, and recommended-action approvals is held in React state/context and resets on reload.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+When backend integration is added, these local arrays/state should be replaced with API-backed data fetching and a shared data layer.
