@@ -97,8 +97,9 @@ button {
   top: 0;
   height: 100vh;
   background: var(--surface);
-  border-right: 1px solid var(--line);
+  border-left: 1px solid var(--line);
   transition: width 0.28s ease;
+  order: 3;
 }
 
 .insight-chat.open {
@@ -182,8 +183,20 @@ button {
 }
 
 .insight-chat-suggestions {
+  position: relative;
   flex-shrink: 0;
   padding: 0 18px 14px;
+}
+
+.insight-chat-suggestions::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
 }
 
 .insight-chat-suggestions p {
@@ -559,13 +572,13 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 38px;
-  padding: 0 14px;
+  height: 44px;
+  padding: 0 20px;
   border: 0;
   border-radius: 999px;
-  background: var(--wave-10);
+  background: var(--wave-30);
   color: var(--ink);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -2872,7 +2885,8 @@ button {
   .insight-chat {
     position: fixed;
     top: 0;
-    left: 0;
+    right: 0;
+    left: auto;
     z-index: 30;
   }
 
