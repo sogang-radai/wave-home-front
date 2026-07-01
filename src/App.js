@@ -247,10 +247,10 @@ const initialTodos = [
 ];
 
 const gestureHistory = [
-  { id: 1, gesture: '손 올리기', device: '거실 조명', action: '전원 켜기', time: '방금 전', confidence: 96 },
-  { id: 2, gesture: '오른쪽 스와이프', device: '침실 에어컨', action: '온도 1℃ 낮춤', time: '8분 전', confidence: 91 },
-  { id: 3, gesture: '주먹 쥐기', device: '서재 스피커', action: '일시정지', time: '23분 전', confidence: 88 },
-  { id: 4, gesture: '왼쪽 스와이프', device: '거실 커튼', action: '닫기', time: '오늘 09:12', confidence: 94 },
+  { id: 1, gesture: '손 올리기', device: '거실 조명', action: '전원 켜기', time: '방금 전', confidence: 96, radar: '방 1' },
+  { id: 2, gesture: '오른쪽 스와이프', device: '침실 에어컨', action: '온도 1℃ 낮춤', time: '8분 전', confidence: 91, radar: '방 2' },
+  { id: 3, gesture: '주먹 쥐기', device: '서재 스피커', action: '일시정지', time: '23분 전', confidence: 88, radar: '방 2' },
+  { id: 4, gesture: '왼쪽 스와이프', device: '거실 커튼', action: '닫기', time: '오늘 09:12', confidence: 94, radar: '방 1' },
 ];
 
 const gestureSets = [
@@ -258,53 +258,45 @@ const gestureSets = [
     id: 'daily',
     name: 'Daily Control',
     description: '조명, 커튼, 스피커처럼 자주 쓰는 가전을 빠르게 제어합니다.',
-    status: '활성 세트',
-    gestureCount: 5,
     gestures: [
-      { id: 1, name: '손 올리기', action: '조명 켜기', status: 'active' },
-      { id: 2, name: '손 내리기', action: '조명 끄기', status: 'active' },
-      { id: 3, name: '왼쪽 스와이프', action: '커튼 닫기', status: 'active' },
-      { id: 4, name: '오른쪽 스와이프', action: '커튼 열기', status: 'active' },
-      { id: 5, name: '주먹 쥐기', action: '미디어 일시정지', status: 'active' },
+      { id: 1, name: '손 올리기', action: '조명 켜기', radars: ['room1'] },
+      { id: 2, name: '손 내리기', action: '조명 끄기', radars: ['room1'] },
+      { id: 3, name: '왼쪽 스와이프', action: '커튼 닫기', radars: [] },
+      { id: 4, name: '오른쪽 스와이프', action: '커튼 열기', radars: [] },
+      { id: 5, name: '주먹 쥐기', action: '미디어 일시정지', radars: ['room2'] },
     ],
   },
   {
     id: 'sleep',
     name: '수면 모드',
     description: '취침 전 조명, 온도, 소리를 한 번에 낮추는 루틴 세트입니다.',
-    status: '대기',
-    gestureCount: 4,
     gestures: [
-      { id: 6, name: '손바닥 보이기', action: '수면 모드 시작', status: 'active' },
-      { id: 7, name: '원 그리기', action: '무드등 20%', status: 'inactive' },
-      { id: 8, name: '두 번 탭', action: '백색소음 재생', status: 'active' },
-      { id: 9, name: '아래 스와이프', action: '에어컨 24℃', status: 'active' },
+      { id: 6, name: '손바닥 보이기', action: '수면 모드 시작', radars: ['room1'] },
+      { id: 7, name: '원 그리기', action: '무드등 20%', radars: [] },
+      { id: 8, name: '두 번 탭', action: '백색소음 재생', radars: [] },
+      { id: 9, name: '아래 스와이프', action: '에어컨 24℃', radars: [] },
     ],
   },
   {
     id: 'focus',
     name: '집중 모드',
     description: '책상 앞에서 방해 요소를 줄이고 조명과 소리를 집중 환경으로 맞춥니다.',
-    status: '대기',
-    gestureCount: 4,
     gestures: [
-      { id: 10, name: '두 손 모으기', action: '집중 조명 켜기', status: 'active' },
-      { id: 11, name: '앞으로 밀기', action: '스피커 볼륨 낮춤', status: 'active' },
-      { id: 12, name: '손바닥 가리기', action: '알림 음소거', status: 'active' },
-      { id: 13, name: '위로 스와이프', action: '공기청정기 강풍', status: 'inactive' },
+      { id: 10, name: '두 손 모으기', action: '집중 조명 켜기', radars: ['study'] },
+      { id: 11, name: '앞으로 밀기', action: '스피커 볼륨 낮춤', radars: [] },
+      { id: 12, name: '손바닥 가리기', action: '알림 음소거', radars: [] },
+      { id: 13, name: '위로 스와이프', action: '공기청정기 강풍', radars: [] },
     ],
   },
   {
     id: 'rest',
     name: '휴식 모드',
     description: '휴식 시간에 맞춰 조명은 부드럽게, 음악과 온도는 편안하게 조절합니다.',
-    status: '대기',
-    gestureCount: 4,
     gestures: [
-      { id: 14, name: '손 흔들기', action: '휴식 음악 재생', status: 'active' },
-      { id: 15, name: '손바닥 위로', action: '무드등 밝게', status: 'active' },
-      { id: 16, name: '손바닥 아래로', action: '무드등 낮춤', status: 'active' },
-      { id: 17, name: '원 크게 그리기', action: '커튼 반쯤 열기', status: 'inactive' },
+      { id: 14, name: '손 흔들기', action: '휴식 음악 재생', radars: [] },
+      { id: 15, name: '손바닥 위로', action: '무드등 밝게', radars: [] },
+      { id: 16, name: '손바닥 아래로', action: '무드등 낮춤', radars: [] },
+      { id: 17, name: '원 크게 그리기', action: '커튼 반쯤 열기', radars: [] },
     ],
   },
 ];
@@ -648,7 +640,7 @@ function Sidebar({
         </div>
         <div className="brand-text">
           <strong>WaveHome</strong>
-          <span>Health Intelligence</span>
+          <span>Your Health Agent</span>
         </div>
         <button className="collapse-button" aria-label="collapse sidebar" onClick={() => onCollapsedChange((value) => !value)}>
           {collapsed ? '›' : '‹'}
@@ -2819,7 +2811,7 @@ function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
     <div className="page-stack">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>주간 건강 계획</h2>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>주간 헬스 루틴</h2>
           <p className="text-xs" style={{ color: 'var(--sub)' }}>
             {weekDates[0].label} {weekDates[0].date}일 ~ {weekDates[6].label} {weekDates[6].date}일
           </p>
@@ -2991,38 +2983,61 @@ function PostureAlertRow({ title, desc, on, onToggle }) {
 function HomeControlPage() {
   const [tab, setTab] = useState('history');
   const [selectedSetId, setSelectedSetId] = useState('daily');
-  const [activeSetId, setActiveSetId] = useState('daily');
   const [selectedDeviceId, setSelectedDeviceId] = useState('light');
   const [openControl, setOpenControl] = useState('');
+  const [openGestureId, setOpenGestureId] = useState(null);
   const [bindings, setBindings] = useState({});
+  const [radarAssignments, setRadarAssignments] = useState(() =>
+    Object.fromEntries(
+      gestureSets.flatMap((set) => set.gestures)
+        .filter((g) => g.radars && g.radars.length > 0)
+        .map((g) => [g.id, g.radars])
+    )
+  );
+
+  const allGestures = gestureSets.flatMap((set) => set.gestures);
+  const registeredGestures = allGestures.filter((g) => (radarAssignments[g.id] || []).length > 0);
   const selectedSet = gestureSets.find((set) => set.id === selectedSetId) || gestureSets[0];
-  const activeSet = gestureSets.find((set) => set.id === activeSetId) || gestureSets[0];
   const selectedDevice = iotDevices.find((device) => device.id === selectedDeviceId) || iotDevices[0];
   const onlineCount = iotDevices.filter((device) => device.connection === 'online').length;
-  const activeGestures = activeSet.gestures.map((gesture) => ({ ...gesture, setName: activeSet.name }));
-  const selectedDeviceBindings = Object.entries(bindings).filter(([key]) => key.startsWith(`${selectedDevice.id}:`));
-  const displayedBinding = selectedDeviceBindings.length > 0
-    ? `${selectedDeviceBindings.length}개 매핑됨`
-    : '전체 미지정';
-  const usedGestureIds = new Set(Object.values(bindings).map((binding) => binding.gestureId));
+  const availableRadars = initialRadarZones.filter((r) => r.connected);
+  const getRadarName = (radarId) => initialRadarZones.find((r) => r.id === radarId)?.name || '';
+  const getAssignedRadarIds = (gestureId) => radarAssignments[gestureId] || [];
 
-  const activateSet = (setId) => {
-    setActiveSetId(setId);
-    setSelectedSetId(setId);
-    setOpenControl('');
-    setBindings({});
+  const toggleRadar = (gestureId, radarId) => {
+    setRadarAssignments((current) => {
+      const existing = current[gestureId] || [];
+      const next = { ...current };
+      if (existing.includes(radarId)) {
+        const updated = existing.filter((id) => id !== radarId);
+        if (updated.length === 0) {
+          delete next[gestureId];
+        } else {
+          next[gestureId] = updated;
+        }
+      } else {
+        next[gestureId] = [...existing, radarId];
+      }
+      return next;
+    });
   };
 
-  const getSetStatus = (setId) => (setId === activeSetId ? '활성 세트' : '대기');
+  const getAssignedLabel = (gestureId) => {
+    const ids = getAssignedRadarIds(gestureId);
+    if (ids.length === 0) return '미등록';
+    if (ids.length === 1) return getRadarName(ids[0]);
+    return `${getRadarName(ids[0])} 외 ${ids.length - 1}개`;
+  };
 
   const getControlKey = (deviceId, controlLabel) => `${deviceId}:${controlLabel}`;
   const getControlBinding = (control) => bindings[getControlKey(selectedDevice.id, control.label)];
+  const selectedDeviceBindings = Object.entries(bindings).filter(([key]) => key.startsWith(`${selectedDevice.id}:`));
+  const displayedBinding = selectedDeviceBindings.length > 0 ? `${selectedDeviceBindings.length}개 매핑됨` : '전체 미지정';
+  const usedGestureIds = new Set(Object.values(bindings).map((binding) => binding.gestureId));
   const clearSelectedDeviceBindings = () => {
     setBindings((current) => {
       const next = { ...current };
-      selectedDevice.controls.forEach((control) => {
-        delete next[getControlKey(selectedDevice.id, control.label)];
-      });
+      selectedDevice.controls.forEach((control) => { delete next[getControlKey(selectedDevice.id, control.label)]; });
       return next;
     });
     setOpenControl('');
@@ -3034,8 +3049,6 @@ function HomeControlPage() {
         gestureId: gesture.id,
         gestureName: gesture.name,
         action: gesture.action,
-        setId: activeSet.id,
-        setName: activeSet.name,
       },
     }));
     setOpenControl('');
@@ -3055,23 +3068,22 @@ function HomeControlPage() {
 
       <div className="home-summary-grid">
         <Metric label="오늘 인식" value="18회" detail="더미 데이터 기준" />
-        <Metric label="활성 제스처" value={`${activeSet.gestureCount}개`} detail={activeSet.name} />
+        <Metric label="등록된 제스처" value={`${registeredGestures.length}개`} detail="레이더 기준" />
         <Metric label="연결 IoT" value={`${onlineCount}/${iotDevices.length}`} detail="온라인 기기" />
       </div>
 
       {tab === 'history' && (
-        <Card title="인식 로그" action="최근 기록" wide>
+        <Card title="최근 기록" wide>
           <div className="gesture-history-list">
             {gestureHistory.map((item) => (
               <article className="gesture-history-item" key={item.id}>
                 <div className="gesture-history-icon">⌁</div>
                 <div>
                   <strong>{item.gesture}</strong>
-                  <span>
-                    {item.device} · {item.action}
-                  </span>
+                  <span>{item.device} · {item.action}</span>
                 </div>
                 <div className="history-meta">
+                  <span className="radar-tag">{item.radar}</span>
                   <time>{item.time}</time>
                 </div>
               </article>
@@ -3083,44 +3095,70 @@ function HomeControlPage() {
       {tab === 'list' && (
         <div className="gesture-management">
           <div className="gesture-set-list">
-            {gestureSets.map((set) => (
-              <article
-                className={`gesture-set-card ${selectedSetId === set.id ? 'selected' : ''} ${activeSetId === set.id ? 'active-set' : ''}`}
-                key={set.id}
-              >
-                <button type="button" className="gesture-set-select-button" onClick={() => setSelectedSetId(set.id)}>
-                  <span>{getSetStatus(set.id)}</span>
-                  <strong>{set.name}</strong>
-                  <p>{set.description}</p>
-                  <small>{set.gestureCount}개 제스처</small>
-                </button>
-                <button
-                  type="button"
-                  className="gesture-set-activate"
-                  disabled={activeSetId === set.id}
-                  onClick={() => activateSet(set.id)}
+            {gestureSets.map((set) => {
+              const registeredCount = set.gestures.filter((g) => (radarAssignments[g.id] || []).length > 0).length;
+              return (
+                <article
+                  className={`gesture-set-card ${selectedSetId === set.id ? 'selected' : ''} ${registeredCount > 0 ? 'active-set' : ''}`}
+                  key={set.id}
                 >
-                  {activeSetId === set.id ? '활성화됨' : '활성화'}
-                </button>
-              </article>
-            ))}
+                  <button type="button" className="gesture-set-select-button" onClick={() => setSelectedSetId(set.id)}>
+                    <span>{registeredCount > 0 ? `${registeredCount}개 등록됨` : '미등록'}</span>
+                    <strong>{set.name}</strong>
+                    <p>{set.description}</p>
+                    <small>{set.gestures.length}개 제스처</small>
+                  </button>
+                </article>
+              );
+            })}
           </div>
 
-          <Card title={selectedSet.name} action="선택된 세트" wide>
+          <Card title={selectedSet.name} wide>
             <p className="section-description">{selectedSet.description}</p>
             <div className="gesture-card-grid">
-              {selectedSet.gestures.map((gesture) => (
-                <article className="gesture-control-card" key={gesture.id}>
-                  <div className="gesture-placeholder">
-                    <span>사진 없음</span>
-                  </div>
-                  <div>
-                    <span className={`status-chip ${gesture.status}`}>{gesture.status === 'active' ? '활성' : '비활성'}</span>
-                    <h3>{gesture.name}</h3>
-                    <p>{gesture.action}</p>
-                  </div>
-                </article>
-              ))}
+              {selectedSet.gestures.map((gesture) => {
+                const assignedIds = getAssignedRadarIds(gesture.id);
+                const isOpen = openGestureId === gesture.id;
+                return (
+                  <article className="gesture-control-card" key={gesture.id}>
+                    <div className="gesture-placeholder">
+                      <span>사진 없음</span>
+                    </div>
+                    <div className="gesture-card-body">
+                      <span className={`status-chip ${assignedIds.length > 0 ? 'active' : 'inactive'}`}>
+                        {getAssignedLabel(gesture.id)}
+                      </span>
+                      <h3>{gesture.name}</h3>
+                      <p>{gesture.action}</p>
+                      <button
+                        type="button"
+                        className="radar-assign-btn"
+                        onClick={() => setOpenGestureId(isOpen ? null : gesture.id)}
+                      >
+                        {assignedIds.length > 0 ? '레이더 관리' : '레이더 등록'}
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <div className="radar-picker">
+                        {availableRadars.map((radar) => {
+                          const isSelected = assignedIds.includes(radar.id);
+                          return (
+                            <button
+                              type="button"
+                              className={`radar-pick-item ${isSelected ? 'selected' : ''}`}
+                              key={radar.id}
+                              onClick={() => toggleRadar(gesture.id, radar.id)}
+                            >
+                              <span>{isSelected ? '✓ ' : ''}{radar.name}</span>
+                              <small>레이더</small>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </Card>
         </div>
@@ -3147,53 +3185,54 @@ function HomeControlPage() {
             </div>
           </Card>
 
-          <Card title={`${selectedDevice.name} 제어 상태`} action={selectedDevice.room} wide>
+          <Card title={`${selectedDevice.name} 제어 상태`} wide>
             <div className="selected-device-panel">
               <div>
                 <span className={`device-dot ${selectedDevice.connection}`} />
                 <strong>{selectedDevice.state}</strong>
-                <p>활성 세트: {activeSet.name} · {displayedBinding}</p>
+                <p>{displayedBinding}</p>
               </div>
-              <button type="button" onClick={clearSelectedDeviceBindings}>전체 비활성화</button>
+              <button type="button" onClick={clearSelectedDeviceBindings}>전체 초기화</button>
             </div>
 
             <div className="control-binding-list">
               {selectedDevice.controls.map((control) => {
                 const binding = getControlBinding(control);
-
                 return (
                   <article className="control-binding-item" key={control.label}>
                     <div className="control-binding-row">
                       <div>
                         <strong>{control.label}</strong>
-                        <span>현재 연결: {binding?.gestureName || '미지정'}</span>
+                        <span>연결된 제스처: {binding?.gestureName || '미지정'}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() =>
-                          setOpenControl((current) => (current === control.label ? '' : control.label))
-                        }
+                        onClick={() => setOpenControl((current) => (current === control.label ? '' : control.label))}
                       >
                         설정
                       </button>
                     </div>
                     {openControl === control.label && (
                       <div className="gesture-picker">
-                        {activeGestures.map((gesture) => {
+                        {registeredGestures.length === 0 && (
+                          <p className="gesture-picker-empty">레이더가 등록된 제스처가 없습니다.</p>
+                        )}
+                        {registeredGestures.map((gesture) => {
                           const currentGesture = binding?.gestureId === gesture.id;
                           const usedElsewhere = usedGestureIds.has(gesture.id) && !currentGesture;
-
                           return (
                             <button
                               type="button"
                               className={currentGesture ? 'selected' : ''}
                               disabled={usedElsewhere}
-                              key={`${control.label}-${gesture.setName}-${gesture.id}`}
+                              key={gesture.id}
                               onClick={() => setControlBinding(control, gesture)}
                             >
                               <span>{gesture.name}</span>
                               <small>
-                                {usedElsewhere ? '다른 제어에 사용 중' : `${gesture.setName} · ${gesture.action}`}
+                                {usedElsewhere
+                                  ? '다른 제어에 사용 중'
+                                  : `${getAssignedLabel(gesture.id)} · ${gesture.action}`}
                               </small>
                             </button>
                           );

@@ -2700,7 +2700,6 @@ button {
 }
 
 .gesture-control-card {
-  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface);
@@ -2710,6 +2709,8 @@ button {
   height: 132px;
   display: grid;
   place-items: center;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
   background:
     linear-gradient(135deg, var(--wave-10), transparent),
     repeating-linear-gradient(45deg, var(--stripe-a), var(--stripe-a) 12px, var(--stripe-b) 12px, var(--stripe-b) 24px);
@@ -2718,7 +2719,7 @@ button {
   font-weight: 800;
 }
 
-.gesture-control-card > div:last-child {
+.gesture-control-card .gesture-card-body {
   padding: 14px;
 }
 
@@ -2878,6 +2879,86 @@ button {
   font-size: 11px;
   line-height: 1.4;
 }
+
+.gesture-picker-empty {
+  grid-column: 1 / -1;
+  color: var(--sub);
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.radar-assign-btn {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.radar-assign-btn:hover {
+  background: var(--wave-10);
+  border-color: var(--wave);
+}
+
+.radar-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px 14px;
+}
+
+.radar-pick-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 14px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.radar-pick-item span {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.radar-pick-item small {
+  font-size: 11px;
+  color: var(--sub);
+}
+
+.radar-pick-item.selected {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.radar-pick-item.unassign {
+  border-color: var(--line);
+  background: transparent;
+}
+
+.radar-pick-item.unassign span {
+  color: var(--sub);
+}
+
+.radar-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wave);
+  background: var(--wave-10);
+  border-radius: 8px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
 
 @media (max-width: 1100px) {
   .sidebar {
