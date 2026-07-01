@@ -599,7 +599,7 @@ button {
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: var(--wave-30);
+  background: transparent;
   color: var(--ink);
   cursor: pointer;
 }

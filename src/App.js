@@ -1,13 +1,11 @@
 import { createContext, useContext, useMemo, useRef, useEffect, useState } from 'react';
 import {
-  LineChart as RechartsLineChart,
   AreaChart as RechartsAreaChart,
   BarChart as RechartsBarChart,
   Area,
   Bar,
   Cell,
   LabelList,
-  Line,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -32,7 +30,7 @@ const pages = [
   { id: 'sleep', label: '수면 관리', icon: 'moon' },
   { id: 'posture', label: '자세 관리', icon: 'posture' },
   { id: 'home', label: '가전 제어', icon: 'power' },
-  { id: 'weeklyPlan', label: '주간 계획', icon: 'calendar' }
+  { id: 'weeklyPlan', label: '헬스 루틴', icon: 'calendar' }
 ];
 
 const initialNotifications = [
@@ -50,7 +48,7 @@ const initialAccounts = [
 const pageTitles = {
   main: '대시보드',
   overview: '삼성헬스 예시',
-  weeklyPlan: '주간 계획',
+  weeklyPlan: '헬스 루틴',
   sleep: '수면 관리',
   posture: '자세 관리',
   home: '가전 제어',
@@ -89,16 +87,6 @@ const sleepSettingSummaries = [
   },
 ];
 
-const heartRateTrend = [
-  { day: '00시', value: 58 },
-  { day: '03시', value: 54 },
-  { day: '06시', value: 62 },
-  { day: '09시', value: 75 },
-  { day: '12시', value: 82 },
-  { day: '15시', value: 71 },
-  { day: '18시', value: 69 },
-  { day: '21시', value: 60 },
-];
 
 const postureBars = [
   { label: '09', value: 78, turtleNeck: 1 },
@@ -191,14 +179,6 @@ const stageColorVar = {
 // continuous activity for the whole sleep period rather than a short cluster.
 const movementTicks = Array.from({ length: 77 }, (_, i) => 14 + ((i * 37) % 60));
 
-const spo2Trend = [
-  { day: '11PM', value: 97 },
-  { day: '1AM', value: 96 },
-  { day: '3AM', value: 95 },
-  { day: '5AM', value: 96 },
-  { day: '7AM', value: 97 },
-  { day: '8AM', value: 96 },
-];
 
 const snoringEpisodes = [
   { time: '01:12', duration: 4 },
@@ -236,14 +216,44 @@ const overviewFeatureTiles = [
 ];
 
 const koreanWeekdayLabels = ['일', '월', '화', '수', '목', '금', '토'];
-const todayWeekdayLabel = koreanWeekdayLabels[new Date().getDay()];
 
 const initialTodos = [
-  { id: 1, title: '오후 4시 목 스트레칭', done: false, day: todayWeekdayLabel, cat: '자세' },
-  { id: 2, title: '수분 섭취 2L', done: false, day: todayWeekdayLabel, cat: '식습관' },
-  { id: 3, title: '자정 전 취침', done: false, day: todayWeekdayLabel, cat: '수면' },
-  { id: 4, title: '오후 10시 이후 화면 밝기 줄이기', done: false, day: todayWeekdayLabel, cat: '수면' },
-  { id: 5, title: '저녁 스트레칭 10분', done: false, day: todayWeekdayLabel, cat: '자세' },
+  // 월요일
+  { id: 1,  title: '기상 후 목 스트레칭 20초',    done: false, day: '월', cat: '자세',  startMin: 7*60,       endMin: 7*60+20 },
+  { id: 2,  title: '아침 샐러드',                  done: false, day: '월', cat: '식습관', startMin: 8*60,       endMin: 8*60+30 },
+  { id: 3,  title: '5분 명상',                     done: false, day: '월', cat: '멘탈',  startMin: 9*60,       endMin: 9*60+5 },
+  { id: 4,  title: '자정 전 취침',                 done: false, day: '월', cat: '수면',  startMin: 23*60,      endMin: 23*60+30 },
+  // 화요일
+  { id: 5,  title: '어깨 스트레칭 10분',           done: false, day: '화', cat: '자세',  startMin: 7*60+30,    endMin: 7*60+40 },
+  { id: 6,  title: '점심 채소 위주',               done: false, day: '화', cat: '식습관', startMin: 12*60,      endMin: 12*60+30 },
+  { id: 7,  title: '저널링 10분',                  done: false, day: '화', cat: '멘탈',  startMin: 20*60,      endMin: 20*60+10 },
+  { id: 8,  title: '스마트폰 디톡스 1시간',        done: false, day: '화', cat: '수면',  startMin: 22*60,      endMin: 23*60 },
+  // 수요일
+  { id: 9,  title: '오후 4시 목 스트레칭',         done: false, day: '수', cat: '자세',  startMin: 16*60,      endMin: 16*60+5 },
+  { id: 10, title: '저녁 스트레칭 10분',           done: false, day: '수', cat: '자세',  startMin: 19*60,      endMin: 19*60+10 },
+  { id: 11, title: '수분 섭취 2L 체크',            done: false, day: '수', cat: '식습관', startMin: 12*60+30,   endMin: 13*60 },
+  { id: 12, title: '화면 밝기 줄이기',             done: false, day: '수', cat: '수면',  startMin: 22*60,      endMin: 22*60+10 },
+  { id: 13, title: '자정 전 취침',                 done: false, day: '수', cat: '수면',  startMin: 23*60,      endMin: 23*60+30 },
+  // 목요일
+  { id: 14, title: '기지개 스트레칭',              done: false, day: '목', cat: '자세',  startMin: 7*60,       endMin: 7*60+10 },
+  { id: 15, title: '걷기 명상 20분',               done: false, day: '목', cat: '멘탈',  startMin: 15*60,      endMin: 15*60+20 },
+  { id: 16, title: '저녁 가볍게 먹기',             done: false, day: '목', cat: '식습관', startMin: 18*60,      endMin: 18*60+30 },
+  { id: 17, title: '음악 들으며 취침 준비',        done: false, day: '목', cat: '수면',  startMin: 22*60+30,   endMin: 23*60 },
+  // 금요일
+  { id: 18, title: '스쿼트 10회',                  done: false, day: '금', cat: '자세',  startMin: 7*60+30,    endMin: 7*60+40 },
+  { id: 19, title: '과일 간식 챙기기',             done: false, day: '금', cat: '식습관', startMin: 15*60,      endMin: 15*60+10 },
+  { id: 20, title: '독서 30분',                    done: false, day: '금', cat: '멘탈',  startMin: 20*60,      endMin: 20*60+30 },
+  { id: 21, title: '22:30 전 취침',                done: false, day: '금', cat: '수면',  startMin: 22*60+30,   endMin: 23*60 },
+  // 토요일
+  { id: 22, title: '요가 30분',                    done: false, day: '토', cat: '자세',  startMin: 8*60,       endMin: 8*60+30 },
+  { id: 23, title: '건강 브런치',                  done: false, day: '토', cat: '식습관', startMin: 10*60,      endMin: 10*60+30 },
+  { id: 24, title: '낮잠 30분',                    done: false, day: '토', cat: '수면',  startMin: 14*60,      endMin: 14*60+30 },
+  { id: 25, title: '자연 산책',                    done: false, day: '토', cat: '멘탈',  startMin: 17*60,      endMin: 18*60 },
+  // 일요일
+  { id: 26, title: '스트레칭 루틴 15분',           done: false, day: '일', cat: '자세',  startMin: 9*60,       endMin: 9*60+15 },
+  { id: 27, title: '주간 영양 식단 계획',          done: false, day: '일', cat: '식습관', startMin: 11*60,      endMin: 11*60+30 },
+  { id: 28, title: '주간 수면 리뷰',               done: false, day: '일', cat: '수면',  startMin: 15*60,      endMin: 15*60+30 },
+  { id: 29, title: '주간 회고 작성',               done: false, day: '일', cat: '멘탈',  startMin: 19*60,      endMin: 19*60+30 },
 ];
 
 const gestureHistory = [
@@ -353,8 +363,11 @@ function App() {
   const toggleTodo = (id) => {
     setTodos((current) => current.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
   };
-  const addTodo = (title, day, cat) => {
-    setTodos((current) => [...current, { id: Date.now(), title, done: false, day, cat }]);
+  const addTodo = (title, day, cat, startMin, endMin) => {
+    setTodos((current) => [...current, { id: Date.now(), title, done: false, day, cat, ...(startMin !== undefined ? { startMin, endMin } : {}) }]);
+  };
+  const updateTodo = (id, changes) => {
+    setTodos((current) => current.map((item) => (item.id === id ? { ...item, ...changes } : item)));
   };
   const [approvedActions, setApprovedActions] = useState({});
   const toggleApprovedAction = (id) => {
@@ -581,7 +594,7 @@ function App() {
               <SleepPage tab={sleepTab} setTab={setSleepTab} onGoToSleepSettings={goToSleepSettings} />
             )}
             {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
-            {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} />}
+            {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} onUpdateTodo={updateTodo} />}
             {page === 'home' && <HomeControlPage />}
             {page === 'setting' && (
               <SettingPage
@@ -1014,7 +1027,7 @@ const CHAT_SUGGESTION_POOL = [
   { icon: '🧘', label: '자세 교정', prompt: '거북목 개선 스트레칭 루틴 추천해줘' },
   { icon: '❤️', label: '심박 트렌드', prompt: '오늘 심박수가 평소와 다른 이유가 뭐야?' },
   { icon: '🏠', label: '가전 자동화', prompt: '취침 전 가전 자동화 설정 도와줘' },
-  { icon: '📋', label: '주간 계획', prompt: '이번 주 건강 목표를 세워줘' },
+  { icon: '📋', label: '헬스 루틴', prompt: '이번 주 건강 목표를 세워줘' },
   { icon: '💤', label: '수면 환경', prompt: '더 깊은 수면을 위한 실내 환경 알려줘' },
   { icon: '🌡️', label: '최적 온도', prompt: '수면에 최적인 실내 온도가 몇 도야?' },
   { icon: '⚡', label: '에너지 향상', prompt: '에너지 점수를 높이는 방법 알려줘' },
@@ -1573,13 +1586,6 @@ const dailyMessage = {
   body: '어제 수면 점수는 84점으로, 입면까지 24분이 걸렸고 깊은 수면 비율은 전주 평균보다 8% 높았어요. 자세 점수는 78점으로, 오후 3시 이후 목이 앞으로 나오는 패턴이 반복되었으니 짧은 스트레칭으로 챙겨주세요. 오늘은 취침 1시간 전 조명을 낮추고, 50분 착석마다 1분 목 리셋 루틴을 실행해보세요!',
 };
 
-function HeartIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 8.5c0 4.5-8 10.5-8 10.5s-8-6-8-10.5a4.5 4.5 0 0 1 8-2.8 4.5 4.5 0 0 1 8 2.8Z" />
-    </svg>
-  );
-}
 
 function Donut({ pct, r = 38, sw = 8, color = 'var(--wave)', bg = 'var(--wave-10)', children }) {
   const circ = 2 * Math.PI * r;
@@ -1677,7 +1683,9 @@ function PostureScoreGauge({ score }) {
 }
 
 function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
-  const remaining = todos.filter((todo) => !todo.done).length;
+  const todayLabel = koreanWeekdayLabels[new Date().getDay()];
+  const todayTodos = todos.filter((t) => t.day === todayLabel);
+  const remaining = todayTodos.filter((todo) => !todo.done).length;
   return (
     <div className="page-stack">
       <section className="hero card">
@@ -1699,7 +1707,8 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
 
         <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')}>
           <div className="todo-list">
-            {todos.map((todo) => (
+            {todayTodos.length === 0 && <p style={{ color: 'var(--sub)', fontSize: '0.8rem' }}>오늘 일정이 없습니다</p>}
+            {todayTodos.map((todo) => (
               <button
                 type="button"
                 className={`todo ${todo.done ? 'done' : ''}`}
@@ -2519,8 +2528,8 @@ function SleepStatusReport() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <Card title="코골이" action={`${snoringEpisodes.length}회 감지`}>
           <div className="big-number">
+            <small>어젯밤 총 코골이 시간</small>
             {snoringEpisodes.reduce((sum, item) => sum + item.duration, 0)}<span>분</span>
-            <small>오늘 밤 총 코골이 시간</small>
           </div>
           <div className="mt-3 flex flex-col gap-2">
             {snoringEpisodes.map((item) => (
@@ -2759,206 +2768,918 @@ const allRecommendedActions = [
   ...postureWeeklyInsights,
 ];
 
-const weeklyPlanCategories = ['자세', '수면', '식습관', '멘탈'];
-
-function getWeekDates() {
+function getWeekDates(weekOffset = 0) {
   const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const day = today.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + mondayOffset);
+  monday.setDate(today.getDate() + mondayOffset + weekOffset * 7);
 
   return koreanWeekdayLabels.slice(1).concat(koreanWeekdayLabels[0]).map((label, index) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
-    return { label, date: date.getDate(), isToday: date.toDateString() === today.toDateString() };
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + index);
+    const dMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const isToday = d.toDateString() === today.toDateString();
+    const isPast = dMidnight < todayMidnight;
+    return { label, date: d.getDate(), month: d.getMonth() + 1, isToday, isPast };
   });
 }
 
-function RecommendedActionRow({ item, approved }) {
-  const { toggle } = useApprovedActions();
+const CAT_STYLE = {
+  '자세': { bg: '#fce7f3', text: '#9d174d', shadow: 'rgba(244,114,182,0.15)', defaultMin: 9 * 60 + 15 },
+  '수면': { bg: '#ede9fe', text: '#4c1d95', shadow: 'rgba(167,139,250,0.15)', defaultMin: 10 * 60 + 30 },
+  '식습관': { bg: '#fef9c3', text: '#713f12', shadow: 'rgba(251,191,36,0.15)', defaultMin: 12 * 60 },
+  '멘탈': { bg: '#d1fae5', text: '#064e3b', shadow: 'rgba(52,211,153,0.15)', defaultMin: 13 * 60 + 30 },
+};
 
-  return (
-    <div className={`insight-card ${approved ? 'applied' : ''}`}>
-      <span className="insight-card-label">{item.label}</span>
-      <strong>{item.title}</strong>
-      <p>{item.text}</p>
-      <button type="button" className="insight-card-action" onClick={() => toggle(item.id)}>
-        {approved ? '✓ 적용됨' : '승인'}
-      </button>
-    </div>
-  );
+const ENG_LABELS = ['Mon', 'Tues', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+const CAL_START_MIN = 0;
+const CAL_END_MIN = 24 * 60;
+const CAL_H = 24 * 48; // 48px per hour
+const PX_PER_MIN = CAL_H / (CAL_END_MIN - CAL_START_MIN);
+
+function minToY(min) {
+  return (min - CAL_START_MIN) * PX_PER_MIN;
+}
+function yToMin(y) {
+  return CAL_START_MIN + y / PX_PER_MIN;
+}
+function snapMin(min) {
+  return Math.round(min / 30) * 30;
+}
+function fmtTime(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+function pickAICat(title) {
+  if (/스트레칭|자세|운동|걷기|요가|스쿼트|기지개|목|허리|체조/.test(title)) return '자세';
+  if (/수면|잠|취침|기상|낮잠|불면|휴식/.test(title)) return '수면';
+  if (/먹|식사|점심|저녁|아침|식단|수분|물|영양|칼로리|간식|채소|과일/.test(title)) return '식습관';
+  return '멘탈';
 }
 
-function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo }) {
-  const weekDates = useMemo(getWeekDates, []);
-  const { approved } = useApprovedActions();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftCat, setDraftCat] = useState('자세');
 
-  const approvedItems = allRecommendedActions.filter((item) => approved[item.id]);
-  const pendingItems = allRecommendedActions.filter((item) => !approved[item.id]);
+function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo }) {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+  const { approved, toggle } = useApprovedActions();
+  const [dismissed, setDismissed] = useState(() => new Set());
+  const [hoverApprovedId, setHoverApprovedId] = useState(null);
+  const [detailTodo, setDetailTodo] = useState(null);
+  const [hoveredCol, setHoveredCol] = useState(-1);
+  const [hoveredY, setHoveredY] = useState(0);
+  const [drag, setDrag] = useState(null);
+  const [moveDrag, setMoveDrag] = useState(null);
+  const [popup, setPopup] = useState(null);
+  const [nowMin, setNowMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
+  const eventsRef = useRef(null);
+  const popupInputRef = useRef(null);
+  const moveDragRef = useRef(null);
+  moveDragRef.current = moveDrag;
 
-  const submitNewTask = () => {
-    if (!draftTitle.trim()) return;
-    onAddTodo(draftTitle.trim(), todayWeekdayLabel, draftCat);
-    setDraftTitle('');
-    setModalOpen(false);
+  useEffect(() => {
+    const tick = () => { const n = new Date(); setNowMin(n.getHours() * 60 + n.getMinutes()); };
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (popup && popupInputRef.current) popupInputRef.current.focus();
+  }, [popup]);
+
+  useEffect(() => {
+    if (!drag) return;
+    const onUp = (e) => {
+      if (!eventsRef.current) return;
+      const rect = eventsRef.current.getBoundingClientRect();
+      const y = Math.max(0, Math.min(CAL_H, e.clientY - rect.top));
+      const dy = Math.abs(y - drag.startY);
+      const startMin = snapMin(yToMin(dy > 10 ? Math.min(drag.startY, y) : drag.startY));
+      const rawEnd = dy > 10 ? yToMin(Math.max(drag.startY, y)) : yToMin(drag.startY) + 60;
+      const endMin = snapMin(Math.min(rawEnd, CAL_END_MIN));
+      setDrag(null);
+      setPopup({ dayIdx: drag.dayIdx, dayLabel: weekDates[drag.dayIdx].label, startMin, endMin: Math.max(endMin, startMin + 30), title: '' });
+    };
+    document.addEventListener('mouseup', onUp);
+    return () => document.removeEventListener('mouseup', onUp);
+  }, [drag, weekDates]);
+
+  // Global mouse handlers for drag-to-move existing todos
+  const moveDragActive = moveDrag !== null;
+  useEffect(() => {
+    if (!moveDragActive) return;
+    const onMove = (e) => {
+      if (!eventsRef.current) return;
+      const rect = eventsRef.current.getBoundingClientRect();
+      const y = Math.max(0, Math.min(CAL_H, e.clientY - rect.top));
+      const dayIdx = Math.min(6, Math.max(0, Math.floor((e.clientX - rect.left) / (rect.width / 7))));
+      setMoveDrag((prev) => prev ? { ...prev, currentY: y, dayIdx } : null);
+    };
+    const onUp = () => {
+      const cur = moveDragRef.current;
+      if (!cur) return;
+      const newStartMin = Math.max(0, Math.min(CAL_END_MIN - cur.duration, snapMin(yToMin(cur.currentY - cur.grabOffsetY))));
+      const newEndMin = newStartMin + cur.duration;
+      const newDay = weekDates[cur.dayIdx]?.label || cur.origDay;
+      onUpdateTodo(cur.id, { startMin: newStartMin, endMin: newEndMin, day: newDay });
+      setMoveDrag(null);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [moveDragActive, weekDates, onUpdateTodo]);
+
+  const colW = 100 / 7;
+  const s = weekDates[0];
+  const e = weekDates[6];
+  const dateRange = s.month === e.month
+    ? `${s.month}월 ${s.date}일 - ${e.date}일`
+    : `${s.month}월 ${s.date}일 - ${e.month}월 ${e.date}일`;
+
+  const getEvtCoords = (e) => {
+    const rect = eventsRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = Math.max(0, Math.min(CAL_H, e.clientY - rect.top));
+    const dayIdx = Math.min(6, Math.max(0, Math.floor(x / (rect.width / 7))));
+    return { x, y, dayIdx };
   };
+
+  const handleEventsMouseMove = (e) => {
+    if (!eventsRef.current) return;
+    if (moveDrag) return; // moveDrag handled by document listener
+    if (e.target.closest('[data-todo-block]')) {
+      if (drag) {
+        const rect = eventsRef.current.getBoundingClientRect();
+        setDrag((prev) => ({ ...prev, currentY: Math.max(0, Math.min(CAL_H, e.clientY - rect.top)) }));
+      }
+      setHoveredCol(-1);
+      return;
+    }
+    const { y, dayIdx } = getEvtCoords(e);
+    setHoveredCol(dayIdx);
+    setHoveredY(y);
+    if (drag) setDrag((prev) => ({ ...prev, currentY: y }));
+  };
+
+  const handleEventsMouseDown = (e) => {
+    if (e.target.closest('[data-todo-block]') || !eventsRef.current) return;
+    e.preventDefault();
+    const { y, dayIdx } = getEvtCoords(e);
+    setDrag({ dayIdx, startY: y, currentY: y });
+  };
+
+  const handleBlockMouseDown = (ev, todo, startMin, endMin) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    if (!eventsRef.current) return;
+    const rect = eventsRef.current.getBoundingClientRect();
+    const y = ev.clientY - rect.top;
+    const dayIdx = Math.min(6, Math.max(0, Math.floor((ev.clientX - rect.left) / (rect.width / 7))));
+    setMoveDrag({
+      id: todo.id,
+      duration: endMin - startMin,
+      grabOffsetY: y - minToY(startMin),
+      dayIdx,
+      currentY: y,
+      origDay: todo.day,
+      origStartMin: startMin,
+      origEndMin: endMin,
+    });
+  };
+
+  const submitPopup = () => {
+    if (!popup?.title.trim()) return;
+    const cat = pickAICat(popup.title);
+    onAddTodo(popup.title.trim(), popup.dayLabel, cat, popup.startMin, popup.endMin);
+    setPopup(null);
+  };
+
+  // Grid lines: every 30 min across 24 hours
+  const gridLines = Array.from({ length: 49 }, (_, i) => ({
+    y: i * (CAL_H / 48),
+    isHour: i % 2 === 0,
+  }));
+
+  // Night overlays: past days only.
+  // Every past night gets an overlay. If no evening sleep todo exists, default to 23:00.
+  // Morning overlay (00:00–07:00) is added to the next column.
+  // Monday morning is handled separately (comes from previous week's Sunday).
+  const nightOverlays = useMemo(() => {
+    const MORNING_END = 7 * 60;     // 07:00 wake-up
+    const MIN_EVE = 18 * 60;        // evening sleep threshold — ignore daytime naps
+    const DEFAULT_NIGHT = 23 * 60;  // fallback sleep start when no evening todo
+    const overlays = [];
+    const morningAdded = new Set();
+
+    weekDates.forEach((d, i) => {
+      if (!d.isPast) return;
+
+      // Determine sleep start: earliest evening 수면 todo, or default 23:00
+      const eveTodos = todos.filter(
+        (t) => t.day === d.label && t.cat === '수면' && (t.startMin ?? 0) >= MIN_EVE
+      );
+      const nightStart = eveTodos.length > 0
+        ? Math.min(...eveTodos.map((t) => t.startMin))
+        : DEFAULT_NIGHT;
+
+      // Night band: nightStart → midnight
+      overlays.push({ dayIdx: i, startMin: nightStart, endMin: CAL_END_MIN, edge: 'night', nightStart });
+
+      // Morning band on next day: 00:00 → 07:00
+      const j = i + 1;
+      if (j < weekDates.length && !morningAdded.has(j)) {
+        const nextPast = weekDates[j].isPast;
+        const nextTodayPastMorning = weekDates[j].isToday && nowMin >= MORNING_END;
+        if (nextPast || nextTodayPastMorning) {
+          overlays.push({ dayIdx: j, startMin: 0, endMin: MORNING_END, edge: 'morning', nightStart });
+          morningAdded.add(j);
+        }
+      }
+    });
+
+    // Monday (index 0) morning: from previous week's Sunday — always add when Monday is past
+    if (weekDates[0]?.isPast && !morningAdded.has(0)) {
+      overlays.push({ dayIdx: 0, startMin: 0, endMin: MORNING_END, edge: 'morning', nightStart: DEFAULT_NIGHT });
+    }
+
+    return overlays;
+  }, [todos, weekDates, nowMin]);
 
   return (
     <div className="page-stack">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>주간 헬스 루틴</h2>
-          <p className="text-xs" style={{ color: 'var(--sub)' }}>
-            {weekDates[0].label} {weekDates[0].date}일 ~ {weekDates[6].label} {weekDates[6].date}일
-          </p>
-        </div>
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold sm:w-auto"
-          style={{ background: 'var(--wave)', color: 'var(--ink)' }}
-          onClick={() => setModalOpen(true)}
-        >
-          + 계획 추가
-        </button>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
 
-      <Card>
-        <div className="overflow-x-auto">
-          <div className="min-w-[640px]">
-            <div className="grid grid-cols-8 border-b" style={{ borderColor: 'var(--line)' }}>
-              <div className="p-3 text-xs font-semibold" style={{ color: 'var(--sub)' }}>구분</div>
-              {weekDates.map((d) => (
-                <div key={d.label} className="px-1 py-2 text-center" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
-                  <p className="text-[10px] font-medium" style={{ color: d.isToday ? 'var(--excellent-text)' : 'var(--sub)' }}>{d.label}</p>
-                  <p className="mt-0.5 text-sm font-bold" style={{ color: d.isToday ? 'var(--ink)' : 'var(--sub)' }}>{d.date}</p>
+        {/* Left: Calendar (3 cols) */}
+        <div className="lg:col-span-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 mb-2">주간 헬스 플랜</h1>
+              <div className="flex items-center gap-2 text-slate-500 font-medium">
+                <span>{dateRange}</span>
+                <div className="flex gap-1 ml-2">
+                  <button type="button" onClick={() => setWeekOffset((w) => w - 1)} className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <button type="button" onClick={() => setWeekOffset((w) => w + 1)} className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
                 </div>
-              ))}
+                {weekOffset !== 0 && (
+                  <button type="button" onClick={() => setWeekOffset(0)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">오늘</button>
+                )}
+              </div>
             </div>
-            {weeklyPlanCategories.map((cat) => (
-              <div key={cat} className="grid grid-cols-8 border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-                <div className="flex items-center p-2">
-                  <span className="status-chip">{cat}</span>
+          </div>
+
+          <div className="relative overflow-x-auto">
+            <div className="min-w-[640px]">
+              {/* Calendar with sticky header inside scroll container */}
+              <div className="overflow-y-auto" style={{ maxHeight: '720px' }}>
+
+                {/* Sticky day header row — z-50 so it stays above todo blocks (z-20/30) */}
+                <div className="sticky top-0 bg-white pb-2" style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
+                  <div className="grid" style={{ gridTemplateColumns: '72px repeat(7, 1fr)' }}>
+                    <div />
+                    {weekDates.map((d, i) => (
+                      <div key={d.label} className="text-center py-2">
+                        <p className="text-xs font-semibold" style={{ color: d.isToday ? '#2563eb' : '#94a3b8' }}>{ENG_LABELS[i]}</p>
+                        <p className="text-sm font-bold mt-0.5" style={{ color: d.isToday ? '#2563eb' : '#1e293b' }}>{d.date}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {weekDates.map((d) => {
-                  const items = todos.filter((t) => t.day === d.label && t.cat === cat);
-                  return (
-                    <div key={d.label} className="min-h-[52px] p-1.5" style={{ background: d.isToday ? 'var(--wave-05)' : undefined }}>
-                      {items.map((t) => (
-                        <button
-                          type="button"
-                          key={t.id}
-                          onClick={() => onToggleTodo(t.id)}
-                          className="mb-1 w-full rounded-lg px-1.5 py-1 text-left text-[10px] leading-snug"
-                          style={{
-                            background: t.done ? 'var(--wave-20)' : 'var(--wave-10)',
-                            color: 'var(--ink)',
-                            opacity: t.done ? 0.6 : 1,
-                            textDecoration: t.done ? 'line-through' : 'none',
-                          }}
-                        >
+
+              {/* Calendar body */}
+              <div className="grid pt-3" style={{ gridTemplateColumns: '72px 1fr' }}>
+                {/* Time labels (absolutely positioned to match grid) */}
+                <div className="relative text-xs font-semibold text-slate-400" style={{ height: `${CAL_H}px` }}>
+                  {TIME_SLOTS.map((t, i) => {
+                    const y = minToY(i * 60);
+                    return (
+                      <div
+                        key={t}
+                        style={{
+                          position: 'absolute',
+                          top: y,
+                          right: 8,
+                          transform: i === 0 ? 'none' : 'translateY(-50%)',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {t}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Events area */}
+                <div
+                  ref={eventsRef}
+                  className="relative w-full"
+                  style={{ height: `${CAL_H}px`, userSelect: 'none', cursor: moveDrag ? 'grabbing' : drag ? 'ns-resize' : 'default' }}
+                  onMouseMove={handleEventsMouseMove}
+                  onMouseDown={handleEventsMouseDown}
+                  onDragStart={(ev) => ev.preventDefault()}
+                  onMouseLeave={() => { if (!moveDrag) setHoveredCol(-1); }}
+                >
+                  {/* Night overlays for past days */}
+                  {nightOverlays.map(({ dayIdx, startMin, endMin, edge }, idx) => {
+                    const top = minToY(startMin);
+                    const height = minToY(endMin) - top;
+                    const gradient = edge === 'night'
+                      ? 'linear-gradient(to bottom, rgba(8,6,32,0) 0%, rgba(12,10,45,0.82) 14%, rgba(10,8,38,0.88) 100%)'
+                      : 'linear-gradient(to bottom, rgba(10,8,38,0.88) 0%, rgba(12,10,45,0.82) 86%, rgba(8,6,32,0) 100%)';
+                    return (
+                      <div key={`night-${idx}`} style={{
+                        position: 'absolute',
+                        left: `${dayIdx * colW}%`,
+                        width: `${colW}%`,
+                        top,
+                        height,
+                        background: gradient,
+                        pointerEvents: 'none',
+                        zIndex: 3,
+                        overflow: 'hidden',
+                      }}>
+                        {edge === 'night' && height > 30 && (
+                          <div style={{ position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: 600, letterSpacing: '0.02em' }}>
+                            {fmtTime(startMin)} 취침
+                          </div>
+                        )}
+                        {edge === 'morning' && height > 30 && (
+                          <div style={{ position: 'absolute', top: 6, left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: 600, letterSpacing: '0.02em' }}>
+                            {fmtTime(endMin)} 기상
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Today column highlight */}
+                  {weekDates.map((d, i) => d.isToday && (
+                    <div key="today-bg" style={{ position: 'absolute', left: `${i * colW}%`, width: `${colW}%`, top: 0, bottom: 0, background: 'rgba(37,99,235,0.03)', pointerEvents: 'none', zIndex: 0 }} />
+                  ))}
+
+                  {/* Current time line — only on today's column */}
+                  {weekDates.map((d, i) => d.isToday && (
+                    <div key="now-line" style={{ position: 'absolute', left: `${i * colW}%`, width: `${colW}%`, top: minToY(nowMin), height: 2, background: '#94a3b8', pointerEvents: 'none', zIndex: 15 }}>
+                      <div style={{ position: 'absolute', left: -3, top: -3, width: 8, height: 8, borderRadius: '50%', background: '#94a3b8' }} />
+                    </div>
+                  ))}
+
+                  {/* 30-min grid lines */}
+                  {gridLines.map(({ y, isHour }) => (
+                    <div
+                      key={y}
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: y,
+                        height: 1,
+                        background: isHour ? '#e2e8f0' : '#f1f5f9',
+                        pointerEvents: 'none',
+                        zIndex: 1,
+                      }}
+                    />
+                  ))}
+
+                  {/* Column dividers */}
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        position: 'absolute',
+                        left: `${(i + 1) * colW}%`,
+                        top: 0,
+                        bottom: 0,
+                        width: 1,
+                        background: '#f1f5f9',
+                        pointerEvents: 'none',
+                        zIndex: 1,
+                      }}
+                    />
+                  ))}
+
+                  {/* Drag selection highlight */}
+                  {drag && Math.abs(drag.currentY - drag.startY) > 5 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${drag.dayIdx * colW + 1}%`,
+                        width: `${colW - 2}%`,
+                        top: Math.min(drag.startY, drag.currentY),
+                        height: Math.abs(drag.currentY - drag.startY),
+                        background: 'rgba(37,99,235,0.08)',
+                        border: '1.5px dashed #93c5fd',
+                        borderRadius: '8px',
+                        pointerEvents: 'none',
+                        zIndex: 5,
+                      }}
+                    />
+                  )}
+
+                  {/* Hover + button */}
+                  {hoveredCol >= 0 && !drag && (
+                    <button
+                      type="button"
+                      onMouseDown={(ev) => ev.stopPropagation()}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        const startMin = snapMin(yToMin(hoveredY));
+                        setPopup({ dayIdx: hoveredCol, dayLabel: weekDates[hoveredCol].label, startMin, endMin: snapMin(startMin + 60), title: '' });
+                      }}
+                      style={{
+                        position: 'absolute',
+                        left: `${hoveredCol * colW + colW / 2}%`,
+                        top: hoveredY,
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 8,
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        background: 'white',
+                        border: '1.5px solid #93c5fd',
+                        color: '#3b82f6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                  )}
+
+                  {/* Individual todo blocks — one block per todo, non-overlapping per column */}
+                  {(() => {
+                    const CAT_ORDER = { '자세': 0, '수면': 1, '식습관': 2, '멘탈': 3 };
+                    return weekDates.flatMap((d, dayIdx) => {
+                      const dayTodos = todos.filter((t) => t.day === d.label);
+                      const sorted = [...dayTodos].sort((a, b) => {
+                        const aMin = a.startMin ?? CAT_STYLE[a.cat]?.defaultMin ?? 540;
+                        const bMin = b.startMin ?? CAT_STYLE[b.cat]?.defaultMin ?? 540;
+                        if (aMin !== bMin) return aMin - bMin;
+                        return (CAT_ORDER[a.cat] ?? 4) - (CAT_ORDER[b.cat] ?? 4);
+                      });
+                      let nextY = 0;
+                      return sorted.map((todo) => {
+                        const cs = CAT_STYLE[todo.cat] || CAT_STYLE['멘탈'];
+                        const startMin = todo.startMin ?? cs.defaultMin ?? 540;
+                        const endMin = todo.endMin ?? (startMin + 30);
+                        const idealTop = minToY(startMin);
+                        const height = Math.max(46, minToY(endMin) - idealTop);
+                        const top = Math.max(idealTop, nextY);
+                        nextY = top + height + 3;
+                        const isBeingMoved = moveDrag?.id === todo.id;
+                        return (
+                          <div
+                            key={todo.id}
+                            data-todo-block="true"
+                            className="absolute rounded-xl px-2 py-1.5"
+                            style={{
+                              top,
+                              height,
+                              left: `${dayIdx * colW + 1}%`,
+                              width: `${colW - 2}%`,
+                              background: cs.bg,
+                              color: cs.text,
+                              boxShadow: `0 2px 6px ${cs.shadow}`,
+                              zIndex: 20,
+                              overflow: 'hidden',
+                              cursor: 'grab',
+                              opacity: isBeingMoved ? 0.25 : 1,
+                              transition: isBeingMoved ? 'none' : 'opacity 0.1s',
+                              borderRadius: 12,
+                            }}
+                            onMouseDown={(ev) => handleBlockMouseDown(ev, todo, startMin, endMin)}
+                            onClick={(ev) => {
+                              if (moveDrag) return;
+                              ev.stopPropagation();
+                              setDetailTodo({ ...todo, resolvedStartMin: startMin, resolvedEndMin: endMin });
+                            }}
+                          >
+                            <p
+                              className="text-[11px] font-medium leading-snug"
+                              style={{ textDecoration: todo.done ? 'line-through' : 'none', opacity: todo.done ? 0.55 : 1, whiteSpace: 'normal', wordBreak: 'keep-all' }}
+                            >
+                              {todo.title}
+                            </p>
+                          </div>
+                        );
+                      });
+                    });
+                  })()}
+
+                  {/* Floating block during drag-to-move */}
+                  {moveDrag && (() => {
+                    const todo = todos.find((t) => t.id === moveDrag.id);
+                    if (!todo) return null;
+                    const cs = CAT_STYLE[todo.cat] || CAT_STYLE['멘탈'];
+                    const newStartMin = Math.max(0, Math.min(CAL_END_MIN - moveDrag.duration, snapMin(yToMin(moveDrag.currentY - moveDrag.grabOffsetY))));
+                    const blockTop = minToY(newStartMin);
+                    const height = Math.max(46, minToY(newStartMin + moveDrag.duration) - blockTop);
+                    return (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: blockTop,
+                          height,
+                          left: `${moveDrag.dayIdx * colW + 1}%`,
+                          width: `${colW - 2}%`,
+                          background: cs.bg,
+                          color: cs.text,
+                          boxShadow: `0 8px 24px ${cs.shadow}, 0 0 0 2px ${cs.text}22`,
+                          zIndex: 30,
+                          borderRadius: 12,
+                          padding: '6px 8px',
+                          pointerEvents: 'none',
+                          opacity: 0.95,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <p className="text-[11px] font-medium leading-snug" style={{ whiteSpace: 'normal', wordBreak: 'keep-all' }}>{todo.title}</p>
+                        <p className="text-[9px] opacity-60 mt-0.5">{fmtTime(newStartMin)} ~ {fmtTime(newStartMin + moveDrag.duration)}</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div className="lg:col-span-1 lg:border-l border-slate-100 lg:pl-6 flex flex-col gap-6">
+          {/* Today's todos */}
+          {(() => {
+            const todayDate = weekDates.find((d) => d.isToday);
+            if (!todayDate) return null;
+            const todayTodos = todos.filter((t) => t.day === todayDate.label);
+            const doneCount = todayTodos.filter((t) => t.done).length;
+            const remaining = todayTodos.length - doneCount;
+            return (
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-bold text-slate-800 text-sm">오늘 할 일</h2>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: remaining > 0 ? '#dbeafe' : '#dcfce7', color: remaining > 0 ? '#1d4ed8' : '#15803d' }}>
+                    {remaining > 0 ? `${remaining}개 남음` : '모두 완료!'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-2">{doneCount}/{todayTodos.length}개 완료</p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {todayTodos.length === 0 && <p className="text-xs text-slate-400 text-center py-2">오늘 일정이 없습니다</p>}
+                  {todayTodos.map((t) => {
+                    const cs = CAT_STYLE[t.cat] || CAT_STYLE['멘탈'];
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-xl cursor-pointer transition-all"
+                        style={{ background: t.done ? '#f8fafc' : 'white', opacity: t.done ? 0.6 : 1 }}
+                        onClick={() => onToggleTodo(t.id)}
+                      >
+                        <div className="w-3 h-3 rounded-full shrink-0 flex items-center justify-center" style={{ background: t.done ? '#94a3b8' : cs.bg, border: t.done ? 'none' : `1.5px solid ${cs.text}40` }}>
+                          {t.done && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </div>
+                        <p className="text-xs flex-1 min-w-0 leading-snug" style={{ textDecoration: t.done ? 'line-through' : 'none', color: t.done ? '#94a3b8' : '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {t.title}
-                        </button>
-                      ))}
+                        </p>
+                        {t.startMin !== undefined && (
+                          <span className="text-[10px] shrink-0" style={{ color: '#94a3b8' }}>{fmtTime(t.startMin)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          <div>
+            <h2 className="font-bold text-slate-800 text-sm mb-3">AI 맞춤 추천 계획</h2>
+            <div className="overflow-y-auto pr-1" style={{ maxHeight: '400px' }}>
+              {(() => {
+                const groups = allRecommendedActions.reduce((acc, item) => {
+                  const existing = acc.find((g) => g.label === item.label);
+                  if (existing) existing.items.push(item);
+                  else acc.push({ label: item.label, items: [item] });
+                  return acc;
+                }, []);
+                return groups.map(({ label, items }) => {
+                  const visible = items.filter((item) => !dismissed.has(item.id));
+                  if (visible.length === 0) return null;
+                  return (
+                    <div key={label} className="mb-4">
+                      <h3 className="text-xs font-bold text-slate-600 mb-1.5 px-1">{label}</h3>
+                      <div className="space-y-1.5">
+                        {visible.map((item) => {
+                          const isApproved = approved[item.id];
+                          const isHovering = isApproved && hoverApprovedId === item.id;
+                          return (
+                            <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                              <p className="flex-1 min-w-0 text-xs text-slate-700 leading-snug">{item.title}</p>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {isApproved ? (
+                                  <button
+                                    type="button"
+                                    onMouseEnter={() => setHoverApprovedId(item.id)}
+                                    onMouseLeave={() => setHoverApprovedId(null)}
+                                    onClick={() => toggle(item.id)}
+                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
+                                    style={{ background: isHovering ? '#fee2e2' : '#dcfce7', color: isHovering ? '#dc2626' : '#16a34a' }}
+                                  >
+                                    {isHovering ? '제거' : '적용됨'}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggle(item.id)}
+                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg"
+                                    style={{ background: '#f1f5f9', color: '#64748b' }}
+                                    onMouseEnter={(ev) => { ev.currentTarget.style.background = '#dbeafe'; ev.currentTarget.style.color = '#2563eb'; }}
+                                    onMouseLeave={(ev) => { ev.currentTarget.style.background = '#f1f5f9'; ev.currentTarget.style.color = '#64748b'; }}
+                                  >
+                                    승인
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setDismissed((prev) => new Set([...prev, item.id]))}
+                                  className="p-0.5 rounded transition-opacity opacity-0 group-hover:opacity-100"
+                                  style={{ color: '#cbd5e1' }}
+                                  onMouseEnter={(ev) => { ev.currentTarget.style.color = '#64748b'; }}
+                                  onMouseLeave={(ev) => { ev.currentTarget.style.color = '#cbd5e1'; }}
+                                  aria-label="삭제"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
-                })}
-              </div>
-            ))}
+                });
+              })()}
+            </div>
           </div>
         </div>
-      </Card>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <Card title="오늘의 할일" action={`${todos.filter((t) => t.done).length}/${todos.length} 완료`}>
-          <div className="flex flex-col gap-1">
-            {todos.map((t) => (
+      </div>
+
+      {/* Todo detail / edit popup */}
+      {detailTodo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.18)' }}
+          onClick={() => setDetailTodo(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-5 mx-4"
+            style={{ width: '100%', maxWidth: '360px' }}
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-slate-400">{detailTodo.day}요일</p>
               <button
                 type="button"
-                key={t.id}
-                onClick={() => onToggleTodo(t.id)}
-                className="flex items-center gap-3 rounded-xl p-2.5 text-left"
-                style={{ background: 'var(--wave-05)' }}
+                onClick={() => setDetailTodo(null)}
+                className="p-1 rounded-lg"
+                style={{ color: '#94a3b8' }}
               >
-                <span
-                  className="h-4 w-4 shrink-0 rounded-full border-2"
-                  style={{ borderColor: t.done ? 'var(--wave)' : 'var(--wave-20)', background: t.done ? 'var(--wave)' : 'transparent' }}
-                />
-                <span className={`min-w-0 flex-1 truncate text-sm ${t.done ? 'line-through' : ''}`} style={{ color: t.done ? 'var(--sub)' : 'var(--ink)' }}>
-                  {t.title}
-                </span>
-                <span className="status-chip shrink-0">{t.cat}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
-            ))}
-          </div>
-        </Card>
-
-        <Card title="AI 맞춤 추천 계획">
-          <p className="section-description">최근 수면, 자세, 환경 데이터를 분석해 오늘 도움이 될 행동을 맞춤으로 추천해드려요.</p>
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="mb-2 text-xs font-bold" style={{ color: 'var(--good-text)' }}>승인됨 ({approvedItems.length})</p>
-              {approvedItems.length === 0 ? (
-                <p className="text-xs" style={{ color: 'var(--sub)' }}>아직 승인한 권장 액션이 없어요.</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {approvedItems.map((item) => (
-                    <RecommendedActionRow key={item.id} item={item} approved />
-                  ))}
-                </div>
-              )}
             </div>
-            <div>
-              <p className="mb-2 text-xs font-bold" style={{ color: 'var(--sub)' }}>승인 대기 ({pendingItems.length})</p>
-              <div className="flex flex-col gap-2">
-                {pendingItems.map((item) => (
-                  <RecommendedActionRow key={item.id} item={item} approved={false} />
+
+            {/* Title input */}
+            <div className="mb-3">
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">제목</label>
+              <input
+                type="text"
+                value={detailTodo.title}
+                onChange={(ev) => setDetailTodo((prev) => ({ ...prev, title: ev.target.value }))}
+                className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
+                style={{ borderColor: '#e2e8f0' }}
+                onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
+                onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
+              />
+            </div>
+
+            {/* Time inputs */}
+            <div className="flex gap-3 mb-3">
+              <div className="flex-1">
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">시작 시간</label>
+                <input
+                  type="time"
+                  value={fmtTime(detailTodo.resolvedStartMin)}
+                  onChange={(ev) => {
+                    const [h, m] = ev.target.value.split(':').map(Number);
+                    setDetailTodo((prev) => ({ ...prev, resolvedStartMin: h * 60 + m }));
+                  }}
+                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
+                  style={{ borderColor: '#e2e8f0' }}
+                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
+                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">종료 시간</label>
+                <input
+                  type="time"
+                  value={fmtTime(detailTodo.resolvedEndMin)}
+                  onChange={(ev) => {
+                    const [h, m] = ev.target.value.split(':').map(Number);
+                    setDetailTodo((prev) => ({ ...prev, resolvedEndMin: h * 60 + m }));
+                  }}
+                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
+                  style={{ borderColor: '#e2e8f0' }}
+                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
+                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
+                />
+              </div>
+            </div>
+
+            {/* Category */}
+            <div className="mb-4">
+              <label className="block text-[11px] font-semibold text-slate-500 mb-2">카테고리</label>
+              <div className="flex gap-2 flex-wrap">
+                {Object.entries(CAT_STYLE).map(([cat, cs]) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setDetailTodo((prev) => ({ ...prev, cat }))}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                    style={{
+                      background: detailTodo.cat === cat ? cs.bg : '#f8fafc',
+                      color: detailTodo.cat === cat ? cs.text : '#94a3b8',
+                      border: `1.5px solid ${detailTodo.cat === cat ? cs.bg : '#f1f5f9'}`,
+                    }}
+                  >
+                    {cat}
+                  </button>
                 ))}
               </div>
             </div>
-          </div>
-        </Card>
-      </div>
 
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setModalOpen(false)}>
-          <div className="w-[90vw] max-w-80 rounded-2xl p-6 shadow-xl" style={{ background: 'var(--surface)', border: '1px solid var(--line)' }} onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>새 계획 추가 · {todayWeekdayLabel}요일</p>
-              <button type="button" onClick={() => setModalOpen(false)} style={{ color: 'var(--sub)' }}>✕</button>
-            </div>
-            <input
-              type="text"
-              value={draftTitle}
-              onChange={(event) => setDraftTitle(event.target.value)}
-              placeholder="계획 내용을 입력하세요"
-              className="w-full rounded-xl px-3 py-2 text-sm outline-none"
-              style={{ border: '1.5px solid var(--line)', background: 'var(--wave-05)' }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') submitNewTask();
-              }}
-            />
-            <select
-              value={draftCat}
-              onChange={(event) => setDraftCat(event.target.value)}
-              className="mt-2 w-full rounded-xl px-3 py-2 text-sm"
-              style={{ border: '1.5px solid var(--line)' }}
-            >
-              {weeklyPlanCategories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+            {/* Done toggle */}
             <button
               type="button"
-              onClick={submitNewTask}
-              className="mt-3 w-full rounded-xl py-2 text-sm font-semibold"
-              style={{ background: 'var(--wave)', color: 'var(--ink)' }}
+              onClick={() => setDetailTodo((prev) => ({ ...prev, done: !prev.done }))}
+              className="w-full py-2 text-sm font-semibold rounded-xl mb-3 transition-colors"
+              style={{
+                background: detailTodo.done ? '#f1f5f9' : CAT_STYLE[detailTodo.cat]?.bg,
+                color: detailTodo.done ? '#64748b' : CAT_STYLE[detailTodo.cat]?.text,
+              }}
             >
-              추가
+              {detailTodo.done ? '↩ 완료 취소' : '✓ 완료 표시'}
             </button>
+
+            {/* Save / Cancel */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setDetailTodo(null)}
+                className="flex-1 py-2 text-sm font-semibold rounded-xl"
+                style={{ background: '#f1f5f9', color: '#64748b' }}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateTodo(detailTodo.id, {
+                    title: detailTodo.title,
+                    cat: detailTodo.cat,
+                    startMin: detailTodo.resolvedStartMin,
+                    endMin: detailTodo.resolvedEndMin,
+                    done: detailTodo.done,
+                  });
+                  setDetailTodo(null);
+                }}
+                className="flex-1 py-2 text-sm font-semibold rounded-xl"
+                style={{ background: CAT_STYLE[detailTodo.cat]?.bg, color: CAT_STYLE[detailTodo.cat]?.text }}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add plan popup */}
+      {popup && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center"
+          style={{ background: 'rgba(0,0,0,0.15)', paddingTop: '18vh' }}
+          onClick={() => setPopup(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 mx-4"
+            style={{ width: '100%', maxWidth: '440px' }}
+            onClick={(ev) => ev.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-800 text-base">새 계획 추가</h3>
+              <button type="button" onClick={() => setPopup(null)} className="p-1 rounded-lg" style={{ color: '#94a3b8' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Title */}
+            <div className="mb-3 relative">
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1">제목</label>
+              <input
+                ref={popupInputRef}
+                type="text"
+                value={popup.title}
+                onChange={(ev) => setPopup((prev) => ({ ...prev, title: ev.target.value }))}
+                onKeyDown={(ev) => { if (ev.key === 'Enter') submitPopup(); if (ev.key === 'Escape') setPopup(null); }}
+                placeholder="어떤 계획을 세울까요?"
+                className="w-full px-4 py-3 pr-12 text-sm rounded-xl bg-slate-50 border focus:outline-none"
+                style={{ borderColor: '#e2e8f0' }}
+                onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
+                onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
+              />
+              <button
+                type="button"
+                onClick={submitPopup}
+                className="absolute right-3 bottom-2.5 w-7 h-7 rounded-full flex items-center justify-center transition-colors"
+                style={{ background: popup.title.trim() ? '#2563eb' : '#e2e8f0' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            {/* Day selector */}
+            <div className="mb-3">
+              <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">요일</label>
+              <div className="flex gap-1.5 flex-wrap">
+                {weekDates.map((d) => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    onClick={() => setPopup((prev) => ({ ...prev, dayLabel: d.label }))}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    style={{
+                      background: popup.dayLabel === d.label ? '#2563eb' : '#f1f5f9',
+                      color: popup.dayLabel === d.label ? 'white' : '#64748b',
+                    }}
+                  >
+                    {d.label} ({d.date})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Time range */}
+            <div className="flex gap-3 mb-4">
+              <div className="flex-1">
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">시작 시간</label>
+                <input
+                  type="time"
+                  value={fmtTime(Math.min(popup.startMin, 23*60+59))}
+                  onChange={(ev) => {
+                    if (!ev.target.value) return;
+                    const [h, m] = ev.target.value.split(':').map(Number);
+                    const newStart = h * 60 + m;
+                    setPopup((prev) => ({ ...prev, startMin: newStart, endMin: Math.max(prev.endMin, newStart + 30) }));
+                  }}
+                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
+                  style={{ borderColor: '#e2e8f0' }}
+                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
+                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">종료 시간</label>
+                <input
+                  type="time"
+                  value={fmtTime(Math.min(popup.endMin, 23*60+59))}
+                  onChange={(ev) => {
+                    if (!ev.target.value) return;
+                    const [h, m] = ev.target.value.split(':').map(Number);
+                    const newEnd = h * 60 + m;
+                    setPopup((prev) => ({ ...prev, endMin: Math.max(newEnd, prev.startMin + 30) }));
+                  }}
+                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
+                  style={{ borderColor: '#e2e8f0' }}
+                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
+                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
+                />
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400">AI가 카테고리를 자동으로 분류합니다</p>
           </div>
         </div>
       )}
