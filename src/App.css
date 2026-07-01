@@ -1430,6 +1430,18 @@ button {
   border: 1px solid var(--line);
 }
 
+.sleep-score-hero.excellent {
+  background: linear-gradient(160deg, var(--wave-20), var(--wave-08));
+}
+
+.sleep-score-hero.attention {
+  background: linear-gradient(160deg, var(--warn-20), var(--wave-08));
+}
+
+.sleep-score-hero.danger {
+  background: linear-gradient(160deg, var(--danger-18), var(--wave-08));
+}
+
 .sleep-score-hero-top {
   display: flex;
   align-items: center;
@@ -1819,6 +1831,17 @@ button {
 
 .care-analysis-grid .metric strong {
   font-size: 23px;
+}
+
+.sleep-score-hero .care-analysis-grid .metric {
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+}
+
+.sleep-score-hero .care-analysis-grid .metric strong {
+  font-size: 17px;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .insight-list {

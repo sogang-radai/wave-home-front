@@ -1932,6 +1932,20 @@ function SleepPage({ tab, setTab, onGoToSleepSettings }) {
         <>
           <SleepDailyReport />
           <SleepWeeklyReport />
+          <Card title="AI 수면 리포트">
+            <p style={{ fontSize: 13, lineHeight: 1.75, color: 'var(--sub)', marginBottom: 16 }}>
+              이번 주 평균 수면 시간은 <strong style={{ color: 'var(--ink)' }}>6.7시간</strong>으로
+              목표 7.5시간보다 0.8시간 부족했어요. 어젯밤은 <strong style={{ color: 'var(--ink)' }}>6시간 25분</strong> 수면으로
+              주 평균과 비슷하지만, 깊은 수면 비율이 전주 대비 <strong style={{ color: 'var(--ink)' }}>8% 높아졌어요.</strong>{' '}
+              수면 중 온도가 26℃를 넘은 구간에서 뒤척임이 집중되었으니,
+              오늘 밤은 에어컨 예약을 새벽 4시까지 유지해보세요.
+            </p>
+            <div className="insight-list">
+              {[...sleepDailyInsights, ...sleepWeeklyInsights].map((item) => (
+                <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+              ))}
+            </div>
+          </Card>
         </>
       )}
     </div>
@@ -2066,19 +2080,21 @@ const sleepDailyInsights = withInsightIds([
   ['자동화 제안', '기상 30분 전 조명 20% → 60%로 서서히 상승', '심박이 안정적으로 올라오는 구간에 맞춰 빛을 천천히 늘리면 더 가볍게 깰 수 있어요.'],
 ]);
 
+const sleepDailyAnalysis = [
+  ['수면 점수', '82점', '전일 대비 +4점'],
+  ['총 수면 시간', '6h 52m', '목표 7h 30m 대비 -38분'],
+  ['입면 시간', '27분', '스마트폰 사용 후 지연'],
+  ['뒤척임 집중 시간', '03:05~03:40', '온도 26℃ 이상 구간'],
+  ['수면 부채', '2h 10m', '이번 주 안에 회복 권장'],
+];
+
 function SleepDailyReport() {
   return (
     <CareReport
       type="daily"
       header={<SleepStatusReport />}
       analysis={[
-        ['수면 점수', '82점', '전일 대비 +4점'],
-        ['총 수면 시간', '6h 52m', '목표 7h 30m 대비 -38분'],
-        ['입면 시간', '27분', '스마트폰 사용 후 지연'],
-        ['뒤척임 집중 시간', '03:05~03:40', '온도 26℃ 이상 구간'],
-        ['수면 부채', '2h 10m', '이번 주 안에 회복 권장'],
       ]}
-      insights={sleepDailyInsights}
     />
   );
 }
@@ -2261,24 +2277,24 @@ function CareReport({
               <p>7일 점수 기준</p>
             </div>
           </div>
+          <div className="care-analysis-grid" style={{ marginTop: 20, paddingTop: 16  }}>
+            {analysis.map(([label, value, detail]) => (
+              <Metric key={label} label={label} value={value} detail={detail} />
+            ))}
+          </div>
         </Card>
       )}
 
-      <Card title="인사이트">
-        <div className="care-analysis-grid">
-          {analysis.map(([label, value, detail]) => (
-            <Metric key={label} label={label} value={value} detail={detail} />
-          ))}
-        </div>
-      </Card>
 
-      <Card title="권장 액션">
-        <div className="insight-list">
-          {insights.map((item) => (
-            <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
-          ))}
-        </div>
-      </Card>
+      {insights && insights.length > 0 && (
+        <Card title="권장 액션">
+          <div className="insight-list">
+            {insights.map((item) => (
+              <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
@@ -2321,7 +2337,6 @@ function SleepWeeklyReport() {
         ['온도 민감 구간', '3회', '26℃ 이상에서 뒤척임 증가'],
         ['기상 규칙성', '82%', '전주 대비 +6%'],
       ]}
-      insights={sleepWeeklyInsights}
     />
   );
 }
@@ -2423,20 +2438,30 @@ function StatusDateNavigator({ date, latestDate, onChange }) {
   );
 }
 
+function sleepScoreStatus(score) {
+  if (score >= 85) return { cls: 'excellent', label: 'Excellent' };
+  if (score >= 70) return { cls: 'good',      label: 'Good' };
+  if (score >= 55) return { cls: 'attention', label: 'Fair' };
+  return              { cls: 'danger',     label: 'Bad' };
+}
+
 function SleepStatusReport() {
   const [reportDate, setReportDate] = useState(getToday);
   const [latestDate] = useState(getToday);
   const [showFactors, setShowFactors] = useState(false);
   const [showStages, setShowStages] = useState(false);
 
+  const score = 75;
+  const { cls, label } = sleepScoreStatus(score);
+
   return (
     <>
       <StatusDateNavigator date={reportDate} latestDate={latestDate} onChange={setReportDate} />
 
-      <section className="sleep-score-hero">
+      <section className={`sleep-score-hero ${cls}`}>
         <div className="sleep-score-hero-top">
           <div className="sleep-score-hero-number">
-            75<span className="tag good">Good</span>
+            {score}<span className={`tag ${cls}`}>{label}</span>
           </div>
           <button type="button" className="sleep-score-details-btn" onClick={() => setShowFactors((current) => !current)}>
             {showFactors ? '접기' : '상세 보기'}
@@ -2449,6 +2474,11 @@ function SleepStatusReport() {
         <div className="sleep-score-hero-actual">
           <strong>5시간 36분</strong>
           <span>실제 수면 시간</span>
+        </div>
+        <div className="care-analysis-grid" style={{ marginTop: 16 }}>
+          {sleepDailyAnalysis.map(([label, value, detail]) => (
+            <Metric key={label} label={label} value={value} detail={detail} />
+          ))}
         </div>
       </section>
 
@@ -2484,31 +2514,7 @@ function SleepStatusReport() {
         )}
       </Card>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Card title="혈중 산소" action="평균 96%">
-          <ResponsiveContainer width="100%" height={140}>
-            <RechartsAreaChart data={spo2Trend} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-              <defs>
-                <linearGradient id="spo2Fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--wave)" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="var(--wave)" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-              <YAxis domain={[88, 100]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-                labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
-                itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
-                formatter={(value) => [`${value}%`, '혈중 산소']}
-              />
-              <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="url(#spo2Fill)" dot={{ fill: 'var(--wave)', r: 3, strokeWidth: 0 }} />
-            </RechartsAreaChart>
-          </ResponsiveContainer>
-          <p className="section-description">90% 미만 지속 시간: 0초</p>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <Card title="코골이" action={`${snoringEpisodes.length}회 감지`}>
           <div className="big-number">
             {snoringEpisodes.reduce((sum, item) => sum + item.duration, 0)}<span>분</span>
