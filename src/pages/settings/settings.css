@@ -1,0 +1,618 @@
+/* ── Radar status row ────────────────────────────────────────────────────── */
+
+.radar-status-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.radar-status-row .pulse {
+  margin: 0 9px 0 2px;
+}
+
+.radar-status-row.warn .pulse {
+  background: var(--warn);
+  box-shadow: 0 0 0 5px var(--warn-15);
+}
+
+.radar-status-row strong {
+  display: block;
+  font-size: 14px;
+}
+
+.radar-status-row span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+/* ── Stat trio ───────────────────────────────────────────────────────────── */
+
+.stat-trio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.stat-trio-item {
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--wave-05);
+  text-align: center;
+}
+
+.stat-trio-item p {
+  margin: 0 0 4px;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.stat-trio-item strong {
+  display: block;
+  font-size: 22px;
+}
+
+.stat-trio-item strong span {
+  margin-left: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.stat-trio-item small {
+  display: block;
+  margin-top: 4px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── Settings page ───────────────────────────────────────────────────────── */
+
+.settings-page {
+  max-width: 1292px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-hero h2 {
+  max-width: 720px;
+  margin: 8px 0 10px;
+  font-size: 26px;
+  line-height: 1.35;
+}
+
+.settings-hero-profile {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.settings-hero-avatar {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wave-20);
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.settings-hero-name {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-nav-item {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-nav-item.active {
+  border-color: var(--wave);
+  background: linear-gradient(135deg, var(--surface), var(--wave-10));
+}
+
+.settings-nav-item strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.settings-nav-item span {
+  color: var(--sub);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ── Zone list (radar zone settings) ────────────────────────────────────── */
+
+.zone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.zone-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.zone-row.active {
+  border-color: var(--wave);
+  box-shadow: 0 0 0 3px var(--wave-15);
+}
+
+.zone-info strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.zone-info span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.zone-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zone-delete {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--sub);
+  cursor: pointer;
+}
+
+.zone-delete:hover {
+  background: var(--wave-15);
+  color: var(--ink);
+}
+
+.zone-add-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.zone-add-row input,
+.zone-add-row select {
+  flex: 1;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font: inherit;
+}
+
+.zone-add-row button {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--wave);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ── Household list ──────────────────────────────────────────────────────── */
+
+.household-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.household-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.household-row.active {
+  border-color: var(--wave);
+  background: var(--wave-05);
+}
+
+.household-row em {
+  margin-left: auto;
+  color: var(--excellent-text);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* ── Personal profile panel ──────────────────────────────────────────────── */
+
+.personal-profile-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0 4px;
+}
+
+.personal-profile-avatar {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wave-20);
+  color: var(--ink);
+  font-size: 36px;
+  font-weight: 800;
+}
+
+.personal-profile-input {
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: center;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.personal-profile-save {
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--wave);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.personal-profile-save:disabled {
+  background: var(--wave-15);
+  color: var(--sub);
+  cursor: default;
+}
+
+/* ── General setting row ─────────────────────────────────────────────────── */
+
+.general-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.general-setting-row:last-of-type {
+  border-bottom: 0;
+}
+
+.general-setting-row strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.general-setting-row span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.general-setting-row select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+
+/* ── Segmented control ───────────────────────────────────────────────────── */
+
+.segmented {
+  display: flex;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--wave-05);
+}
+
+.segmented button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sub);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmented button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 6px var(--wave-30);
+}
+
+/* ── Sleep settings ──────────────────────────────────────────────────────── */
+
+.sleep-settings-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sleep-settings-time-field p {
+  margin: 0 0 6px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sleep-settings-time-field input[type='time'] {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1.5px solid var(--wave-20);
+  border-radius: 12px;
+  background: var(--wave-05);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.sleep-settings-duration {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--wave-05);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.sleep-settings-callout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--wave-05);
+  border: 1px solid var(--wave-15);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.sleep-settings-callout p {
+  margin: 0;
+}
+
+.sleep-settings-music-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--wave-05);
+  border: 1px solid var(--line);
+}
+
+.sleep-settings-music-text {
+  flex: 1;
+}
+
+.sleep-settings-music-text strong {
+  display: block;
+  font-size: 13px;
+}
+
+.sleep-settings-music-text span {
+  color: var(--sub);
+  font-size: 11px;
+}
+
+.sleep-settings-music-play {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--wave);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sleep-settings-music-play.off {
+  background: var(--wave-20);
+}
+
+.sleep-settings-note {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--wave-05);
+}
+
+.sleep-settings-note p {
+  margin: 0 0 4px;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sleep-settings-note strong {
+  font-size: 13px;
+}
+
+/* ── Sleep settings slider ───────────────────────────────────────────────── */
+
+.sleep-settings-slider-block {
+  margin: 14px 0;
+}
+
+.sleep-settings-slider-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.sleep-settings-slider-label span {
+  color: var(--sub);
+}
+
+.sleep-settings-slider-label strong {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+/* ── Light timeline ──────────────────────────────────────────────────────── */
+
+.light-timeline {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.light-timeline p {
+  margin: 0 0 8px;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.light-timeline-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+}
+
+.light-timeline-bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: var(--wave);
+}
+
+.light-timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--sub);
+  font-size: 10px;
+}
+
+/* ── Sleep debt ──────────────────────────────────────────────────────────── */
+
+.debt-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--wave-10);
+  overflow: hidden;
+}
+
+.debt-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.debt-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.debt-day {
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: var(--wave-05);
+  text-align: center;
+}
+
+.debt-day.deficit {
+  background: var(--wave-10);
+}
+
+.debt-day span {
+  display: block;
+  color: var(--sub);
+  font-size: 10px;
+}
+
+.debt-day strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}

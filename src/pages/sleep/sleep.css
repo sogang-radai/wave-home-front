@@ -1,0 +1,517 @@
+/* ── Sleep score hero ────────────────────────────────────────────────────── */
+
+.sleep-score-hero {
+  padding: 24px 28px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--good-18), var(--wave-08));
+  border: 1px solid var(--line);
+}
+
+.sleep-score-hero.excellent {
+  background: linear-gradient(160deg, var(--wave-20), var(--wave-08));
+}
+
+.sleep-score-hero.attention {
+  background: linear-gradient(160deg, var(--warn-20), var(--wave-08));
+}
+
+.sleep-score-hero.danger {
+  background: linear-gradient(160deg, var(--danger-18), var(--wave-08));
+}
+
+.sleep-score-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.sleep-score-hero-number {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.sleep-score-details-btn {
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sleep-score-hero-times,
+.sleep-score-hero-actual {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sleep-score-hero-times strong,
+.sleep-score-hero-actual strong {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.sleep-score-hero-times span,
+.sleep-score-hero-actual span {
+  font-size: 12px;
+  color: var(--sub);
+}
+
+/* ── Tag pill ────────────────────────────────────────────────────────────── */
+
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.tag.good { background: var(--good-18); color: var(--good-text); }
+.tag.attention { background: var(--warn-20); color: var(--warn-text); }
+.tag.excellent { background: var(--wave-20); color: var(--excellent-text); }
+.tag.danger { background: var(--danger-18); color: var(--danger-strong); }
+
+/* ── Sleep plan card ─────────────────────────────────────────────────────── */
+
+.sleep-plan-settings-btn {
+  width: 100%;
+  height: 40px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--wave-05);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sleep-plan strong,
+.phone-care strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 30px;
+}
+
+.sleep-plan > span,
+.phone-care span {
+  color: var(--sub);
+  font-size: 13px;
+}
+
+.sleep-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 13px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.sleep-plan-row p {
+  margin: 0;
+  color: var(--sub);
+  font-size: 13px;
+}
+
+.sleep-plan-row b {
+  font-size: 14px;
+}
+
+/* ── Wake alarm ──────────────────────────────────────────────────────────── */
+
+.wake-alarm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wake-alarm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px;
+  border-radius: 15px;
+  background: var(--wave-05);
+}
+
+.wake-alarm-row strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.wake-alarm-row span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+/* ── Phone care card ─────────────────────────────────────────────────────── */
+
+.phone-care > div:first-child {
+  margin-bottom: 12px;
+  padding: 15px;
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+/* ── Big number ──────────────────────────────────────────────────────────── */
+
+.big-number {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.big-number span {
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.big-number small {
+  margin-left: 18px;
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* ── Care analysis grid ──────────────────────────────────────────────────── */
+
+.care-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.care-analysis-grid .metric {
+  min-height: auto;
+  background: var(--wave-10);
+  border: 1px solid var(--wave-20);
+}
+
+.care-analysis-grid .metric strong {
+  font-size: 23px;
+}
+
+.sleep-score-hero .care-analysis-grid .metric {
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+}
+
+.sleep-score-hero .care-analysis-grid .metric strong {
+  font-size: 17px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* ── Insight list & card ─────────────────────────────────────────────────── */
+
+.insight-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-10);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.insight-card.applied {
+  border-color: var(--good-18);
+  background: var(--good-15);
+}
+
+.insight-card-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--excellent-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.insight-card.applied .insight-card-label {
+  color: var(--good-text);
+}
+
+.insight-card strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.insight-card p {
+  flex: 1;
+  margin: 0 0 14px;
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.insight-card-action {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--wave);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.insight-card.applied .insight-card-action {
+  background: var(--good);
+  color: var(--surface);
+}
+
+/* ── Date navigator ──────────────────────────────────────────────────────── */
+
+.date-navigator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.date-navigator > button:first-child,
+.date-navigator > button:last-child {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.date-navigator > button:first-child:disabled,
+.date-navigator > button:last-child:disabled {
+  color: var(--sub);
+  border-color: var(--line);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.date-navigator-label {
+  min-width: 140px;
+  height: 34px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--wave-05);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ── Calendar popup ──────────────────────────────────────────────────────── */
+
+.calendar-popup {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: 260px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px var(--shadow);
+}
+
+.calendar-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.calendar-popup-head strong {
+  font-size: 13px;
+}
+
+.calendar-popup-head button {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--wave-05);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.calendar-popup-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 4px;
+}
+
+.calendar-popup-weekdays span {
+  text-align: center;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.calendar-popup-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-popup-grid button {
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.calendar-popup-grid button:hover:not(:disabled) {
+  background: var(--wave-10);
+}
+
+.calendar-popup-grid button.selected {
+  background: var(--wave);
+  font-weight: 800;
+}
+
+.calendar-popup-grid button:disabled {
+  color: var(--line);
+  cursor: not-allowed;
+}
+
+/* ── Report score & weekly chart ─────────────────────────────────────────── */
+
+.report-score {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+.report-score p {
+  margin: 0 0 5px;
+  color: var(--sub);
+}
+
+.report-score strong {
+  font-size: 54px;
+}
+
+.report-score span {
+  max-width: 620px;
+  color: var(--sub);
+  line-height: 1.7;
+}
+
+.report-score.compact strong {
+  font-size: 42px;
+}
+
+.report-summary-only {
+  margin: 0;
+  color: var(--sub);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.weekly-score-chart {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.weekly-trend-chart {
+  min-height: 210px;
+  padding: 12px 4px 0;
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.weekly-score-average {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 210px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--wave-15);
+}
+
+.weekly-score-average span,
+.weekly-score-average p {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.weekly-score-average strong {
+  margin: 8px 0 4px;
+  font-size: 34px;
+}
+
+.weekly-score-average p {
+  margin: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .insight-list,
+  .care-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .sleep-score-hero {
+    padding: 20px;
+  }
+
+  .sleep-score-hero-number {
+    font-size: 32px;
+  }
+
+  .big-number {
+    font-size: 32px;
+  }
+
+  .insight-list {
+    grid-template-columns: 1fr;
+  }
+}

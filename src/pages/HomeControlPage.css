@@ -1,0 +1,464 @@
+/* ── Home summary ───────────────────────────────────────────────────────── */
+
+.home-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* ── Gesture history ────────────────────────────────────────────────────── */
+
+.gesture-history-list,
+.iot-device-list,
+.control-binding-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gesture-history-item,
+.iot-device-row,
+.control-binding-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 70px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.gesture-history-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.gesture-history-item strong,
+.iot-device-row strong,
+.control-binding-row strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.gesture-history-item span,
+.iot-device-row small,
+.control-binding-row span,
+.selected-device-panel p,
+.section-description {
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.history-meta {
+  margin-left: auto;
+  display: grid;
+  justify-items: end;
+}
+
+.history-meta time {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.radar-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wave);
+  background: var(--wave-10);
+  border-radius: 8px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* ── Gesture management ─────────────────────────────────────────────────── */
+
+.gesture-management {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.gesture-set-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gesture-set-card {
+  width: 100%;
+  min-height: 146px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  text-align: left;
+  box-shadow: 0 1px 8px var(--wave-10);
+}
+
+.gesture-set-card.selected {
+  border-color: var(--wave);
+  background: linear-gradient(135deg, var(--surface), var(--wave-10));
+}
+
+.gesture-set-card.active-set {
+  box-shadow: 0 0 0 3px var(--wave-15), 0 1px 8px var(--wave-10);
+}
+
+.gesture-set-select-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gesture-set-activate {
+  width: 100%;
+  margin-top: 14px;
+  border: 0;
+  border-radius: 13px;
+  padding: 10px 12px;
+  background: var(--wave);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.gesture-set-activate:disabled {
+  background: var(--wave-15);
+  color: var(--sub);
+  cursor: default;
+}
+
+.gesture-set-card span,
+.status-chip {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.gesture-set-card strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.gesture-set-card p {
+  margin: 0 0 12px;
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.gesture-set-card small {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.section-description {
+  margin: -4px 0 18px;
+}
+
+.gesture-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.gesture-control-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.gesture-placeholder {
+  height: 132px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, var(--wave-10), transparent),
+    repeating-linear-gradient(45deg, var(--stripe-a), var(--stripe-a) 12px, var(--stripe-b) 12px, var(--stripe-b) 24px);
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.gesture-control-card .gesture-card-body {
+  padding: 14px;
+}
+
+.status-chip.inactive {
+  background: var(--surface-muted);
+  color: var(--sub);
+}
+
+.gesture-control-card h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.gesture-control-card p {
+  margin: 0;
+  color: var(--sub);
+  font-size: 13px;
+}
+
+/* ── Radar assign ────────────────────────────────────────────────────────── */
+
+.radar-assign-btn {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.radar-assign-btn:hover {
+  background: var(--wave-10);
+  border-color: var(--wave);
+}
+
+.radar-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px 14px;
+}
+
+.radar-pick-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 14px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.radar-pick-item span {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.radar-pick-item small {
+  font-size: 11px;
+  color: var(--sub);
+}
+
+.radar-pick-item.selected {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.radar-pick-item.unassign {
+  border-color: var(--line);
+  background: transparent;
+}
+
+.radar-pick-item.unassign span {
+  color: var(--sub);
+}
+
+/* ── IoT layout ─────────────────────────────────────────────────────────── */
+
+.iot-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.iot-layout .card.wide {
+  grid-column: auto;
+}
+
+.iot-device-row {
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.iot-device-row.selected {
+  outline: 2px solid var(--wave);
+  background: var(--surface);
+}
+
+.device-dot {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--neutral-dot);
+}
+
+.device-dot.online {
+  background: var(--good);
+  box-shadow: 0 0 0 5px var(--good-15);
+}
+
+.device-dot.idle {
+  background: var(--warn);
+  box-shadow: 0 0 0 5px var(--warn-15);
+}
+
+.iot-device-row em {
+  margin-left: auto;
+  color: var(--sub);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* ── Selected device panel ──────────────────────────────────────────────── */
+
+.selected-device-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.selected-device-panel > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.selected-device-panel p {
+  grid-column: 2;
+  margin: 0;
+}
+
+.selected-device-panel button,
+.control-binding-row button,
+.gesture-picker button {
+  border: 0;
+  border-radius: 13px;
+  padding: 10px 13px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.control-binding-row {
+  justify-content: space-between;
+}
+
+.control-binding-item {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.control-binding-item .control-binding-row {
+  border: 0;
+  background: transparent;
+}
+
+.control-binding-row button {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+/* ── Gesture picker (IoT binding) ───────────────────────────────────────── */
+
+.gesture-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.gesture-picker button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.gesture-picker button.selected {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.gesture-picker button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gesture-picker span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.gesture-picker small {
+  color: var(--sub);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.gesture-picker-empty {
+  grid-column: 1 / -1;
+  color: var(--sub);
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .iot-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .home-summary-grid,
+  .gesture-set-list,
+  .gesture-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gesture-picker {
+    grid-template-columns: 1fr;
+  }
+}

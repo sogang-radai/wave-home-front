@@ -1,0 +1,102 @@
+@keyframes wave-circle-expand {
+  0% { clip-path: circle(0% at 92% 6%); opacity: 1; }
+  100% { clip-path: circle(162% at 92% 6%); opacity: 1; }
+}
+
+@keyframes wave-ripple-out {
+  0% { transform: scale(0); opacity: 0.66; }
+  80% { transform: scale(1); opacity: 0.28; }
+  100% { transform: scale(1.08); opacity: 0; }
+}
+
+@keyframes wave-overlay-fade {
+  0%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes wave-surface-rise {
+  0% { transform: translateY(38px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes wave-bubble-float {
+  0% { transform: translate3d(0, 56px, 0) scale(0.45); opacity: 0; }
+  18% { opacity: var(--bubble-alpha, 0.78); }
+  100% { transform: translate3d(var(--bubble-drift, 20px), -86vh, 0) scale(1.14); opacity: 0; }
+}
+
+.wave-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  overflow: hidden;
+  animation: wave-overlay-fade 0.78s ease forwards;
+}
+
+.wave-overlay-fill {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.46), transparent 18%),
+    radial-gradient(circle at 78% 24%, var(--accent-plum-bg-1), transparent 24%),
+    linear-gradient(145deg, #c9efff 0%, var(--wave) 48%, var(--accent-mint) 100%);
+  clip-path: circle(0% at 92% 6%);
+  animation: wave-circle-expand 0.58s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.wave-overlay-ripple {
+  position: absolute;
+  top: 5%;
+  right: 5%;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.14), 0 16px 48px var(--wave-35);
+  transform: scale(0);
+  animation: wave-ripple-out 0.58s ease forwards;
+}
+
+.wave-overlay-surface {
+  position: absolute;
+  right: -10%;
+  bottom: -10px;
+  left: -10%;
+  height: 36vh;
+  opacity: 0;
+  animation: wave-surface-rise 0.44s 0.12s ease-out forwards;
+}
+
+.wave-overlay-surface svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: rgba(255, 255, 255, 0.74);
+}
+
+.wave-overlay-bubbles span {
+  position: absolute;
+  bottom: -54px;
+  left: var(--bubble-left);
+  width: var(--bubble-size);
+  height: var(--bubble-size);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset -4px -5px 12px rgba(255, 255, 255, 0.52), 0 8px 24px rgba(74, 111, 165, 0.14);
+  animation: wave-bubble-float var(--bubble-duration) ease-out forwards;
+  animation-delay: var(--bubble-delay);
+  --bubble-alpha: 0.82;
+}
+
+.wave-overlay-bubbles span::after {
+  content: '';
+  position: absolute;
+  top: 22%;
+  left: 24%;
+  width: 26%;
+  height: 26%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+}

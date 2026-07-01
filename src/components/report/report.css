@@ -1,0 +1,288 @@
+/* InsightCard */
+.insight-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-10);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.insight-card.applied {
+  border-color: var(--good-18);
+  background: var(--good-15);
+}
+
+.insight-card-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--excellent-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.insight-card.applied .insight-card-label {
+  color: var(--good-text);
+}
+
+.insight-card strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.insight-card p {
+  flex: 1;
+  margin: 0 0 14px;
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.insight-card-action {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--wave);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.insight-card.applied .insight-card-action {
+  background: var(--good);
+  color: var(--surface);
+}
+
+/* CareReport */
+.care-report-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.care-report-layout .card.wide {
+  grid-column: 1 / -1;
+}
+
+.care-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.care-analysis-grid .metric {
+  min-height: auto;
+  background: var(--wave-10);
+  border: 1px solid var(--wave-20);
+}
+
+.care-analysis-grid .metric strong {
+  font-size: 23px;
+}
+
+.sleep-score-hero .care-analysis-grid .metric {
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+}
+
+.sleep-score-hero .care-analysis-grid .metric strong {
+  font-size: 17px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* Weekly trend chart */
+.weekly-score-chart {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.weekly-trend-chart {
+  min-height: 210px;
+  padding: 12px 4px 0;
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.weekly-score-average {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 210px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--wave-15);
+}
+
+.weekly-score-average span,
+.weekly-score-average p {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.weekly-score-average strong {
+  margin: 8px 0 4px;
+  font-size: 34px;
+}
+
+.weekly-score-average p {
+  margin: 0;
+}
+
+/* StatusDateNavigator */
+.date-navigator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.date-navigator > button:first-child,
+.date-navigator > button:last-child {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.date-navigator > button:first-child:disabled,
+.date-navigator > button:last-child:disabled {
+  color: var(--sub);
+  border-color: var(--line);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.date-navigator-label {
+  min-width: 140px;
+  height: 34px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--wave-05);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* CalendarPopup */
+.calendar-popup {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: 260px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 16px 40px var(--shadow);
+}
+
+.calendar-popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.calendar-popup-head strong {
+  font-size: 13px;
+}
+
+.calendar-popup-head button {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--wave-05);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.calendar-popup-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 4px;
+}
+
+.calendar-popup-weekdays span {
+  text-align: center;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.calendar-popup-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-popup-grid button {
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.calendar-popup-grid button:hover:not(:disabled) {
+  background: var(--wave-10);
+}
+
+.calendar-popup-grid button.selected {
+  background: var(--wave);
+  font-weight: 800;
+}
+
+.calendar-popup-grid button:disabled {
+  color: var(--line);
+  cursor: not-allowed;
+}
+
+/* report-summary-only */
+.report-summary-only {
+  margin: 0;
+  color: var(--sub);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* PostureScoreChart */
+/* (chart rendered via Recharts, no extra CSS classes needed beyond .card) */
+
+@media (max-width: 760px) {
+  .weekly-score-chart,
+  .insight-list,
+  .care-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
