@@ -1715,18 +1715,18 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
         </Card>
       </section>
 
-      <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        <div className="flex flex-col gap-5 md:col-span-2">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="flex flex-col gap-5">
           <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-12">
               <Donut pct={0.933} r={48} sw={11}>
                 <div className="flex flex-col items-center">
                   <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>7.0</span>
-                  <span className="text-xs" style={{ color: 'var(--sub)' }}>h</span>
+                  <span className="text-xs" style={{ color: 'var(--sub)' }}>/ 7.5 h</span>
                 </div>
               </Donut>
               <div className="min-w-0 flex-1">
-                <div className="mb-3 flex items-center gap-6 sm:gap-14">
+                <div className="mb-3 flex items-center gap-16">
                   <div>
                     <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
                     <div className="flex items-baseline gap-0.5">
@@ -1745,50 +1745,16 @@ function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
                   </div>
                 </div>
                 <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
-                  <div className="flex items-center gap-6 text-xs sm:gap-14">
+                  <div className="flex items-center gap-16 text-xs">
                     <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
                     <span className="font-semibold" style={{ color: 'var(--ink)' }}>23:42</span>
                   </div>
-                  <div className="mt-1 flex items-center gap-6 text-xs sm:gap-14">
+                  <div className="mt-1 flex items-center gap-16 text-xs">
                     <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
                     <span className="font-semibold" style={{ color: 'var(--ink)' }}>06:42</span>
                   </div>
                 </div>
               </div>
-            </div>
-          </Card>
-
-          <Card
-            title="심박수"
-            action={
-              <span className="inline-flex items-center gap-1.5">
-                <HeartIcon />
-                62 bpm
-              </span>
-            }
-          >
-            <p className="mb-3 text-sm" style={{ color: 'var(--sub)' }}>오늘 시간대별</p>
-            <ResponsiveContainer width="100%" height={115}>
-              <RechartsLineChart data={heartRateTrend} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[45, 95]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-                  itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
-                  labelStyle={{ color: 'var(--ink)', fontWeight: 700 }}
-                  formatter={(value) => [`${value} bpm`, '심박']}
-                />
-                <Line type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} dot={{ fill: 'var(--wave)', r: 3, strokeWidth: 0 }} />
-              </RechartsLineChart>
-            </ResponsiveContainer>
-            <div className="mt-3 flex gap-2">
-              {[{ l: '최저', v: '54' }, { l: '평균', v: '69' }, { l: '최고', v: '82' }].map((s) => (
-                <div key={s.l} className="flex-1 rounded-xl py-1.5 text-center" style={{ background: 'var(--wave-05)' }}>
-                  <p className="text-base font-bold" style={{ color: 'var(--ink)' }}>{s.v}</p>
-                  <p className="text-xs" style={{ color: 'var(--sub)' }}>{s.l}</p>
-                </div>
-              ))}
             </div>
           </Card>
         </div>
