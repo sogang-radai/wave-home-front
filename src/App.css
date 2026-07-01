@@ -403,7 +403,9 @@ button {
 }
 
 .nav-icon {
-  width: 22px;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
   display: grid;
   place-items: center;
   text-align: center;
@@ -412,6 +414,8 @@ button {
 
 .nav-icon svg {
   display: block;
+  width: 24px;
+  height: 24px;
 }
 
 .sidebar-bottom {
