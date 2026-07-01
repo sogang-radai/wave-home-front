@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useRef, useEffect, useState } from 'react';
 import {
   LineChart as RechartsLineChart,
   AreaChart as RechartsAreaChart,
@@ -55,6 +55,7 @@ const pageTitles = {
   posture: '자세 관리',
   home: '가전 제어',
   setting: '설정',
+  chat: 'WaveAI',
 };
 
 const sleepTrend = [
@@ -372,7 +373,134 @@ function App() {
     setPage('setting');
     setSettingCategory('sleep');
   };
-  const [showInsightChat, setShowInsightChat] = useState(false);
+  const [chatConversations, setChatConversations] = useState(initialChatConversations);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [waveTransition, setWaveTransition] = useState(false);
+  const bubbleAudioCtxRef = useRef(null);
+  const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
+  const [prevPage, setPrevPage] = useState('main');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const playBubbleTransitionSound = async () => {
+    if (typeof window === 'undefined') return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    if (!bubbleAudioCtxRef.current) {
+      bubbleAudioCtxRef.current = new AudioContextClass();
+    }
+
+    const ctx = bubbleAudioCtxRef.current;
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+    [0, 0.07, 0.16, 0.25, 0.36].forEach((offset, index) => {
+      const start = now + offset;
+      const duration = 0.11 + index * 0.01;
+      const base = 360 + Math.random() * 260 + index * 34;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(base, start);
+      oscillator.frequency.exponentialRampToValueAtTime(base * 1.65, start + duration * 0.72);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1800, start);
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.034, start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+      oscillator.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.02);
+    });
+  };
+
+  const handleNavigateToChat = () => {
+    if (chatMode === 'popup' || chatMode === 'mini') {
+      playBubbleTransitionSound();
+      setChatMode('page');
+      setPage('chat');
+      setSidebarCollapsed(true);
+      return;
+    }
+    if (page === 'chat') {
+      setActiveChatId(null);
+      return;
+    }
+    setPrevPage(page);
+    playBubbleTransitionSound();
+    setWaveTransition(true);
+    setSidebarCollapsed(true);
+    setTimeout(() => {
+      setPage('chat');
+      setActiveChatId(null);
+      setWaveTransition(false);
+    }, 580);
+  };
+
+  const handleShrinkChat = () => {
+    setChatMode('popup');
+    setPage(prevPage || 'main');
+  };
+
+  const handleExpandChat = () => {
+    setChatMode('page');
+    setPage('chat');
+  };
+
+  const handleMiniChat = () => {
+    setChatMode((m) => (m === 'mini' ? 'popup' : 'mini'));
+  };
+
+  const handleClosePopupChat = () => {
+    setChatMode('page');
+  };
+
+  const addChatConversation = () => {
+    const id = `chat-${Date.now()}`;
+    setChatConversations((prev) => [{ id, title: '새 대화', messages: [] }, ...prev]);
+    setActiveChatId(id);
+  };
+
+  const deleteChatConversation = (id) => {
+    setChatConversations((prev) => prev.filter((c) => c.id !== id));
+    if (activeChatId === id) setActiveChatId(null);
+  };
+
+  const renameChatConversation = (id, title) => {
+    setChatConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
+  };
+
+  const sendChatMessage = (text) => {
+    if (!text.trim()) return;
+    let targetId = activeChatId;
+    if (!targetId) {
+      targetId = `chat-${Date.now()}`;
+      const newConv = {
+        id: targetId,
+        title: text.slice(0, 22) + (text.length > 22 ? '…' : ''),
+        messages: [],
+      };
+      setChatConversations((prev) => [newConv, ...prev]);
+      setActiveChatId(targetId);
+    }
+    const reply = getInsightReply(text);
+    setChatConversations((prev) =>
+      prev.map((c) =>
+        c.id === targetId
+          ? { ...c, messages: [...c.messages, { role: 'user', text: text.trim() }, { role: 'assistant', text: reply }] }
+          : c
+      )
+    );
+  };
   const [accounts, setAccounts] = useState(initialAccounts);
   const [accountId, setAccountId] = useState(initialAccounts[0].id);
   const account = accounts.find((item) => item.id === accountId) || accounts[0];
@@ -397,7 +525,23 @@ function App() {
   return (
     <ApprovedActionsContext.Provider value={{ approved: approvedActions, toggle: toggleApprovedAction }}>
       <div className="app-shell">
-        <InsightChat open={showInsightChat} onClose={() => setShowInsightChat(false)} />
+        <WaveTransitionOverlay active={waveTransition} />
+        <InsightChat open={false} onClose={() => {}} />
+        {(chatMode === 'popup' || chatMode === 'mini') && (
+          <ChatPopup
+            mode={chatMode}
+            conversations={chatConversations}
+            activeConvId={activeChatId}
+            onSelectConv={setActiveChatId}
+            onAddConv={addChatConversation}
+            onDeleteConv={deleteChatConversation}
+            onRenameConv={renameChatConversation}
+            onSendMessage={sendChatMessage}
+            onExpand={handleExpandChat}
+            onMini={handleMiniChat}
+            onClose={handleClosePopupChat}
+          />
+        )}
         <Sidebar
           page={page}
           onSelect={setPage}
@@ -410,8 +554,11 @@ function App() {
           accounts={accounts}
           account={account}
           onSwitchAccount={setAccountId}
-          showInsightChat={showInsightChat}
-          onToggleInsightChat={() => setShowInsightChat((value) => !value)}
+          showInsightChat={page === 'chat'}
+          onToggleInsightChat={handleNavigateToChat}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+          hideInsightTrigger={page === 'chat' && chatMode === 'page'}
         />
         <section className="workspace">
           <TopBar
@@ -424,10 +571,11 @@ function App() {
             accounts={accounts}
             account={account}
             onSwitchAccount={setAccountId}
-            showInsightChat={showInsightChat}
-            onToggleInsightChat={() => setShowInsightChat((value) => !value)}
+            showInsightChat={page === 'chat'}
+            onToggleInsightChat={handleNavigateToChat}
+            hideInsightTrigger={page === 'chat' && chatMode === 'page'}
           />
-          <main className="content">
+          <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}`}>
             {page === 'main' && (
               <MainPage
                 onNavigate={setPage}
@@ -455,6 +603,18 @@ function App() {
                 setCategory={setSettingCategory}
               />
             )}
+            {page === 'chat' && chatMode === 'page' && (
+              <ChatPage
+                conversations={chatConversations}
+                activeConvId={activeChatId}
+                onSelectConv={setActiveChatId}
+                onAddConv={addChatConversation}
+                onDeleteConv={deleteChatConversation}
+                onRenameConv={renameChatConversation}
+                onSendMessage={sendChatMessage}
+                onShrink={handleShrinkChat}
+              />
+            )}
           </main>
         </section>
       </div>
@@ -476,9 +636,10 @@ function Sidebar({
   onSwitchAccount,
   showInsightChat,
   onToggleInsightChat,
+  collapsed,
+  onCollapsedChange,
+  hideInsightTrigger,
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
@@ -489,7 +650,7 @@ function Sidebar({
           <strong>WaveHome</strong>
           <span>Health Intelligence</span>
         </div>
-        <button className="collapse-button" aria-label="collapse sidebar" onClick={() => setCollapsed((value) => !value)}>
+        <button className="collapse-button" aria-label="collapse sidebar" onClick={() => onCollapsedChange((value) => !value)}>
           {collapsed ? '›' : '‹'}
         </button>
         <TopActionsCluster
@@ -504,6 +665,7 @@ function Sidebar({
           onSwitchAccount={onSwitchAccount}
           showInsightChat={showInsightChat}
           onToggleInsightChat={onToggleInsightChat}
+          hideInsightTrigger={hideInsightTrigger}
         />
       </div>
 
@@ -641,20 +803,23 @@ function TopActionsCluster({
   onSwitchAccount,
   showInsightChat,
   onToggleInsightChat,
+  hideInsightTrigger,
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   return (
     <div className={`top-actions top-actions-${variant}`}>
-      <button
-        className={`insight-trigger ${showInsightChat ? 'active' : ''}`}
-        aria-label="AI 인사이트 채팅"
-        onClick={onToggleInsightChat}
-      >
-        <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
-        <span className="insight-trigger-label">WaveAI</span>
-      </button>
+      {!hideInsightTrigger && (
+        <button
+          className={`insight-trigger ${showInsightChat ? 'active' : ''}`}
+          aria-label="AI 인사이트 채팅"
+          onClick={onToggleInsightChat}
+        >
+          <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
+          <span className="insight-trigger-label">WaveAI</span>
+        </button>
+      )}
       <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
         <BellIcon />
         {unreadCount > 0 && <b>{unreadCount}</b>}
@@ -842,6 +1007,45 @@ const insightSuggestions = [
   '오늘 심박수 어때?',
 ];
 
+const CHAT_SUGGESTION_POOL = [
+  { icon: '🌙', label: '수면 분석', prompt: '어젯밤 수면 점수를 분석해줘' },
+  { icon: '🧘', label: '자세 교정', prompt: '거북목 개선 스트레칭 루틴 추천해줘' },
+  { icon: '❤️', label: '심박 트렌드', prompt: '오늘 심박수가 평소와 다른 이유가 뭐야?' },
+  { icon: '🏠', label: '가전 자동화', prompt: '취침 전 가전 자동화 설정 도와줘' },
+  { icon: '📋', label: '주간 계획', prompt: '이번 주 건강 목표를 세워줘' },
+  { icon: '💤', label: '수면 환경', prompt: '더 깊은 수면을 위한 실내 환경 알려줘' },
+  { icon: '🌡️', label: '최적 온도', prompt: '수면에 최적인 실내 온도가 몇 도야?' },
+  { icon: '⚡', label: '에너지 향상', prompt: '에너지 점수를 높이는 방법 알려줘' },
+];
+
+const initialChatConversations = [
+  {
+    id: 'chat-1',
+    title: '수면 분석 질문',
+    messages: [
+      { role: 'assistant', text: '안녕하세요! 수면에 대해 궁금한 점이 있으신가요?' },
+      { role: 'user', text: '어젯밤 수면 점수가 낮은 이유가 뭔가요?' },
+      { role: 'assistant', text: '어젯밤 수면 점수가 낮은 주요 원인은 뒤척임이 많았던 03:05~03:40 구간이에요. 그 시간대 실내 온도가 26℃를 넘으면서 수면 질이 떨어졌어요. 에어컨 예약을 새벽 4시까지 1시간 연장해보시는 걸 추천드려요!' },
+    ],
+  },
+  {
+    id: 'chat-2',
+    title: '자세 교정 루틴',
+    messages: [
+      { role: 'assistant', text: '자세 교정 루틴에 대해 알아볼까요?' },
+      { role: 'user', text: '거북목 교정 스트레칭 알려줘' },
+      { role: 'assistant', text: '거북목 교정에 좋은 스트레칭을 알려드릴게요!\n\n1. 턱 당기기 (Chin Tuck) — 10초 × 10회\n2. 목 옆으로 스트레칭 — 각 방향 20초\n3. 어깨 으쓱 후 내리기 — 5회 반복\n\n하루 3번, 특히 착석 50분 후에 해주세요 🧘' },
+    ],
+  },
+  {
+    id: 'chat-3',
+    title: '심박수 트렌드',
+    messages: [
+      { role: 'assistant', text: '오늘 심박수 데이터를 분석해드릴게요.' },
+    ],
+  },
+];
+
 function getInsightReply(question) {
   const q = question.toLowerCase();
   if (q.includes('수면') || q.includes('잠')) {
@@ -925,6 +1129,440 @@ function InsightChat({ open, onClose }) {
         </form>
       </div>
     </aside>
+  );
+}
+
+// ── Wave transition overlay ──────────────────────────────────────────────────
+
+function WaveTransitionOverlay({ active }) {
+  if (!active) return null;
+  const bubbles = Array.from({ length: 18 }, (_, index) => ({
+    left: 5 + ((index * 17) % 90),
+    size: 15 + ((index * 7) % 28),
+    delay: index * 0.018,
+    duration: 0.62 + index * 0.018,
+    drift: -26 + ((index * 13) % 54),
+  }));
+  return (
+    <div className="wave-overlay" aria-hidden="true">
+      <div className="wave-overlay-fill" />
+      <div className="wave-overlay-ripple" />
+      <div className="wave-overlay-surface">
+        <svg viewBox="0 0 1200 160" preserveAspectRatio="none">
+          <path d="M0,72 C130,130 260,18 420,74 C590,134 760,22 940,72 C1060,106 1130,78 1200,54 L1200,160 L0,160 Z" />
+        </svg>
+      </div>
+      <div className="wave-overlay-bubbles">
+        {bubbles.map((_, index) => (
+          <span
+            key={index}
+            style={{
+              '--bubble-left': `${bubbles[index].left}%`,
+              '--bubble-size': `${bubbles[index].size}px`,
+              '--bubble-delay': `${bubbles[index].delay}s`,
+              '--bubble-duration': `${bubbles[index].duration}s`,
+              '--bubble-drift': `${bubbles[index].drift}px`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Chat page ────────────────────────────────────────────────────────────────
+
+function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv, onDeleteConv, onRenameConv, onSendMessage, onShrink }) {
+  const [convOpen, setConvOpen] = useState(false);
+  const activeConversation = conversations.find((c) => c.id === activeConvId) || null;
+  const messages = activeConversation?.messages || [];
+
+  return (
+    <div className="chat-page">
+      <div className="chat-page-body">
+        {convOpen && <div className="chat-conv-overlay" onClick={() => setConvOpen(false)} />}
+        <ChatConvSidebar
+          open={convOpen}
+          onToggle={() => setConvOpen((o) => !o)}
+          conversations={conversations}
+          activeConvId={activeConvId}
+          onSelect={onSelectConv}
+          onAdd={onAddConv}
+          onDelete={onDeleteConv}
+          onRename={onRenameConv}
+        />
+        <ChatMainArea
+          messages={messages}
+          isNewChat={!activeConvId || messages.length === 0}
+          onSend={onSendMessage}
+          onShrink={onShrink}
+          onToggleConv={() => setConvOpen((o) => !o)}
+          convOpen={convOpen}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ChatConvSidebar({ open, onToggle, conversations, activeConvId, onSelect, onAdd, onDelete, onRename }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+
+  const handleStartEdit = (conv) => {
+    setEditingId(conv.id);
+    setEditTitle(conv.title);
+  };
+
+  const handleSaveEdit = () => {
+    if (editTitle.trim()) onRename(editingId, editTitle.trim());
+    setEditingId(null);
+  };
+
+  return (
+    <aside className={`chat-conv-sidebar${open ? '' : ' collapsed'}`}>
+      <div className="chat-conv-header">
+        <button
+          className="chat-conv-toggle-btn"
+          onClick={onToggle}
+          title={open ? '목록 닫기' : '대화 목록 열기'}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <button className="chat-new-btn" onClick={onAdd}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          새 대화
+        </button>
+      </div>
+
+      <div className="chat-conv-list">
+        {conversations.length === 0 && (
+          <p className="chat-conv-empty">대화 내역이 없습니다</p>
+        )}
+        {conversations.map((conv) => (
+          <div
+            key={conv.id}
+            className={`chat-conv-item${conv.id === activeConvId ? ' active' : ''}`}
+            onClick={() => onSelect(conv.id)}
+          >
+            {editingId === conv.id ? (
+              <input
+                className="chat-conv-edit-input"
+                value={editTitle}
+                autoFocus
+                onChange={(e) => setEditTitle(e.target.value)}
+                onBlur={handleSaveEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveEdit();
+                  if (e.key === 'Escape') setEditingId(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <>
+                <span className="chat-conv-title">{conv.title}</span>
+                <div className="chat-conv-actions">
+                  <button
+                    className="chat-conv-action-btn"
+                    title="이름 바꾸기"
+                    onClick={(e) => { e.stopPropagation(); handleStartEdit(conv); }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    className="chat-conv-action-btn danger"
+                    title="삭제"
+                    onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, convOpen }) {
+  const [draft, setDraft] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const [shownSuggestions] = useState(() => {
+    const shuffled = [...CHAT_SUGGESTION_POOL].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 4);
+  });
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  const handleSend = (text) => {
+    const t = (text !== undefined ? text : draft).trim();
+    if (!t) return;
+    onSend(t);
+    setDraft('');
+  };
+
+  return (
+    <div className="chat-main-area">
+      <div className="chat-main-topbar">
+        {onToggleConv && !convOpen && (
+          <button
+            className="chat-conv-toggle-btn"
+            onClick={onToggleConv}
+            title="대화 목록 열기"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
+        {onShrink && (
+          <button className="chat-shrink-btn" onClick={onShrink}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="10" y1="14" x2="3" y2="21" /><line x1="21" y1="3" x2="14" y2="10" />
+            </svg>
+            작게 보기
+          </button>
+        )}
+      </div>
+      <div className="chat-messages-area">
+        {isNewChat ? (
+          <div className="chat-welcome">
+            <div className="chat-welcome-icon">✦</div>
+            <h2 className="chat-welcome-title">WaveAI에게 무엇이든 물어보세요</h2>
+            <p className="chat-welcome-sub">수면·자세·심박·가전까지, 건강 데이터 기반으로 답변드려요</p>
+            <div className="chat-suggestions-grid">
+              {shownSuggestions.map((s) => (
+                <button key={s.label} className="chat-suggestion-card" onClick={() => handleSend(s.prompt)}>
+                  <span className="chat-suggestion-icon">{s.icon}</span>
+                  <strong>{s.label}</strong>
+                  <span>{s.prompt}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="chat-bubble-list">
+            {messages.map((msg, i) => (
+              <div key={i} className={`chat-bubble-row ${msg.role}`}>
+                {msg.role === 'assistant' && (
+                  <div className="chat-bubble-avatar">✦</div>
+                )}
+                <div className={`chat-bubble ${msg.role}`}>{msg.text}</div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+
+      <div className="chat-input-area">
+        <form
+          className="chat-input-form"
+          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+        >
+          <input
+            className="chat-input"
+            type="text"
+            placeholder="메시지를 입력하세요..."
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button type="submit" className="chat-send-btn" aria-label="보내기" disabled={!draft.trim()}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Chat popup (floating, popup / mini mode) ─────────────────────────────────
+
+function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onAddConv, onSendMessage, onExpand, onMini, onClose }) {
+  const [draft, setDraft] = useState('');
+  const [showConvList, setShowConvList] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const activeConv = conversations.find((c) => c.id === activeConvId) || null;
+  const messages = activeConv?.messages || [];
+  const isNewChat = !activeConvId || messages.length === 0;
+
+  const [popupSuggestions] = useState(() =>
+    [...CHAT_SUGGESTION_POOL].sort(() => Math.random() - 0.5).slice(0, 3)
+  );
+
+  useEffect(() => {
+    if (mode === 'popup') messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, mode]);
+
+  const handleSend = (text) => {
+    const t = (text !== undefined ? text : draft).trim();
+    if (!t) return;
+    onSendMessage(t);
+    setDraft('');
+    setShowConvList(false);
+  };
+
+  return (
+    <div className={`chat-popup chat-popup--${mode}`}>
+      {/* Header */}
+      <div
+        className="chat-popup-header"
+        onClick={mode === 'mini' ? onMini : undefined}
+        style={mode === 'mini' ? { cursor: 'pointer' } : undefined}
+      >
+        <div className="chat-popup-header-left">
+          <span className="chat-popup-icon">✦</span>
+          {mode === 'mini' ? (
+            <span className="chat-popup-mini-label">
+              {activeConv ? activeConv.title : 'WaveAI'}
+            </span>
+          ) : (
+            <span className="chat-popup-conv-label">
+              {activeConv ? activeConv.title : 'WaveAI'}
+            </span>
+          )}
+        </div>
+        <div className="chat-popup-header-actions" onClick={(e) => e.stopPropagation()}>
+          {mode === 'popup' && (
+            <button
+              className={`chat-popup-action-btn${showConvList ? ' active' : ''}`}
+              onClick={() => setShowConvList((v) => !v)}
+              title="대화 목록"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+          )}
+          <button className="chat-popup-action-btn" onClick={onMini} title={mode === 'mini' ? '팝업으로 열기' : '한 줄로 접기'}>
+            {mode === 'mini' ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
+          </button>
+          <button className="chat-popup-action-btn" onClick={onExpand} title="전체 화면으로 열기">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+              <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+            </svg>
+          </button>
+          <button className="chat-popup-action-btn" onClick={onClose} title="닫기">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Body — only when popup mode */}
+      {mode === 'popup' && (
+        <>
+          {showConvList ? (
+            <div className="chat-popup-conv-panel">
+              <button
+                className="chat-popup-conv-new"
+                onClick={() => { onAddConv(); setShowConvList(false); }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                새 대화
+              </button>
+              <div className="chat-popup-conv-scroll">
+                {conversations.length === 0 && (
+                  <p className="chat-popup-conv-empty">대화 내역이 없습니다</p>
+                )}
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    className={`chat-popup-conv-row${conv.id === activeConvId ? ' active' : ''}`}
+                    onClick={() => { onSelectConv(conv.id); setShowConvList(false); }}
+                  >
+                    {conv.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="chat-popup-messages">
+                {isNewChat ? (
+                  <div className="chat-popup-welcome">
+                    <p className="chat-popup-welcome-hint">무엇이든 물어보세요</p>
+                    {popupSuggestions.map((s) => (
+                      <button
+                        key={s.label}
+                        className="chat-popup-suggestion"
+                        onClick={() => handleSend(s.prompt)}
+                      >
+                        <span className="chat-popup-suggestion-icon">{s.icon}</span>
+                        <span>{s.prompt}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="chat-popup-bubble-list">
+                    {messages.map((msg, i) => (
+                      <div key={i} className={`chat-popup-bubble-row ${msg.role}`}>
+                        {msg.role === 'assistant' && (
+                          <span className="chat-popup-avatar">✦</span>
+                        )}
+                        <div className={`chat-popup-bubble ${msg.role}`}>{msg.text}</div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+              <div className="chat-popup-input-area">
+                <form
+                  className="chat-popup-input-form"
+                  onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+                >
+                  <input
+                    className="chat-popup-input"
+                    type="text"
+                    placeholder="메시지를 입력하세요..."
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                  />
+                  <button type="submit" className="chat-send-btn" disabled={!draft.trim()} aria-label="보내기">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
