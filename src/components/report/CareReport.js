@@ -27,12 +27,11 @@ export function WeeklyTrendSummary({ trendData, valueKey = 'hours', unit = 'h', 
   const goalPercent = Math.round((avgValue / goal) * 100);
 
   return (
-    <div className="mb-2 mt-3 flex flex-wrap items-baseline gap-2">
-      <span className="text-sm font-medium" style={{ color: 'var(--sub)' }}>{label}</span>
-      <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{avgValue.toFixed(decimals)}</span>
-      <span className="text-sm font-medium" style={{ color: 'var(--sub)' }}>{unit}</span>
-      <span className="block w-full text-xs" style={{ color: 'var(--sub)' }}>
-        목표 {goal}{unit} 대비 <span className="font-bold" style={{ color: 'var(--ink)' }}>{goalPercent}%</span>
+    <div className="weekly-trend-summary">
+      <span>{label}</span>
+      <strong>{avgValue.toFixed(decimals)}{unit}</strong>
+      <span>
+        목표 {goal}{unit} 대비 <strong>{goalPercent}%</strong>
       </span>
     </div>
   );
@@ -106,38 +105,36 @@ export function CareReport({
               decimals={trendDecimals}
             />
           )}
-          <div className="weekly-score-chart">
-            <div className="weekly-trend-chart">
-              <ResponsiveContainer width="100%" height={210}>
-                <RechartsBarChart data={trendData} margin={{ top: 16, right: 12, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
-                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={trendDomain} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    content={<WeeklyTrendTooltip valueKey={trendValueKey} unit={trendUnit} valueLabel={trendTooltipLabel} />}
-                    cursor={{ fill: 'var(--wave-10)' }}
+          <div className="weekly-trend-chart" style={{ marginTop: 18 }}>
+            <ResponsiveContainer width="100%" height={210}>
+              <RechartsBarChart data={trendData} margin={{ top: 16, right: 12, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={trendDomain} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  content={<WeeklyTrendTooltip valueKey={trendValueKey} unit={trendUnit} valueLabel={trendTooltipLabel} />}
+                  cursor={{ fill: 'var(--wave-10)' }}
+                />
+                <Bar dataKey={trendValueKey} radius={[8, 8, 0, 0]} maxBarSize={36}>
+                  <LabelList
+                    dataKey={trendValueKey}
+                    position="top"
+                    formatter={(value) => `${value}${trendUnit}`}
+                    style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }}
                   />
-                  <Bar dataKey={trendValueKey} radius={[8, 8, 0, 0]} maxBarSize={36}>
-                    <LabelList
-                      dataKey={trendValueKey}
-                      position="top"
-                      formatter={(value) => `${value}${trendUnit}`}
-                      style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }}
-                    />
-                    {trendData.map((d) => (
-                      <Cell key={d.day} fill={trendColorFn(d[trendValueKey])} />
-                    ))}
-                  </Bar>
-                </RechartsBarChart>
-              </ResponsiveContainer>
-            </div>
+                  {trendData.map((d) => (
+                    <Cell key={d.day} fill={trendColorFn(d[trendValueKey])} />
+                  ))}
+                </Bar>
+              </RechartsBarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="weekly-bottom-grid">
             <div className="weekly-score-average">
               <span>평균 점수</span>
               <strong>{averageScore || score}</strong>
               <p>7일 점수 기준</p>
             </div>
-          </div>
-          <div className="care-analysis-grid" style={{ marginTop: 20, paddingTop: 16 }}>
             {analysis.map(([label, value, detail]) => (
               <Metric key={label} label={label} value={value} detail={detail} />
             ))}

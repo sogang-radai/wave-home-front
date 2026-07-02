@@ -1000,4 +1000,17 @@
     right: 12px;
     left: 12px;
   }
+
+  /* InsightChat: take out of flex flow on mobile so it doesn't consume 100vh */
+  .insight-chat {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 0;
+  }
+
+  .insight-chat.open {
+    width: 100vw;
+  }
 }

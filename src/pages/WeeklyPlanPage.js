@@ -517,7 +517,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
               <div className="bg-slate-50 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-slate-800 text-sm">오늘 할 일</h2>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: remaining > 0 ? '#dbeafe' : '#dcfce7', color: remaining > 0 ? '#1d4ed8' : '#15803d' }}>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: remaining > 0 ? '#dbeafe' : '#dcfce7', color: remaining > 0 ? '#0294d8' : '#15803d' }}>
                     {remaining > 0 ? `${remaining}개 남음` : '모두 완료!'}
                   </span>
                 </div>

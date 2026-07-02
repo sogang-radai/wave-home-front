@@ -97,14 +97,14 @@
 }
 
 .sleep-plan strong,
-.phone-care strong {
+.phone-care > div:first-child strong {
   display: block;
   margin-bottom: 6px;
   font-size: 30px;
 }
 
 .sleep-plan > span,
-.phone-care span {
+.phone-care > div:first-child span {
   color: var(--sub);
   font-size: 13px;
 }
@@ -220,6 +220,66 @@
   word-break: break-all;
   overflow-wrap: break-word;
 }
+
+.sleep-score-factor-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.56);
+}
+
+.sleep-score-factor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sleep-score-factor-head strong {
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.sleep-factor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.sleep-factor-card {
+  min-height: 86px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.sleep-factor-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sleep-factor-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.sleep-factor-tag {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.sleep-factor-tag.good { color: var(--good-text); }
+.sleep-factor-tag.attention { color: var(--warn-text); }
+.sleep-factor-tag.excellent { color: var(--excellent-text); }
+.sleep-factor-tag.danger { color: var(--danger-strong); }
 
 /* ── Insight list & card ─────────────────────────────────────────────────── */
 
@@ -450,13 +510,6 @@
   line-height: 1.7;
 }
 
-.weekly-score-chart {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 150px;
-  gap: 16px;
-  margin-top: 18px;
-}
-
 .weekly-trend-chart {
   min-height: 210px;
   padding: 12px 4px 0;
@@ -464,12 +517,51 @@
   background: var(--wave-05);
 }
 
-.weekly-score-average {
+.weekly-bottom-grid {
   display: grid;
-  align-content: center;
-  justify-items: center;
-  min-height: 210px;
-  padding: 18px;
+  grid-template-columns: 150px repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  align-items: stretch;
+}
+
+.weekly-bottom-grid .metric {
+  min-height: 72px;
+  padding: 4px 8px;
+  background: var(--wave-10);
+  border: 1px solid var(--wave-20);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.weekly-bottom-grid .metric p {
+  margin: 0 0 1px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.weekly-bottom-grid .metric strong {
+  display: block;
+  margin-bottom: 1px;
+  font-size: 20px;
+  line-height: 1.05;
+}
+
+.weekly-bottom-grid .metric span {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.weekly-score-average {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: 4px 10px;
   border-radius: 16px;
   background: var(--wave-15);
 }
@@ -478,11 +570,13 @@
 .weekly-score-average p {
   color: var(--sub);
   font-size: 12px;
+  line-height: 1.2;
 }
 
 .weekly-score-average strong {
-  margin: 8px 0 4px;
-  font-size: 34px;
+  margin: 2px 0;
+  font-size: 28px;
+  line-height: 1.05;
 }
 
 .weekly-score-average p {
@@ -500,7 +594,7 @@
 
 @media (max-width: 760px) {
   .sleep-score-hero {
-    padding: 20px;
+    padding: 16px;
   }
 
   .sleep-score-hero-number {
@@ -513,5 +607,26 @@
 
   .insight-list {
     grid-template-columns: 1fr;
+  }
+
+  /* 2-column compact metrics on mobile */
+  .care-analysis-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekly-bottom-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekly-score-average {
+    min-height: 0;
+    padding: 8px 12px;
+    text-align: center;
+    justify-items: center;
+  }
+
+  .weekly-score-average strong {
+    margin: 2px 0;
+    font-size: 20px;
   }
 }

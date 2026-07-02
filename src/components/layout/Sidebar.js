@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import './layout.css';
 import logo from '../../img/logo.png';
 import { pages } from '../../data/appData';
@@ -23,6 +24,15 @@ function SidebarIcon({ name }) {
         <rect x="14" y="3" width="7" height="7" rx="2" />
         <rect x="3" y="14" width="7" height="7" rx="2" />
         <rect x="14" y="14" width="7" height="7" rx="2" />
+      </svg>
+    );
+  }
+
+  if (name === 'waveai') {
+    return (
+      <svg {...common}>
+        <path d="M12 3l1.8 5.1L19 10l-5.2 1.9L12 17l-1.8-5.1L5 10l5.2-1.9L12 3Z" />
+        <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
       </svg>
     );
   }
@@ -91,7 +101,6 @@ export function Sidebar({
   onToggleInsightChat,
   collapsed,
   onCollapsedChange,
-  hideInsightTrigger,
 }) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -116,24 +125,36 @@ export function Sidebar({
           accounts={accounts}
           account={account}
           onSwitchAccount={onSwitchAccount}
-          showInsightChat={showInsightChat}
-          onToggleInsightChat={onToggleInsightChat}
-          hideInsightTrigger={hideInsightTrigger}
         />
       </div>
 
       <nav className="nav-list">
         {pages.map((item) => (
-          <button
-            key={item.id}
-            className={`nav-item ${page === item.id ? 'active' : ''}`}
-            onClick={() => onSelect(item.id)}
-            title={collapsed ? item.label : undefined}
-          >
-            <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
-            <span className="nav-label">{item.label}</span>
-            {page === item.id && <i />}
-          </button>
+          <Fragment key={item.id}>
+            <button
+              className={`nav-item ${page === item.id ? 'active' : ''}`}
+              onClick={() => { onSelect(item.id); if (collapsed) onCollapsedChange(false); }}
+              title={collapsed ? item.label : undefined}
+            >
+              <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
+              <span className="nav-label">{item.label}</span>
+              {page === item.id && <i />}
+            </button>
+            {item.id === 'main' && (
+              <button
+                className={`nav-item ${showInsightChat ? 'active' : ''}`}
+                onClick={() => {
+                  onToggleInsightChat();
+                  if (collapsed) onCollapsedChange(false);
+                }}
+                title={collapsed ? 'WaveAI' : undefined}
+              >
+                <span className="nav-icon"><SidebarIcon name="waveai" /></span>
+                <span className="nav-label">WaveAI</span>
+                {showInsightChat && <i />}
+              </button>
+            )}
+          </Fragment>
         ))}
       </nav>
 

@@ -5,9 +5,10 @@ import { Donut } from '../../components/ui/Donut';
 import { Metric } from '../../components/ui/Metric';
 import { InfoList } from '../../components/ui/InfoList';
 import { PostureScoreChart } from '../../components/report/PostureScoreChart';
+import { InsightCard } from '../../components/report/InsightCard';
 import { PostureDailyReport } from './PostureDailyReport';
 import { PostureWeeklyReport } from './PostureWeeklyReport';
-import { postureBars } from '../../data/postureData';
+import { postureBars, postureDailyInsights, postureWeeklyInsights } from '../../data/postureData';
 import './posture.css';
 
 function PostureAlertRow({ title, desc, on, onToggle }) {
@@ -25,6 +26,7 @@ function PostureAlertRow({ title, desc, on, onToggle }) {
 }
 
 export function PosturePage({ tab, setTab }) {
+  const activeTab = tab === 'daily' || tab === 'weekly' ? 'report' : tab;
   const [postureAlerts, setPostureAlerts] = useState({
     turtleNeck: true,
     waistTilt: true,
@@ -38,16 +40,16 @@ export function PosturePage({ tab, setTab }) {
   return (
     <div className="page-stack">
       <Tabs
-        active={tab}
+        active={activeTab}
         onChange={setTab}
         items={[
           ['current', '현재 상태'],
-          ['daily', '일간 리포트'],
-          ['weekly', '주간 리포트'],
+          ['report', '리포트'],
+          ['actions', '권장 액션'],
         ]}
       />
 
-      {tab === 'current' && (
+      {activeTab === 'current' && (
         <div className="dashboard-grid">
           <Card title="현재 자세상태">
             <div className="gesture-placeholder mb-4 rounded-2xl">
@@ -117,8 +119,32 @@ export function PosturePage({ tab, setTab }) {
         </div>
       )}
 
-      {tab === 'daily' && <PostureDailyReport />}
-      {tab === 'weekly' && <PostureWeeklyReport />}
+      {activeTab === 'report' && (
+        <div className="posture-report-stack">
+          <PostureDailyReport />
+          <PostureWeeklyReport />
+        </div>
+      )}
+
+      {activeTab === 'actions' && (
+        <div className="posture-actions-layout">
+          <Card title="일간 권장 액션">
+            <div className="posture-action-list">
+              {postureDailyInsights.map((item) => (
+                <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+              ))}
+            </div>
+          </Card>
+
+          <Card title="주간 권장 액션">
+            <div className="posture-action-list">
+              {postureWeeklyInsights.map((item) => (
+                <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

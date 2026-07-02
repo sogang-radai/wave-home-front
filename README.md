@@ -73,11 +73,11 @@ wave-home-front/
 └── package.json
 ```
 
-Nearly all UI, routing (simple `page` state, no router library), and mock data currently live in the single `src/App.js` file.
+Nearly all UI, routing (simple `page` state, no router library), and mock data currently live in the single `src/data` folder.
 
 ## Design Principles
 
-- **Tailwind-first for new UI**: layout, spacing, typography, and interaction states for new screens/components are expressed with Tailwind utility classes directly in JSX. `src/App.css` stays focused on design tokens (CSS variables), global resets, and the older component styles it already owns.
+- **Tailwind-first for new UI**: layout, spacing, typography, and interaction states for new screens/components are expressed with Tailwind utility classes directly in JSX. css files stays focused on design tokens (CSS variables), global resets, and the older component styles it already owns.
 - **Single base color**: `#95d9f8` (`var(--wave)` in `App.css`), used through opacity variants (`var(--wave-05)` … `var(--wave-35)`) for depth and hierarchy instead of introducing new hues. Status colors (good/warn/excellent/danger) are tokenized separately in `:root`.
 - **Status text sits on a tinted pill, never bare on a surface**: status words (Good/주의/위험 등) use a `<tone>-18`/`<tone>-20` light background with the matching darker `<tone>-text` color (see `.tag`, `.posture-status-pill`), so saturated colors stay readable without breaking the pastel palette.
 - **Clean and intuitive**: minimal chrome, one clear primary action per card, generous whitespace.
@@ -85,6 +85,6 @@ Nearly all UI, routing (simple `page` state, no router library), and mock data c
 
 ## Current Data Model
 
-This frontend currently uses local mock data declared as constants at the top of `src/App.js` (sleep trends, posture logs, gesture sets, IoT devices, notifications, weekly-plan tasks, AI-recommended actions, account list, etc.). There is no backend integration yet — state for todos, notifications, accounts, and recommended-action approvals is held in React state/context and resets on reload.
+This frontend currently uses local mock data declared as constants at the top of js files (sleep trends, posture logs, gesture sets, IoT devices, notifications, weekly-plan tasks, AI-recommended actions, account list, etc.). There is no backend integration yet — state for todos, notifications, accounts, and recommended-action approvals is held in React state/context and resets on reload.
 
 When backend integration is added, these local arrays/state should be replaced with API-backed data fetching and a shared data layer.

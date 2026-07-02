@@ -122,6 +122,7 @@ function App() {
   const handleShrinkChat = () => {
     setChatMode('popup');
     setPage(prevPage || 'main');
+    setSidebarCollapsed(false);
   };
 
   const handleExpandChat = () => {
@@ -231,7 +232,6 @@ function App() {
           onToggleInsightChat={handleNavigateToChat}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
-          hideInsightTrigger={page === 'chat' && chatMode === 'page'}
         />
         <section className="workspace">
           <TopBar
@@ -244,9 +244,6 @@ function App() {
             accounts={accounts}
             account={account}
             onSwitchAccount={setAccountId}
-            showInsightChat={page === 'chat'}
-            onToggleInsightChat={handleNavigateToChat}
-            hideInsightTrigger={page === 'chat' && chatMode === 'page'}
           />
           <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}`}>
             {page === 'main' && (

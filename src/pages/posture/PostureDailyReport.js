@@ -1,6 +1,6 @@
 import { CareReport } from '../../components/report/CareReport';
 import { PostureScoreChart } from '../../components/report/PostureScoreChart';
-import { postureLog, postureDailyInsights } from '../../data/postureData';
+import { postureLog } from '../../data/postureData';
 
 export function PostureDailyReport() {
   return (
@@ -19,7 +19,6 @@ export function PostureDailyReport() {
         ['허리 굽음 시간', '1h 10m', '골반 세우기 피드백 필요'],
         ['가장 무너진 시간대', '15:00~17:00', '목 전방 자세 반복'],
       ]}
-      insights={postureDailyInsights}
     />
   );
 }

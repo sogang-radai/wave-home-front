@@ -103,6 +103,32 @@
   gap: 14px;
 }
 
+.dashboard-health-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 370px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.dashboard-sleep-column,
+.dashboard-posture-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.dashboard-sleep-card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.dashboard-posture-card {
+  width: 50%;
+  max-width: 320px;
+  min-width: 280px;
+}
+
 /* ── Todo list ──────────────────────────────────────────────────────────── */
 
 .todo-list {
@@ -344,9 +370,17 @@
   }
 
   .dashboard-grid,
+  .dashboard-health-grid,
   .main-grid,
   .empty-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-sleep-card,
+  .dashboard-posture-card {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
   }
 
   .hero {
@@ -356,8 +390,17 @@
 }
 
 @media (max-width: 760px) {
+  .page-stack {
+    gap: 14px;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 20px;
+  }
+
   .hero h2 {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .hero p {
@@ -370,6 +413,15 @@
   .split-stats,
   .overview-score-row,
   .overview-tile-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* wide cards should not span 2 cols in single-column grid */
+  .card.wide {
+    grid-column: 1;
+  }
+
+  .overview-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

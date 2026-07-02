@@ -12,6 +12,19 @@
 .posture-status-pill.attention { background: var(--warn-20); color: var(--warn-text); }
 .posture-status-pill.danger { background: var(--danger-18); color: var(--danger-strong); }
 
+/* ── Gesture placeholder ────────────────────────────────────────────────── */
+
+.gesture-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border-radius: 16px;
+  background: var(--wave-05);
+  color: var(--sub);
+  font-size: 13px;
+}
+
 /* ── Sitting time card ──────────────────────────────────────────────────── */
 
 .sitting-time strong {
@@ -150,16 +163,49 @@
   font-weight: 800;
 }
 
+/* ── Posture report/actions tabs ────────────────────────────────────────── */
+
+.posture-report-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.posture-actions-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.posture-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1100px) {
   .factor-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 160px));
+  }
+
+  .posture-actions-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 760px) {
   .factor-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .factor-card {
+    padding: 10px 12px;
+    gap: 4px;
+  }
+
+  .factor-card strong {
+    font-size: 16px;
   }
 }

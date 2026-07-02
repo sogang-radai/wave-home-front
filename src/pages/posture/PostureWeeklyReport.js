@@ -1,6 +1,6 @@
 import { CareReport } from '../../components/report/CareReport';
 import { postureScoreColor } from '../../components/report/PostureScoreChart';
-import { postureWeeklyTrendData, postureWeeklyInsights } from '../../data/postureData';
+import { postureWeeklyTrendData } from '../../data/postureData';
 
 export function PostureWeeklyReport() {
   return (
@@ -24,7 +24,6 @@ export function PostureWeeklyReport() {
         ['휴식 루틴 수행률', '64%', '목표 80%까지 16%p 부족'],
         ['장시간 착석 알림', '7회', '50분 이상 같은 자세 유지'],
       ]}
-      insights={postureWeeklyInsights}
     />
   );
 }

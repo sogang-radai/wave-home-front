@@ -170,21 +170,24 @@ export function SleepStatusReport() {
             <Metric key={lbl} label={lbl} value={value} detail={detail} />
           ))}
         </div>
-      </section>
 
-      {showFactors && (
-        <Card title="수면 점수 요인">
-          <div className="factor-grid">
-            {sleepScoreFactors.map((factor) => (
-              <div className={`factor-card ${factor.tone}`} key={factor.label}>
-                <span>{factor.label}</span>
-                <strong>{factor.value}</strong>
-                <em className={`factor-tag ${factor.tone}`}>{factor.tag}</em>
-              </div>
-            ))}
+        {showFactors && (
+          <div className="sleep-score-factor-panel">
+            <div className="sleep-score-factor-head">
+              <strong>수면 점수 요인</strong>
+            </div>
+            <div className="sleep-factor-grid">
+              {sleepScoreFactors.map((factor) => (
+                <div className={`sleep-factor-card ${factor.tone}`} key={factor.label}>
+                  <span>{factor.label}</span>
+                  <strong>{factor.value}</strong>
+                  <em className={`sleep-factor-tag ${factor.tone}`}>{factor.tag}</em>
+                </div>
+              ))}
+            </div>
           </div>
-        </Card>
-      )}
+        )}
+      </section>
 
       <Card
         title="수면 단계"

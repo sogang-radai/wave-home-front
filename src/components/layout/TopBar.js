@@ -44,25 +44,12 @@ export function TopActionsCluster({
   accounts,
   account,
   onSwitchAccount,
-  showInsightChat,
-  onToggleInsightChat,
-  hideInsightTrigger,
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   return (
     <div className={`top-actions top-actions-${variant}`}>
-      {!hideInsightTrigger && (
-        <button
-          className={`insight-trigger ${showInsightChat ? 'active' : ''}`}
-          aria-label="AI 인사이트 채팅"
-          onClick={onToggleInsightChat}
-        >
-          <span className="insight-chat-spark" style={{ color: "#000" }}>✦</span>
-          <span className="insight-trigger-label">WaveAI</span>
-        </button>
-      )}
       <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
         <BellIcon />
         {unreadCount > 0 && <b>{unreadCount}</b>}
