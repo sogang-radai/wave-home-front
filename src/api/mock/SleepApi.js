@@ -7,11 +7,10 @@ import {
   snoringEpisodes,
   sleepDailyAnalysis,
   sleepWeeklyTrendData,
-  sleepDailyInsights,
-  sleepWeeklyInsights,
   sleepSettingSummaries,
   movementTicks,
 } from '../../data/sleepData';
+import { listInsights, setInsightApproved } from './insightsStore';
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -139,18 +138,6 @@ function toAnalysisItem(item) {
   return item;
 }
 
-function toInsight(item, period, index) {
-  return {
-    id: typeof item.id === 'string' ? item.id : `ins_sleep_${period}_${item.id ?? index + 1}`,
-    domain: 'sleep',
-    period,
-    label: item.label,
-    title: item.title,
-    text: item.text,
-    approved: Boolean(item.approved),
-  };
-}
-
 const ACTIVE_ACCOUNT_ID = 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E';
 let activeAccountId = ACTIVE_ACCOUNT_ID;
 
@@ -225,9 +212,6 @@ const weeklyReports = {
   },
 };
 
-let dailyInsights = sleepDailyInsights.map((item, index) => toInsight(item, 'daily', index));
-let weeklyInsights = sleepWeeklyInsights.map((item, index) => toInsight(item, 'weekly', index));
-
 function requireActiveAccount() {
   if (!activeAccountId) {
     throw apiError(409, 'ACTIVE_ACCOUNT_REQUIRED', '활성 구성원을 먼저 선택해주세요.');
@@ -235,9 +219,10 @@ function requireActiveAccount() {
 }
 
 function getInsightCollection(period) {
-  if (period === 'daily') return dailyInsights;
-  if (period === 'weekly') return weeklyInsights;
-  throw apiError(400, 'INVALID_PERIOD', 'period는 daily 또는 weekly여야 합니다.');
+  if (period !== 'daily' && period !== 'weekly') {
+    throw apiError(400, 'INVALID_PERIOD', 'period는 daily 또는 weekly여야 합니다.');
+  }
+  return listInsights({ domain: 'sleep', period });
 }
 
 export class SleepApi {
@@ -298,15 +283,9 @@ export class SleepApi {
   async updateInsight(insightId, { approved }) {
     await delay();
     requireActiveAccount();
-    const collections = [dailyInsights, weeklyInsights];
-    for (const collection of collections) {
-      const insight = collection.find((item) => item.id === insightId);
-      if (insight) {
-        insight.approved = Boolean(approved);
-        return { id: insight.id, approved: insight.approved };
-      }
-    }
-    throw apiError(404, 'NOT_FOUND', '인사이트를 찾을 수 없습니다.');
+    const insight = setInsightApproved(insightId, approved);
+    if (!insight) throw apiError(404, 'NOT_FOUND', '인사이트를 찾을 수 없습니다.');
+    return { id: insight.id, approved: insight.approved };
   }
 
   // 테스트에서 activeAccount required 경로를 확인할 때만 사용한다.

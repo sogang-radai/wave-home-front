@@ -1,5 +1,6 @@
 import { delay, cloneDeep } from './utils';
-import { postureBars, postureLog, postureDailyInsights, postureWeeklyInsights, postureWeeklyTrendData } from '../../data/postureData';
+import { postureBars, postureLog, postureWeeklyTrendData } from '../../data/postureData';
+import { listInsights } from './insightsStore';
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -32,18 +33,6 @@ function toAnalysisItem(item) {
     };
   }
   return item;
-}
-
-function toInsight(item, period, index) {
-  return {
-    id: typeof item.id === 'string' ? item.id : `ins_posture_${period}_${item.id ?? index + 1}`,
-    domain: 'posture',
-    period,
-    label: item.label,
-    title: item.title,
-    text: item.text,
-    approved: Boolean(item.approved),
-  };
 }
 
 function isDate(value) {
@@ -171,9 +160,6 @@ let alertSettings = {
   longSitting: false,
 };
 
-let dailyInsights = postureDailyInsights.map((item, index) => toInsight(item, 'daily', index));
-let weeklyInsights = postureWeeklyInsights.map((item, index) => toInsight(item, 'weekly', index));
-
 function requireActiveAccount() {
   if (!activeAccountId) {
     throw apiError(409, 'ACTIVE_ACCOUNT_REQUIRED', '활성 구성원을 먼저 선택해주세요.');
@@ -220,13 +206,13 @@ export class PostureApi {
   async getDailyInsights() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(dailyInsights);
+    return cloneDeep(listInsights({ domain: 'posture', period: 'daily' }));
   }
 
   async getWeeklyInsights() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(weeklyInsights);
+    return cloneDeep(listInsights({ domain: 'posture', period: 'weekly' }));
   }
 
   async getAlertSettings() {

@@ -1,23 +1,31 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { useApprovedActions } from '../context/ApprovedActionsContext';
 import {
   CAT_STYLE, ENG_LABELS, CAL_H, CAL_END_MIN,
   minToY, yToMin, snapMin, fmtTime, pickAICat, getWeekDates,
 } from '../data/weeklyPlanData';
-import { sleepDailyInsights, sleepWeeklyInsights } from '../data/sleepData';
-import { postureDailyInsights, postureWeeklyInsights } from '../data/postureData';
-
-const allRecommendedActions = [
-  ...sleepDailyInsights,
-  ...sleepWeeklyInsights,
-  ...postureDailyInsights,
-  ...postureWeeklyInsights,
-];
+import weeklyPlanApi from '../api/weeklyPlanApi';
 
 export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
-  const { approved, toggle } = useApprovedActions();
+  const [recommendationGroups, setRecommendationGroups] = useState([]);
+
+  useEffect(() => {
+    weeklyPlanApi.getRecommendations().then(setRecommendationGroups);
+  }, []);
+
+  const toggleRecommendation = async (id) => {
+    const current = recommendationGroups.flatMap((group) => group.items).find((item) => item.id === id);
+    if (!current) return;
+    const nextApproved = !current.approved;
+    setRecommendationGroups((prev) =>
+      prev.map((group) => ({
+        ...group,
+        items: group.items.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)),
+      }))
+    );
+    await weeklyPlanApi.updateInsight(id, { approved: nextApproved });
+  };
   const [dismissed, setDismissed] = useState(() => new Set());
   const [hoverApprovedId, setHoverApprovedId] = useState(null);
   const [detailTodo, setDetailTodo] = useState(null);
@@ -555,21 +563,15 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
             <h2 className="font-bold text-slate-800 text-sm mb-3">AI 맞춤 추천 계획</h2>
             <div className="overflow-y-auto pr-1" style={{ maxHeight: '500px' }}>
               {(() => {
-                const groups = allRecommendedActions.reduce((acc, item) => {
-                  const existing = acc.find((g) => g.label === item.label);
-                  if (existing) existing.items.push(item);
-                  else acc.push({ label: item.label, items: [item] });
-                  return acc;
-                }, []);
-                return groups.map(({ label, items }) => {
+                return recommendationGroups.map(({ key, label, items }) => {
                   const visible = items.filter((item) => !dismissed.has(item.id));
                   if (visible.length === 0) return null;
                   return (
-                    <div key={label} className="mb-4">
+                    <div key={key} className="mb-4">
                       <h3 className="text-xs font-bold text-slate-600 mb-1.5 px-1">{label}</h3>
                       <div className="space-y-1.5">
                         {visible.map((item) => {
-                          const isApproved = approved[item.id];
+                          const isApproved = item.approved;
                           const isHovering = isApproved && hoverApprovedId === item.id;
                           return (
                             <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
@@ -580,7 +582,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
                                     type="button"
                                     onMouseEnter={() => setHoverApprovedId(item.id)}
                                     onMouseLeave={() => setHoverApprovedId(null)}
-                                    onClick={() => toggle(item.id)}
+                                    onClick={() => toggleRecommendation(item.id)}
                                     className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
                                     style={{ background: isHovering ? '#fee2e2' : '#dcfce7', color: isHovering ? '#dc2626' : '#16a34a' }}
                                   >
@@ -589,7 +591,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
                                 ) : (
                                   <button
                                     type="button"
-                                    onClick={() => toggle(item.id)}
+                                    onClick={() => toggleRecommendation(item.id)}
                                     className="text-[11px] font-semibold px-2 py-1 rounded-lg"
                                     style={{ background: '#f1f5f9', color: '#64748b' }}
                                     onMouseEnter={(ev) => { ev.currentTarget.style.background = '#dbeafe'; ev.currentTarget.style.color = '#2563eb'; }}

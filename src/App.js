@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
-import ApprovedActionsContext from './context/ApprovedActionsContext';
 import { pageTitles } from './data/appData';
-import { initialTodos } from './data/weeklyPlanData';
 import chatApi from './api/chatApi';
 import settingsApi from './api/settingsApi';
+import weeklyPlanApi from './api/weeklyPlanApi';
 import { WaveTransitionOverlay } from './WaveTransitionOverlay';
 import { InsightChat } from './chat/InsightChat';
 import { ChatPopup } from './chat/ChatPopup';
@@ -44,6 +43,24 @@ function toViewNotification(notification) {
   };
 }
 
+// weekly-plan.md의 Task(dayOfWeek/category/startMinute/endMinute)를 캘린더 화면이 이미 쓰던
+// 뷰 모델(day/cat/startMin/endMin, 한글 요일·카테고리)로 변환한다.
+const DAY_TO_KOREAN = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
+const KOREAN_TO_DAY = { 월: 'mon', 화: 'tue', 수: 'wed', 목: 'thu', 금: 'fri', 토: 'sat', 일: 'sun' };
+const CATEGORY_TO_KOREAN = { posture: '자세', sleep: '수면', diet: '식습관', mental: '멘탈' };
+const KOREAN_TO_CATEGORY = { 자세: 'posture', 수면: 'sleep', 식습관: 'diet', 멘탈: 'mental' };
+
+function toViewTodo(task) {
+  return {
+    id: task.id,
+    title: task.title,
+    done: task.done,
+    day: DAY_TO_KOREAN[task.dayOfWeek],
+    cat: CATEGORY_TO_KOREAN[task.category] || '멘탈',
+    ...(task.startMinute !== undefined ? { startMin: task.startMinute, endMin: task.endMinute } : {}),
+  };
+}
+
 function App() {
   const [page, setPage] = useState('main');
   const [sleepTab, setSleepTab] = useState('report');
@@ -60,19 +77,37 @@ function App() {
     const updated = await settingsApi.markAllNotificationsRead();
     setNotifications(updated.map(toViewNotification));
   };
-  const [todos, setTodos] = useState(initialTodos);
-  const toggleTodo = (id) => {
-    setTodos((current) => current.map((item) => (item.id === id ? { ...item, done: !item.done } : item)));
+  const [todos, setTodos] = useState([]);
+  useEffect(() => {
+    weeklyPlanApi.getTasks().then((tasks) => setTodos(tasks.map(toViewTodo)));
+  }, []);
+
+  const toggleTodo = async (id) => {
+    const current = todos.find((item) => item.id === id);
+    if (!current) return;
+    const updated = await weeklyPlanApi.updateTask(id, { done: !current.done });
+    setTodos((prev) => prev.map((item) => (item.id === id ? toViewTodo(updated) : item)));
   };
-  const addTodo = (title, day, cat, startMin, endMin) => {
-    setTodos((current) => [...current, { id: Date.now(), title, done: false, day, cat, ...(startMin !== undefined ? { startMin, endMin } : {}) }]);
+  const addTodo = async (title, day, cat, startMin, endMin) => {
+    // weekly-plan.md: 직접 만든 task의 category는 보내지 않는다 — 서버가 title을 보고 자동 분류한다.
+    const payload = {
+      title,
+      dayOfWeek: KOREAN_TO_DAY[day],
+      ...(startMin !== undefined ? { startMinute: startMin, endMinute: endMin } : {}),
+    };
+    const created = await weeklyPlanApi.createTask(payload);
+    setTodos((prev) => [...prev, toViewTodo(created)]);
   };
-  const updateTodo = (id, changes) => {
-    setTodos((current) => current.map((item) => (item.id === id ? { ...item, ...changes } : item)));
-  };
-  const [approvedActions, setApprovedActions] = useState({});
-  const toggleApprovedAction = (id) => {
-    setApprovedActions((current) => ({ ...current, [id]: !current[id] }));
+  const updateTodo = async (id, changes) => {
+    const payload = {};
+    if (changes.title !== undefined) payload.title = changes.title;
+    if (changes.done !== undefined) payload.done = changes.done;
+    if (changes.cat !== undefined) payload.category = KOREAN_TO_CATEGORY[changes.cat];
+    if (changes.day !== undefined) payload.dayOfWeek = KOREAN_TO_DAY[changes.day];
+    if (changes.startMin !== undefined) payload.startMinute = changes.startMin;
+    if (changes.endMin !== undefined) payload.endMinute = changes.endMin;
+    const updated = await weeklyPlanApi.updateTask(id, payload);
+    setTodos((prev) => prev.map((item) => (item.id === id ? toViewTodo(updated) : item)));
   };
   const [settingCategory, setSettingCategory] = useState('devices');
   const goToSleepSettings = () => {
@@ -247,29 +282,44 @@ function App() {
   }
 
   return (
-    <ApprovedActionsContext.Provider value={{ approved: approvedActions, toggle: toggleApprovedAction }}>
-      <div className="app-shell">
-        <WaveTransitionOverlay active={waveTransition} />
-        <InsightChat open={false} onClose={() => {}} />
-        {(chatMode === 'popup' || chatMode === 'mini') && (
-          <ChatPopup
-            mode={chatMode}
-            conversations={chatConversations}
-            activeConvId={activeChatId}
-            onSelectConv={setActiveChatId}
-            onAddConv={addChatConversation}
-            onDeleteConv={deleteChatConversation}
-            onRenameConv={renameChatConversation}
-            onSendMessage={sendChatMessage}
-            onExpand={handleExpandChat}
-            onMini={handleMiniChat}
-            onClose={handleClosePopupChat}
-          />
-        )}
-        <Sidebar
-          page={page}
-          onSelect={setPage}
-          today={today}
+    <div className="app-shell">
+      <WaveTransitionOverlay active={waveTransition} />
+      <InsightChat open={false} onClose={() => {}} />
+      {(chatMode === 'popup' || chatMode === 'mini') && (
+        <ChatPopup
+          mode={chatMode}
+          conversations={chatConversations}
+          activeConvId={activeChatId}
+          onSelectConv={setActiveChatId}
+          onAddConv={addChatConversation}
+          onDeleteConv={deleteChatConversation}
+          onRenameConv={renameChatConversation}
+          onSendMessage={sendChatMessage}
+          onExpand={handleExpandChat}
+          onMini={handleMiniChat}
+          onClose={handleClosePopupChat}
+        />
+      )}
+      <Sidebar
+        page={page}
+        onSelect={setPage}
+        today={today}
+        showNotifications={showNotifications}
+        onToggleNotifications={() => setShowNotifications((value) => !value)}
+        onCloseNotifications={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAllNotificationsRead={markAllNotificationsRead}
+        accounts={accounts}
+        account={account}
+        onSwitchAccount={switchAccount}
+        showInsightChat={page === 'chat'}
+        onToggleInsightChat={handleNavigateToChat}
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
+      />
+      <section className="workspace">
+        <TopBar
+          title={pageTitles[page]}
           showNotifications={showNotifications}
           onToggleNotifications={() => setShowNotifications((value) => !value)}
           onCloseNotifications={() => setShowNotifications(false)}
@@ -278,68 +328,51 @@ function App() {
           accounts={accounts}
           account={account}
           onSwitchAccount={switchAccount}
-          showInsightChat={page === 'chat'}
-          onToggleInsightChat={handleNavigateToChat}
-          collapsed={sidebarCollapsed}
-          onCollapsedChange={setSidebarCollapsed}
         />
-        <section className="workspace">
-          <TopBar
-            title={pageTitles[page]}
-            showNotifications={showNotifications}
-            onToggleNotifications={() => setShowNotifications((value) => !value)}
-            onCloseNotifications={() => setShowNotifications(false)}
-            notifications={notifications}
-            onMarkAllNotificationsRead={markAllNotificationsRead}
-            accounts={accounts}
-            account={account}
-            onSwitchAccount={switchAccount}
-          />
-          <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}`}>
-            {page === 'main' && (
-              <MainPage
-                onNavigate={setPage}
-                todos={todos}
-                onToggleTodo={toggleTodo}
-                onGoToSleepSettings={goToSleepSettings}
-                onGoToPowerAnalysis={goToPowerAnalysis}
-              />
-            )}
-            {page === 'overview' && <OverviewPage onNavigate={setPage} />}
-            {page === 'sleep' && (
-              <SleepPage tab={sleepTab} setTab={setSleepTab} onGoToSleepSettings={goToSleepSettings} />
-            )}
-            {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
-            {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} onUpdateTodo={updateTodo} />}
-            {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
-            {page === 'setting' && (
-              <SettingPage
-                accounts={accounts}
-                accountId={accountId}
-                account={account}
-                onSwitchAccount={switchAccount}
-                onRenameAccount={renameAccount}
-                onAddAccount={addAccount}
-                category={settingCategory}
-                setCategory={setSettingCategory}
-              />
-            )}
-            {page === 'chat' && chatMode === 'page' && (
-              <ChatPage
-                conversations={chatConversations}
-                activeConvId={activeChatId}
-                onSelectConv={setActiveChatId}
-                onAddConv={addChatConversation}
-                onDeleteConv={deleteChatConversation}
-                onRenameConv={renameChatConversation}
-                onSendMessage={sendChatMessage}
-                onShrink={handleShrinkChat}
-              />
-            )}
-          </main>
-        </section>
-      </div>
-    </ApprovedActionsContext.Provider>
+        <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}`}>
+          {page === 'main' && (
+            <MainPage
+              onNavigate={setPage}
+              todos={todos}
+              onToggleTodo={toggleTodo}
+              onGoToSleepSettings={goToSleepSettings}
+              onGoToPowerAnalysis={goToPowerAnalysis}
+            />
+          )}
+          {page === 'overview' && <OverviewPage onNavigate={setPage} />}
+          {page === 'sleep' && (
+            <SleepPage tab={sleepTab} setTab={setSleepTab} onGoToSleepSettings={goToSleepSettings} />
+          )}
+          {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
+          {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} onUpdateTodo={updateTodo} />}
+          {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
+          {page === 'setting' && (
+            <SettingPage
+              accounts={accounts}
+              accountId={accountId}
+              account={account}
+              onSwitchAccount={switchAccount}
+              onRenameAccount={renameAccount}
+              onAddAccount={addAccount}
+              category={settingCategory}
+              setCategory={setSettingCategory}
+            />
+          )}
+          {page === 'chat' && chatMode === 'page' && (
+            <ChatPage
+              conversations={chatConversations}
+              activeConvId={activeChatId}
+              onSelectConv={setActiveChatId}
+              onAddConv={addChatConversation}
+              onDeleteConv={deleteChatConversation}
+              onRenameConv={renameChatConversation}
+              onSendMessage={sendChatMessage}
+              onShrink={handleShrinkChat}
+            />
+          )}
+        </main>
+      </section>
+    </div>
   );
 }
 

@@ -35,6 +35,15 @@ export function SleepPage({ tab, setTab, onGoToSleepSettings }) {
     sleepApi.getInsights({ period: 'weekly' }).then(setWeeklyInsights);
   }, []);
 
+  const toggleInsight = async (id) => {
+    const current = [...dailyInsights, ...weeklyInsights].find((item) => item.id === id);
+    if (!current) return;
+    const nextApproved = !current.approved;
+    setDailyInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
+    setWeeklyInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
+    await sleepApi.updateInsight(id, { approved: nextApproved });
+  };
+
   return (
     <div className="page-stack">
       <Tabs
@@ -108,7 +117,7 @@ export function SleepPage({ tab, setTab, onGoToSleepSettings }) {
             )}
             <div className="insight-list">
               {[...dailyInsights, ...weeklyInsights].map((item) => (
-                <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+                <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} title={item.title} text={item.text} onToggle={toggleInsight} />
               ))}
             </div>
           </Card>

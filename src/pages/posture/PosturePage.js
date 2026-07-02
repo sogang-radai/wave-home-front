@@ -9,6 +9,7 @@ import { InsightCard } from '../../components/report/InsightCard';
 import { PostureDailyReport } from './PostureDailyReport';
 import { PostureWeeklyReport } from './PostureWeeklyReport';
 import postureApi from '../../api/postureApi';
+import sleepApi from '../../api/sleepApi';
 import './posture.css';
 
 function formatMinutes(totalMinutes) {
@@ -50,6 +51,17 @@ export function PosturePage({ tab, setTab }) {
     setAlertSettings(next);
     const saved = await postureApi.updateAlertSettings(next);
     setAlertSettings(saved);
+  };
+
+  // Insight approval is a single shared endpoint across sleep/posture/weekly-plan (see sleep.md),
+  // so posture insights are approved through sleepApi too — there is no postureApi.updateInsight.
+  const toggleInsight = async (id) => {
+    const current = [...dailyInsights, ...weeklyInsights].find((item) => item.id === id);
+    if (!current) return;
+    const nextApproved = !current.approved;
+    setDailyInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
+    setWeeklyInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
+    await sleepApi.updateInsight(id, { approved: nextApproved });
   };
 
   return (
@@ -150,7 +162,7 @@ export function PosturePage({ tab, setTab }) {
           <Card title="WaveAI 추천 일간 권장 액션">
             <div className="posture-action-list">
               {dailyInsights.map((item) => (
-                <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+                <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} title={item.title} text={item.text} onToggle={toggleInsight} />
               ))}
             </div>
           </Card>
@@ -158,7 +170,7 @@ export function PosturePage({ tab, setTab }) {
           <Card title="WaveAI 추천 주간 권장 액션">
             <div className="posture-action-list">
               {weeklyInsights.map((item) => (
-                <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+                <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} title={item.title} text={item.text} onToggle={toggleInsight} />
               ))}
             </div>
           </Card>
