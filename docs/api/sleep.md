@@ -393,7 +393,7 @@ sleepApi.updateInsight(insightId, { approved })
   `/sleep/today/automation-summary`
 - `src/pages/sleep/SleepStatusReport.js` → `/sleep/reports/daily`
 - `src/pages/sleep/SleepWeeklyReport.js` → `/sleep/reports/weekly`
-- `src/pages/MainPage.js`, `src/pages/OverviewPage.js` → `/sleep/today/summary`
+- `src/pages/MainPage.js` → `/sleep/today/summary`
 - 인사이트 카드(`src/components/report/InsightCard.js`) → `/sleep/insights?period=daily`,
   `/sleep/insights?period=weekly`, 승인 토글은 `PATCH /insights/{id}`
 - Mock 시드 데이터: `src/data/sleepData.js`

@@ -1,30 +1,54 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   CAT_STYLE, ENG_LABELS, CAL_H, CAL_END_MIN,
-  minToY, yToMin, snapMin, fmtTime, pickAICat, getWeekDates,
+  minToY, yToMin, snapMin, fmtTime, getWeekDates,
 } from '../data/weeklyPlanData';
 import weeklyPlanApi from '../api/weeklyPlanApi';
 
-export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo }) {
+export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
   const [recommendationGroups, setRecommendationGroups] = useState([]);
+  const [updatingRecommendationId, setUpdatingRecommendationId] = useState(null);
 
   useEffect(() => {
     weeklyPlanApi.getRecommendations().then(setRecommendationGroups);
   }, []);
 
-  const toggleRecommendation = async (id) => {
-    const current = recommendationGroups.flatMap((group) => group.items).find((item) => item.id === id);
-    if (!current) return;
-    const nextApproved = !current.approved;
+  const setRecommendationApproved = (id, approved) => {
     setRecommendationGroups((prev) =>
       prev.map((group) => ({
         ...group,
-        items: group.items.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)),
+        items: group.items.map((item) => (item.id === id ? { ...item, approved } : item)),
       }))
     );
-    await weeklyPlanApi.updateInsight(id, { approved: nextApproved });
+  };
+
+  const getRecommendationDay = (item) => {
+    if (item.period === 'weekly') return weekDates[0]?.label || '월';
+    return weekDates.find((day) => day.isToday)?.label || weekDates[0]?.label || '월';
+  };
+
+  const toggleRecommendation = async (id) => {
+    const current = recommendationGroups.flatMap((group) => group.items).find((item) => item.id === id);
+    if (!current) return;
+    const linkedTasks = todos.filter((todo) => todo.sourceInsightId === id);
+    const isApplied = current.approved || linkedTasks.length > 0;
+
+    setUpdatingRecommendationId(id);
+    try {
+      if (isApplied) {
+        await Promise.all(linkedTasks.map((todo) => onDeleteTodo(todo.id)));
+        await weeklyPlanApi.updateInsight(id, { approved: false });
+        setRecommendationApproved(id, false);
+      } else {
+        await onAddTodoFromInsight(id, getRecommendationDay(current));
+        await weeklyPlanApi.updateInsight(id, { approved: true });
+        setRecommendationApproved(id, true);
+      }
+    } finally {
+      setUpdatingRecommendationId(null);
+    }
   };
   const [dismissed, setDismissed] = useState(() => new Set());
   const [hoverApprovedId, setHoverApprovedId] = useState(null);
@@ -154,8 +178,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
 
   const submitPopup = () => {
     if (!popup?.title.trim()) return;
-    const cat = pickAICat(popup.title);
-    onAddTodo(popup.title.trim(), popup.dayLabel, cat, popup.startMin, popup.endMin);
+    onAddTodo(popup.title.trim(), popup.dayLabel, popup.startMin, popup.endMin);
     setPopup(null);
   };
 
@@ -571,7 +594,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
                       <h3 className="text-xs font-bold text-slate-600 mb-1.5 px-1">{label}</h3>
                       <div className="space-y-1.5">
                         {visible.map((item) => {
-                          const isApproved = item.approved;
+                          const isApproved = item.approved || todos.some((todo) => todo.sourceInsightId === item.id);
+                          const isUpdating = updatingRecommendationId === item.id;
                           const isHovering = isApproved && hoverApprovedId === item.id;
                           return (
                             <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
@@ -583,21 +607,23 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo })
                                     onMouseEnter={() => setHoverApprovedId(item.id)}
                                     onMouseLeave={() => setHoverApprovedId(null)}
                                     onClick={() => toggleRecommendation(item.id)}
+                                    disabled={isUpdating}
                                     className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
-                                    style={{ background: isHovering ? '#fee2e2' : '#dcfce7', color: isHovering ? '#dc2626' : '#16a34a' }}
+                                    style={{ background: isHovering ? '#fee2e2' : '#dcfce7', color: isHovering ? '#dc2626' : '#16a34a', opacity: isUpdating ? 0.6 : 1 }}
                                   >
-                                    {isHovering ? '제거' : '적용됨'}
+                                    {isUpdating ? '처리 중' : isHovering ? '제거' : '추가됨'}
                                   </button>
                                 ) : (
                                   <button
                                     type="button"
                                     onClick={() => toggleRecommendation(item.id)}
+                                    disabled={isUpdating}
                                     className="text-[11px] font-semibold px-2 py-1 rounded-lg"
-                                    style={{ background: '#f1f5f9', color: '#64748b' }}
+                                    style={{ background: '#f1f5f9', color: '#64748b', opacity: isUpdating ? 0.6 : 1 }}
                                     onMouseEnter={(ev) => { ev.currentTarget.style.background = '#dbeafe'; ev.currentTarget.style.color = '#2563eb'; }}
                                     onMouseLeave={(ev) => { ev.currentTarget.style.background = '#f1f5f9'; ev.currentTarget.style.color = '#64748b'; }}
                                   >
-                                    승인
+                                    {isUpdating ? '처리 중' : '추가'}
                                   </button>
                                 )}
                                 <button

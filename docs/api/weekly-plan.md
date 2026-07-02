@@ -286,8 +286,9 @@ type RecommendationGroup = {
 ]
 ```
 
-승인/적용 토글은 `sleep.md`의 `PATCH /insights/{insightId}`를 그대로 사용한다. 추천 액션을 실제 일정으로
-추가하는 동작은 승인 토글과 별개로 `POST /weekly-plan/tasks`의 `sourceInsightId` 생성 흐름을 사용한다.
+프론트의 "추가" 버튼은 `POST /weekly-plan/tasks`에 `sourceInsightId`를 보내 실제 task를 만든 뒤,
+`PATCH /insights/{insightId}`로 `approved: true`를 저장한다. "제거" 버튼은 해당 `sourceInsightId`로 만든
+task를 삭제하고 `approved: false`로 되돌린다.
 
 ---
 
@@ -314,6 +315,7 @@ weeklyPlanApi.deleteTask(id)
 
 weeklyPlanApi.getRecommendations()
 
+// 추천 액션을 일정으로 추가할 때는 createTask({ sourceInsightId, dayOfWeek, ... })를 사용한다.
 weeklyPlanApi.updateInsight(insightId, { approved })
 ```
 

@@ -241,6 +241,10 @@
 `class`도 백엔드 장비 클래스명과 맞추기 위해 그대로 쓴다. 프론트 내부에서 camelCase가 필요하면
 `SettingsApi` 구현체에서 별도 view model로 변환한다.
 
+레이더 장비 원본은 여기(`class: "srs_r4sn"`)에만 있다. `home.md`의 `GET /home/radars`는 이 목록에서
+파생된 읽기 전용 뷰이며 별도로 저장하지 않는다 — 레이더 등록/이름변경/삭제/활성화는 전부 이 `/devices`
+엔드포인트로만 한다.
+
 ```ts
 type Device = {
   id: string;

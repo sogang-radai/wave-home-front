@@ -11,7 +11,6 @@ import { ChatPage } from './chat/ChatPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { MainPage } from './pages/MainPage';
-import { OverviewPage } from './pages/OverviewPage';
 import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/WeeklyPlanPage';
@@ -57,6 +56,7 @@ function toViewTodo(task) {
     done: task.done,
     day: DAY_TO_KOREAN[task.dayOfWeek],
     cat: CATEGORY_TO_KOREAN[task.category] || '멘탈',
+    sourceInsightId: task.sourceInsightId ?? null,
     ...(task.startMinute !== undefined ? { startMin: task.startMinute, endMin: task.endMinute } : {}),
   };
 }
@@ -88,7 +88,7 @@ function App() {
     const updated = await weeklyPlanApi.updateTask(id, { done: !current.done });
     setTodos((prev) => prev.map((item) => (item.id === id ? toViewTodo(updated) : item)));
   };
-  const addTodo = async (title, day, cat, startMin, endMin) => {
+  const addTodo = async (title, day, startMin, endMin) => {
     // weekly-plan.md: 직접 만든 task의 category는 보내지 않는다 — 서버가 title을 보고 자동 분류한다.
     const payload = {
       title,
@@ -97,6 +97,14 @@ function App() {
     };
     const created = await weeklyPlanApi.createTask(payload);
     setTodos((prev) => [...prev, toViewTodo(created)]);
+  };
+  const addTodoFromInsight = async (insightId, day) => {
+    const created = await weeklyPlanApi.createTask({
+      sourceInsightId: insightId,
+      dayOfWeek: KOREAN_TO_DAY[day],
+    });
+    setTodos((prev) => [...prev, toViewTodo(created)]);
+    return created;
   };
   const updateTodo = async (id, changes) => {
     const payload = {};
@@ -108,6 +116,10 @@ function App() {
     if (changes.endMin !== undefined) payload.endMinute = changes.endMin;
     const updated = await weeklyPlanApi.updateTask(id, payload);
     setTodos((prev) => prev.map((item) => (item.id === id ? toViewTodo(updated) : item)));
+  };
+  const deleteTodo = async (id) => {
+    await weeklyPlanApi.deleteTask(id);
+    setTodos((prev) => prev.filter((item) => item.id !== id));
   };
   const [settingCategory, setSettingCategory] = useState('devices');
   const goToSleepSettings = () => {
@@ -367,12 +379,20 @@ function App() {
               onGoToPowerAnalysis={goToPowerAnalysis}
             />
           )}
-          {page === 'overview' && <OverviewPage onNavigate={setPage} />}
           {page === 'sleep' && (
             <SleepPage tab={sleepTab} setTab={setSleepTab} onGoToSleepSettings={goToSleepSettings} />
           )}
           {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
-          {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} onUpdateTodo={updateTodo} />}
+          {page === 'weeklyPlan' && (
+            <WeeklyPlanPage
+              todos={todos}
+              onToggleTodo={toggleTodo}
+              onAddTodo={addTodo}
+              onUpdateTodo={updateTodo}
+              onDeleteTodo={deleteTodo}
+              onAddTodoFromInsight={addTodoFromInsight}
+            />
+          )}
           {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
           {page === 'setting' && (
             <SettingPage

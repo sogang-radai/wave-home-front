@@ -1,5 +1,6 @@
 import { delay, cloneDeep } from './utils';
 import { gestureHistory, gestureSets, iotDevices, smartPlugDevices } from '../../data/homeData';
+import { getDevicesByClass } from './devicesStore';
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -24,11 +25,16 @@ function requireActiveAccount() {
   }
 }
 
-const radarsSeed = [
-  { id: 'room1', name: '방 1', connected: true },
-  { id: 'room2', name: '방 2', connected: true },
-  { id: 'study', name: '서재', connected: false },
-];
+// 레이더는 자체 저장소가 없다 — settings.md의 GET /devices(class: srs_r4sn)에서 파생한다.
+// 방 이름 변경/삭제/비활성화가 여기 자동으로 반영되도록 devicesStore를 직접 조회한다.
+function getRadarList() {
+  return getDevicesByClass('srs_r4sn').map((device) => ({
+    id: device.id,
+    name: device.name,
+    roomId: device.room_id,
+    connected: device.enabled,
+  }));
+}
 
 function toGesture(item) {
   return { id: `ges_${item.id}`, name: item.name, action: item.action };
@@ -42,7 +48,8 @@ const gestureSetsSeed = gestureSets.map((set) => ({
 }));
 
 function toHistoryItem(item, index) {
-  const radar = radarsSeed.find((r) => r.name === item.radar) || radarsSeed[0];
+  const radars = getRadarList();
+  const radar = radars.find((r) => r.name === item.radar) || radars[0];
   const minutesAgo = { 1: 2, 2: 8, 3: 23, 4: null }[item.id] ?? index * 10;
   const occurredAt = minutesAgo === null
     ? '2026-07-02T09:12:00+09:00'
@@ -139,7 +146,7 @@ export class HomeApi {
   async getRadars() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(radarsSeed);
+    return cloneDeep(getRadarList());
   }
 
   async getGestureRadarAssignments() {

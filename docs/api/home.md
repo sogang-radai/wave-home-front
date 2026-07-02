@@ -13,8 +13,10 @@
 - 제스처 등록/바인딩/레이더 배정은 현재 세션의 `activeAccount`가 속한 가구 기준으로 조회/수정한다.
 - `activeAccount`가 설정되지 않은 경우 `409 ACTIVE_ACCOUNT_REQUIRED`를 반환한다.
 - 공통 에러 응답: `{ "error": { "code": "NOT_FOUND", "message": "..." } }`
-- 여기서 다루는 `radars`는 제스처 인식 전용 레이더 가용성 목록이다. `settings.md`의 기기등록(`/devices`,
-  `class: "srs_r4sn"`)과 개념적으로 겹치지만, 아직 두 목록을 통합하지 않았다 — 지금은 각자 별도로 관리한다.
+- `radars`는 자체 저장소가 없는 파생 리소스다. 레이더 장비 원본(등록/이름변경/삭제/활성화)은
+  `settings.md`의 `GET /devices` 하나에만 있고, `GET /home/radars`는 그중 `class: "srs_r4sn"`인
+  장치만 골라 제스처 화면이 쓰기 쉬운 형태로 변환해 보여준다. 레이더 등록/이름 변경/삭제는
+  `settings.md`의 `/devices`에서만 하고, 여기서는 별도의 쓰기 API를 두지 않는다.
 
 **Response 409**
 ```json
@@ -54,9 +56,10 @@ type GestureSet = {
 };
 
 type Radar = {
-  id: string;
+  id: string;         // settings.md GET /devices의 장치 id와 동일
   name: string;
-  connected: boolean;
+  roomId: string;      // settings.md GET /rooms의 방 id
+  connected: boolean;  // 해당 장치의 enabled 값
 };
 
 type DeviceControl = {
@@ -127,8 +130,8 @@ type SmartPlugDevice = {
     "action": "전원 켜기",
     "occurredAt": "2026-07-02T14:58:00+09:00",
     "confidence": 96,
-    "radarId": "room1",
-    "radarName": "방 1"
+    "radarId": "8d2e5a1c49f7036b",
+    "radarName": "거실 레이더"
   }
 ]
 ```
@@ -155,26 +158,27 @@ type SmartPlugDevice = {
 
 ## GET `/home/radars`
 
-제스처 배정 화면에서 고를 수 있는 레이더 목록.
+제스처 배정 화면에서 고를 수 있는 레이더 목록. `settings.md`의 `GET /devices` 중 `class: "srs_r4sn"`인
+장치만 골라 변환한 결과이며, 별도 저장소가 없다 — 레이더를 추가/삭제/비활성화하려면
+`settings.md`의 `/devices`를 쓴다.
 
 **Response 200**
 ```json
 [
-  { "id": "room1", "name": "방 1", "connected": true },
-  { "id": "room2", "name": "방 2", "connected": true },
-  { "id": "study", "name": "서재", "connected": false }
+  { "id": "8d2e5a1c49f7036b", "name": "거실 레이더", "roomId": "7c4a9e2f18b356d0", "connected": true }
 ]
 ```
 
 ## GET `/home/gesture-radar-assignments`
 
-제스처 id → 배정된 레이더 id 목록. 배정이 없는 제스처는 응답에 포함되지 않는다.
+제스처 id → 배정된 레이더 id 목록(레이더 id는 `settings.md`의 장치 id). 배정이 없는 제스처는 응답에
+포함되지 않는다.
 
 **Response 200**
 ```json
 {
-  "ges_1": ["room1"],
-  "ges_5": ["room2"]
+  "ges_1": ["8d2e5a1c49f7036b"],
+  "ges_5": ["8d2e5a1c49f7036b"]
 }
 ```
 
@@ -185,12 +189,12 @@ type SmartPlugDevice = {
 
 **Request Body**
 ```json
-{ "radarIds": ["room1", "room2"] }
+{ "radarIds": ["8d2e5a1c49f7036b"] }
 ```
 
 **Response 200**
 ```json
-{ "gestureId": "ges_1", "radarIds": ["room1", "room2"] }
+{ "gestureId": "ges_1", "radarIds": ["8d2e5a1c49f7036b"] }
 ```
 
 **Response 404**
@@ -347,4 +351,5 @@ homeApi.getPowerPlugs()
 
 - `src/pages/HomeControlPage.js` → 위 엔드포인트 전부(탭 4개: 제스처 히스토리/제스처 목록/IoT 상태/전력 분석)
 - `src/pages/MainPage.js` → `/home/power/plugs`(대시보드 전력 분석 카드)
-- Mock 시드 데이터: `src/data/homeData.js`
+- Mock 시드 데이터: `src/data/homeData.js`(레이더 제외), 레이더는 `src/api/mock/devicesStore.js`
+  (`settings.md`의 mock과 공유하는 room/device 원본 저장소)에서 파생한다.

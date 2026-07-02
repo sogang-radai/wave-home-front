@@ -1,4 +1,16 @@
 import { delay, cloneDeep } from './utils';
+import {
+  getRooms as getRoomsStore,
+  addRoom,
+  removeRoom,
+  getDevices as getDevicesStore,
+  getAllDevices,
+  addDeviceToBucket,
+  findDeviceEntry,
+  moveDeviceBucket,
+  replaceDeviceAt,
+  removeDeviceAt,
+} from './devicesStore';
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -64,133 +76,6 @@ const accountsSeed = [
   { id: 'acc_01J2ZQ8YV6E3N9P5K7M1R4T2WA', name: '박웰빙' },
 ];
 
-const roomsSeed = [
-  { id: '7c4a9e2f18b356d0', name: '책상', description: '책상' },
-  { id: '3f91c6e52ad047b8', name: '침실', description: '침실' },
-];
-
-const devicesSeed = {
-  input_devices: [
-    {
-      id: '8d2e5a1c49f7036b',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 레이더',
-      description: 'SRS R4SN mmWave 레이더',
-      enabled: true,
-      class: 'srs_r4sn',
-      interface: {
-        host: '192.168.0.33',
-        point_cloud: { enabled: true, port: 29172 },
-        iq: { enabled: true, port: 29171 },
-      },
-      settings: {
-        angle_z: 0.0,
-        angle_y: 0.0,
-        min_x: -5.0,
-        max_x: 5.0,
-        min_y: 0.0,
-        max_y: 10.0,
-        min_z: -2.0,
-        max_z: 2.0,
-      },
-    },
-    {
-      id: '1a6f3e8d02c75491',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 마이크',
-      description: 'ESP32 + INMP441, 16kHz 16bit mono',
-      enabled: true,
-      class: 'wave_mic',
-      interface: { host: '192.168.0.50', port: 8765 },
-      settings: { sample_rate: 16000, sample_size: 16, channels: 1 },
-    },
-    {
-      id: '6b904f2e17d83ac5',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 카메라',
-      description: 'USB Wave Camera',
-      enabled: true,
-      class: 'wave_cam',
-      interface: { transport: 'usb', backend: 'v4l2', device: '/dev/video0' },
-    },
-    {
-      id: 'c5281a7e93bf406d',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 카메라',
-      description: 'Network Wave Camera',
-      enabled: true,
-      class: 'wave_cam',
-      interface: { transport: 'tcp', backend: 'droidcam', host: '192.168.0.51', port: 4747 },
-    },
-    {
-      id: '2e8d1795c0463f5a',
-      room_id: '7c4a9e2f18b356d0',
-      name: 'IR 수신기',
-      description: 'LIRC IR 수신',
-      enabled: true,
-      class: 'ir_reciever',
-      interface: { transport: 'lirc', device: '/dev/lirc0' },
-    },
-  ],
-  output_devices: [
-    {
-      id: '9a4c71e36b0285fd',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 스마트 플러그',
-      description: 'EP2H Tuya IoT 플러그',
-      enabled: true,
-      class: 'tuya_ep2h',
-      interface: {
-        host: '192.168.0.37',
-        device_id: 'eb61aa6ce49add5d80yfcj',
-        local_key: 's^q2?;Ur|q{SlG(>',
-        version: '3.3',
-      },
-    },
-    {
-      id: '5e3b80a1f2496cde',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 TV',
-      description: '삼성 32인치 TV',
-      enabled: true,
-      class: 'tizen_tv',
-      interface: { host: '192.168.0.70', port: 8002, name: 'WaveHome-TV' },
-    },
-    {
-      id: '0f8c2d6b147ae953',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 에어컨 IR',
-      description: 'LIRC IR 송신, 에어컨 제어',
-      enabled: true,
-      class: 'ir_remote',
-      interface: { transport: 'lirc', device: '/dev/lirc1', command_list: './ir/ac_commands.txt' },
-    },
-    {
-      id: 'd7139e58a04b6c21',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 조명',
-      description: 'Philips Hue 전구',
-      enabled: true,
-      class: 'hue_light',
-      interface: { bridge_host: '192.168.0.80', username: 'hue-bridge-api-key-placeholder', light_id: 1 },
-    },
-    {
-      id: '4b2a90e7c1586d3f',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 블라인드',
-      description: 'Tuya 스마트 블라인드',
-      enabled: false,
-      class: 'tuya_blind',
-      interface: {
-        host: '192.168.0.61',
-        device_id: 'bfabcdef12345678',
-        local_key: 'f0e1d2c3b4a59687',
-        version: '3.3',
-      },
-    },
-  ],
-};
-
 const defaultSleepConfig = {
   bedtime: '23:30',
   wakeTime: '07:00',
@@ -245,8 +130,6 @@ const notificationsSeed = [
 
 let accounts = cloneDeep(accountsSeed);
 let activeAccountId = accountsSeed[0].id;
-let rooms = cloneDeep(roomsSeed);
-let devices = cloneDeep(devicesSeed);
 let sleepConfigs = Object.fromEntries(accountsSeed.map((account) => [account.id, cloneDeep(defaultSleepConfig)]));
 let generalSettings = Object.fromEntries(accountsSeed.map((account) => [account.id, cloneDeep(defaultGeneralSettings)]));
 let notifications = cloneDeep(notificationsSeed);
@@ -260,21 +143,9 @@ function getActiveAccount() {
   return findAccount(activeAccountId) || null;
 }
 
-function getDeviceCollections() {
-  return [devices.input_devices, devices.output_devices];
-}
-
-function findDevice(deviceId) {
-  for (const collection of getDeviceCollections()) {
-    const index = collection.findIndex((device) => device.id === deviceId);
-    if (index !== -1) return { collection, index, device: collection[index] };
-  }
-  return null;
-}
-
 function ensureRoomExists(roomId) {
   if (!roomId) return;
-  if (!rooms.some((room) => room.id === roomId)) {
+  if (!getRoomsStore().some((room) => room.id === roomId)) {
     throw apiError(404, 'NOT_FOUND', '방을 찾을 수 없습니다.');
   }
 }
@@ -370,20 +241,20 @@ export class SettingsApi {
 
   async getRooms() {
     await delay();
-    return cloneDeep(rooms);
+    return cloneDeep(getRoomsStore());
   }
 
   async createRoom({ name, description = '' }) {
     await delay();
     const roomName = requireName(name, '방 이름을 입력해주세요.');
     const room = { id: makeHexId(), name: roomName, description: description.trim() || roomName };
-    rooms = [...rooms, room];
+    addRoom(room);
     return cloneDeep(room);
   }
 
   async updateRoom(roomId, { name, description }) {
     await delay();
-    const room = rooms.find((item) => item.id === roomId);
+    const room = getRoomsStore().find((item) => item.id === roomId);
     if (!room) throw apiError(404, 'NOT_FOUND', '방을 찾을 수 없습니다.');
     if (name !== undefined) room.name = requireName(name, '방 이름을 입력해주세요.');
     if (description !== undefined) room.description = description.trim() || room.name;
@@ -392,19 +263,19 @@ export class SettingsApi {
 
   async deleteRoom(roomId) {
     await delay();
-    const room = rooms.find((item) => item.id === roomId);
+    const room = getRoomsStore().find((item) => item.id === roomId);
     if (!room) throw apiError(404, 'NOT_FOUND', '방을 찾을 수 없습니다.');
-    const hasDevices = [...devices.input_devices, ...devices.output_devices].some((device) => device.room_id === roomId);
+    const hasDevices = getAllDevices().some((device) => device.room_id === roomId);
     if (hasDevices) {
       throw apiError(409, 'ROOM_HAS_DEVICES', '이 방에 연결된 기기가 있어 삭제할 수 없습니다.');
     }
-    rooms = rooms.filter((item) => item.id !== roomId);
+    removeRoom(roomId);
     return { id: roomId };
   }
 
   async getDevices() {
     await delay();
-    return cloneDeep(devices);
+    return cloneDeep(getDevicesStore());
   }
 
   async createDevice(payload) {
@@ -421,13 +292,13 @@ export class SettingsApi {
       enabled: payload.enabled ?? true,
       interface: cloneDeep(payload.interface || {}),
     };
-    devices[classifyDeviceBucket(device.class)] = [...devices[classifyDeviceBucket(device.class)], device];
+    addDeviceToBucket(classifyDeviceBucket(device.class), device);
     return cloneDeep(device);
   }
 
   async updateDevice(deviceId, payload) {
     await delay();
-    const found = findDevice(deviceId);
+    const found = findDeviceEntry(deviceId);
     if (!found) throw apiError(404, 'NOT_FOUND', '기기를 찾을 수 없습니다.');
     if (payload.room_id !== undefined) ensureRoomExists(payload.room_id);
 
@@ -436,12 +307,10 @@ export class SettingsApi {
     if (payload.description !== undefined) updated.description = payload.description.trim() || updated.name;
 
     const nextBucket = classifyDeviceBucket(updated.class);
-    const currentBucket = devices.input_devices.includes(found.device) ? 'input_devices' : 'output_devices';
-    if (nextBucket !== currentBucket) {
-      found.collection.splice(found.index, 1);
-      devices[nextBucket] = [...devices[nextBucket], updated];
+    if (nextBucket !== found.bucket) {
+      moveDeviceBucket(found, nextBucket, updated);
     } else {
-      found.collection[found.index] = updated;
+      replaceDeviceAt(found, updated);
     }
 
     return cloneDeep(updated);
@@ -449,9 +318,9 @@ export class SettingsApi {
 
   async deleteDevice(deviceId) {
     await delay();
-    const found = findDevice(deviceId);
+    const found = findDeviceEntry(deviceId);
     if (!found) throw apiError(404, 'NOT_FOUND', '기기를 찾을 수 없습니다.');
-    found.collection.splice(found.index, 1);
+    removeDeviceAt(found);
     return { id: deviceId };
   }
 
