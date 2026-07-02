@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { CHAT_SUGGESTION_POOL } from '../data/chatData';
+import chatApi from '../api/chatApi';
 import { MarkdownMessage } from './MarkdownMessage';
 import './chat.css';
 
@@ -12,9 +12,12 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
   const messages = activeConv?.messages || [];
   const isNewChat = !activeConvId || messages.length === 0;
 
-  const [popupSuggestions] = useState(() =>
-    [...CHAT_SUGGESTION_POOL].sort(() => Math.random() - 0.5).slice(0, 3)
-  );
+  const [popupSuggestions, setPopupSuggestions] = useState([]);
+  useEffect(() => {
+    chatApi.getSuggestions().then((res) => {
+      setPopupSuggestions([...res.suggestionPool].sort(() => Math.random() - 0.5).slice(0, 3));
+    });
+  }, []);
 
   useEffect(() => {
     if (mode === 'popup') messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -122,7 +125,7 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
                     <p className="chat-popup-welcome-hint">무엇이든 물어보세요</p>
                     {popupSuggestions.map((s) => (
                       <button
-                        key={s.label}
+                        key={s.id || s.label}
                         className="chat-popup-suggestion"
                         onClick={() => handleSend(s.prompt)}
                       >
@@ -134,7 +137,7 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
                 ) : (
                   <div className="chat-popup-bubble-list">
                     {messages.map((msg, i) => (
-                      <div key={i} className={`chat-popup-bubble-row ${msg.role}`}>
+                      <div key={msg.id || i} className={`chat-popup-bubble-row ${msg.role}`}>
                         {msg.role === 'assistant' && (
                           <span className="chat-popup-avatar">✦</span>
                         )}

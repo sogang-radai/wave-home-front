@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { CHAT_SUGGESTION_POOL } from '../data/chatData';
+import chatApi from '../api/chatApi';
 import { MarkdownMessage } from './MarkdownMessage';
 import './chat.css';
 
@@ -100,10 +100,12 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
   const [draft, setDraft] = useState('');
   const messagesEndRef = useRef(null);
 
-  const [shownSuggestions] = useState(() => {
-    const shuffled = [...CHAT_SUGGESTION_POOL].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 4);
-  });
+  const [shownSuggestions, setShownSuggestions] = useState([]);
+  useEffect(() => {
+    chatApi.getSuggestions().then((res) => {
+      setShownSuggestions([...res.suggestionPool].sort(() => Math.random() - 0.5).slice(0, 4));
+    });
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -147,7 +149,7 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
             <p className="chat-welcome-sub">수면·자세·심박·가전까지, 건강 데이터 기반으로 답변드려요</p>
             <div className="chat-suggestions-grid">
               {shownSuggestions.map((s) => (
-                <button key={s.label} className="chat-suggestion-card" onClick={() => handleSend(s.prompt)}>
+                <button key={s.id || s.label} className="chat-suggestion-card" onClick={() => handleSend(s.prompt)}>
                   <span className="chat-suggestion-icon">{s.icon}</span>
                   <strong>{s.label}</strong>
                   <span>{s.prompt}</span>
@@ -158,7 +160,7 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
         ) : (
           <div className="chat-bubble-list">
             {messages.map((msg, i) => (
-              <div key={i} className={`chat-bubble-row ${msg.role}`}>
+              <div key={msg.id || i} className={`chat-bubble-row ${msg.role}`}>
                 {msg.role === 'assistant' && (
                   <div className="chat-bubble-avatar">✦</div>
                 )}

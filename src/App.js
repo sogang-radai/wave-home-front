@@ -214,8 +214,23 @@ function App() {
     setChatMode('page');
   };
 
+  const mergeChatConversation = (conversation) => {
+    setChatConversations((prev) => {
+      const exists = prev.some((item) => item.id === conversation.id);
+      return exists
+        ? prev.map((item) => (item.id === conversation.id ? { ...item, ...conversation } : item))
+        : [conversation, ...prev];
+    });
+  };
+
+  const selectChatConversation = async (id) => {
+    setActiveChatId(id);
+    const conversation = await chatApi.getConversation(id);
+    mergeChatConversation(conversation);
+  };
+
   const addChatConversation = async () => {
-    const conversation = await chatApi.createConversation();
+    const conversation = await chatApi.createConversation({ title: '새 대화' });
     setChatConversations((prev) => [conversation, ...prev]);
     setActiveChatId(conversation.id);
   };
@@ -228,19 +243,32 @@ function App() {
 
   const renameChatConversation = async (id, title) => {
     const conversation = await chatApi.renameConversation(id, title);
-    setChatConversations((prev) => prev.map((c) => (c.id === id ? conversation : c)));
+    setChatConversations((prev) => prev.map((c) => (c.id === id ? { ...c, ...conversation } : c)));
   };
 
   const sendChatMessage = async (text) => {
     if (!text.trim()) return;
-    const wasNewConversation = !activeChatId;
-    const conversation = await chatApi.sendMessage(activeChatId, text.trim());
+    if (!activeChatId) {
+      const conversation = await chatApi.startConversation(text.trim());
+      setChatConversations((prev) => [conversation, ...prev]);
+      setActiveChatId(conversation.id);
+      return;
+    }
+
+    const result = await chatApi.sendMessage(activeChatId, text.trim());
     setChatConversations((prev) =>
-      wasNewConversation
-        ? [conversation, ...prev]
-        : prev.map((c) => (c.id === conversation.id ? conversation : c))
+      prev.map((c) =>
+        c.id === result.conversationId
+          ? {
+              ...c,
+              ...result.conversation,
+              messages: [...(c.messages || []), ...result.appendedMessages],
+              lastMessagePreview: result.appendedMessages[result.appendedMessages.length - 1]?.text || c.lastMessagePreview,
+              messageCount: (c.messageCount || c.messages?.length || 0) + result.appendedMessages.length,
+            }
+          : c
+      )
     );
-    if (wasNewConversation) setActiveChatId(conversation.id);
   };
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState(null);
@@ -290,7 +318,7 @@ function App() {
           mode={chatMode}
           conversations={chatConversations}
           activeConvId={activeChatId}
-          onSelectConv={setActiveChatId}
+          onSelectConv={selectChatConversation}
           onAddConv={addChatConversation}
           onDeleteConv={deleteChatConversation}
           onRenameConv={renameChatConversation}
@@ -362,7 +390,7 @@ function App() {
             <ChatPage
               conversations={chatConversations}
               activeConvId={activeChatId}
-              onSelectConv={setActiveChatId}
+              onSelectConv={selectChatConversation}
               onAddConv={addChatConversation}
               onDeleteConv={deleteChatConversation}
               onRenameConv={renameChatConversation}
