@@ -156,7 +156,352 @@
   line-height: 1.4;
 }
 
-/* ── Zone list (radar zone settings) ────────────────────────────────────── */
+/* ── Device registration ────────────────────────────────────────────────── */
+
+.device-summary-row {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--wave-05);
+}
+
+.device-summary-row strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.device-summary-row span {
+  color: var(--sub);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.device-section + .device-section {
+  margin-top: 22px;
+}
+
+.device-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.device-list,
+.room-zone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.device-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 38px auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.device-row.enabled {
+  background: var(--wave-05);
+}
+
+.device-thumb {
+  width: 64px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--wave-20), var(--surface));
+  border: 1px solid var(--wave-20);
+}
+
+.device-thumb span {
+  display: block;
+  width: 32px;
+  height: 24px;
+  border-radius: 8px;
+  border: 3px solid var(--ink-soft);
+}
+
+.device-thumb.srs_r4sn span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border-width: 5px;
+  box-shadow: inset 0 0 0 5px var(--surface);
+}
+
+.device-thumb.wave_mic span {
+  width: 18px;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.device-thumb.wave_cam span {
+  width: 36px;
+  height: 24px;
+  border-radius: 9px;
+  box-shadow: inset 10px 0 0 var(--ink-soft);
+}
+
+.device-thumb.ir_remote span {
+  width: 18px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.device-thumb.tizen_tv span {
+  width: 42px;
+  height: 26px;
+  border-radius: 5px;
+}
+
+.device-thumb.tuya_ep2h span,
+.device-thumb.hue_light span {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.device-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.device-row-title strong {
+  font-size: 15px;
+}
+
+.device-row-title em {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.device-row-title em.online {
+  color: var(--good-text);
+}
+
+.device-row-title em.idle {
+  color: var(--warn-text);
+}
+
+.device-row-main span,
+.device-row-main small {
+  display: block;
+  color: var(--sub);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.device-settings-btn,
+.device-remove-btn {
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.device-settings-btn {
+  width: 34px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--sub);
+}
+
+.device-settings-btn:hover {
+  background: var(--wave-15);
+  color: var(--ink);
+}
+
+.device-remove-btn {
+  padding: 0 12px;
+  background: var(--wave-05);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.device-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.device-dialog {
+  width: min(520px, 100%);
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px var(--shadow);
+}
+
+.device-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.device-dialog-head span {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.device-dialog-head h3 {
+  margin: 2px 0 0;
+  font-size: 20px;
+}
+
+.device-dialog-head > button {
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--wave-05);
+  color: var(--sub);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.device-enable-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.device-enable-row strong,
+.device-enable-row span {
+  display: block;
+}
+
+.device-enable-row span {
+  margin-top: 3px;
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.device-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.device-detail-line {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.device-detail-line span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.device-detail-line strong {
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.mic-level-block {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.mic-level-block > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.mic-level-bar {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--wave-15);
+}
+
+.mic-level-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--wave);
+}
+
+.room-zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.room-zone-row strong,
+.room-zone-row span {
+  display: block;
+}
+
+.room-zone-row span {
+  margin-top: 4px;
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.room-zone-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.room-zone-add input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font: inherit;
+}
+
+.room-zone-add button {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--wave);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ── Zone list (legacy radar zone settings) ─────────────────────────────── */
 
 .zone-list {
   display: flex;
@@ -362,6 +707,76 @@
   border: 1px solid var(--line);
   border-radius: 10px;
   font: inherit;
+}
+
+.tts-setting-block {
+  padding-top: 13px;
+}
+
+.tts-setting-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.tts-setting-head strong,
+.tts-setting-head span {
+  display: block;
+}
+
+.tts-setting-head strong {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.tts-setting-head span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.tts-setting-head select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.tts-speaker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tts-speaker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tts-speaker-card.active {
+  border-color: var(--wave);
+  background: var(--wave-05);
+}
+
+.tts-speaker-card strong {
+  font-size: 14px;
+}
+
+.tts-speaker-card em,
+.tts-speaker-card small {
+  color: var(--sub);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.4;
 }
 
 /* ── Segmented control ───────────────────────────────────────────────────── */
@@ -614,5 +1029,27 @@
 @media (max-width: 1100px) {
   .settings-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .device-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .device-settings-btn,
+  .device-remove-btn {
+    grid-column: auto;
+  }
+
+  .device-detail-grid,
+  .room-zone-add,
+  .tts-speaker-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tts-setting-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

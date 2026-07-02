@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CHAT_SUGGESTION_POOL } from '../data/chatData';
+import { MarkdownMessage } from './MarkdownMessage';
 import './chat.css';
 
 export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onAddConv, onSendMessage, onExpand, onMini, onClose }) {
@@ -137,7 +138,9 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
                         {msg.role === 'assistant' && (
                           <span className="chat-popup-avatar">✦</span>
                         )}
-                        <div className={`chat-popup-bubble ${msg.role}`}>{msg.text}</div>
+                        <div className={`chat-popup-bubble ${msg.role}`}>
+                          {msg.role === 'assistant' ? <MarkdownMessage text={msg.text} /> : msg.text}
+                        </div>
                       </div>
                     ))}
                     <div ref={messagesEndRef} />

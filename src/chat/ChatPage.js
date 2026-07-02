@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { CHAT_SUGGESTION_POOL } from '../data/chatData';
+import { MarkdownMessage } from './MarkdownMessage';
 import './chat.css';
 
 function ChatConvSidebar({ open, onToggle, conversations, activeConvId, onSelect, onAdd, onDelete, onRename }) {
@@ -161,7 +162,9 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
                 {msg.role === 'assistant' && (
                   <div className="chat-bubble-avatar">✦</div>
                 )}
-                <div className={`chat-bubble ${msg.role}`}>{msg.text}</div>
+                <div className={`chat-bubble ${msg.role}`}>
+                  {msg.role === 'assistant' ? <MarkdownMessage text={msg.text} /> : msg.text}
+                </div>
               </div>
             ))}
             <div ref={messagesEndRef} />

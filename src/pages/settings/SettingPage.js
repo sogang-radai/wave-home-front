@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import './settings.css';
-import { DeviceRegistrationSettings } from './DeviceSettings';
+import { DeviceRegistrationSettings, RoomZoneSettings, initialRooms } from './DeviceSettings';
 import { SleepSettings } from './SleepSettings';
 import { AccountSettings } from './AccountSettings';
 import { PersonalSettings } from './PersonalSettings';
 import { GeneralSettings } from './GeneralSettings';
 
 const settingCategories = [
-  { id: 'devices', label: '기기등록', desc: '레이더 연결 상태와 감지 구역을 관리합니다.' },
+  { id: 'devices', label: '기기등록', desc: '입력 장치와 출력 장치를 관리합니다.' },
+  { id: 'rooms', label: '방 / 구역 등록', desc: '장치가 배치된 공간을 등록합니다.' },
   { id: 'sleep', label: '수면 설정', desc: '오늘 밤 수면 계획과 자동 제어를 관리합니다.' },
   { id: 'account', label: '계정', desc: '가구 구성원의 프로필을 확인합니다.' },
   { id: 'personal', label: '개인 설정', desc: '내 이름을 변경합니다.' },
@@ -14,6 +16,8 @@ const settingCategories = [
 ];
 
 export function SettingPage({ accounts, accountId, account, onSwitchAccount, onRenameAccount, onAddAccount, category, setCategory }) {
+  const [rooms, setRooms] = useState(initialRooms);
+
   return (
     <div className="settings-page">
       <section className="settings-hero card">
@@ -42,7 +46,8 @@ export function SettingPage({ accounts, accountId, account, onSwitchAccount, onR
         </nav>
 
         <div className="settings-detail">
-          {category === 'devices' && <DeviceRegistrationSettings accounts={accounts} />}
+          {category === 'devices' && <DeviceRegistrationSettings rooms={rooms} />}
+          {category === 'rooms' && <RoomZoneSettings rooms={rooms} setRooms={setRooms} />}
           {category === 'sleep' && <SleepSettings />}
           {category === 'account' && (
             <AccountSettings
