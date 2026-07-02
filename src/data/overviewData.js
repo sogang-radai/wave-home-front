@@ -21,8 +21,7 @@ export const overviewQuickActions = [
   { label: '더보기', tone: 'gray' },
 ];
 
-export const overviewFeatureTiles = [
-  { id: 'cycle', title: '생리주기 기록', desc: '주기를 기록하고 다음 예상일을 확인하세요.', tone: 'pink', muted: true },
+export const overviewFeatureTiles = [ 
   { id: 'medication', title: '복약 관리', desc: '복용 중인 약을 등록하고 알림을 받아보세요.', tone: 'mint', muted: true },
   { id: 'records', title: '건강 기록', desc: '건강검진 결과와 기록을 한 곳에서 모아보세요.', tone: 'gray', muted: true },
 ];

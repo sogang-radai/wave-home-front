@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -11,9 +11,27 @@ import {
 import { Card } from '../components/ui/Card';
 import { Tabs } from '../components/ui/Tabs';
 import { Metric } from '../components/ui/Metric';
-import { gestureHistory, gestureSets, iotDevices, powerRanges, smartPlugDevices } from '../data/homeData';
-import { initialRadarZones } from './settings/DeviceSettings';
+import homeApi from '../api/homeApi';
 import './HomeControlPage.css';
+
+const powerRanges = [
+  { id: 'hour', label: '시간' },
+  { id: 'day', label: '일간' },
+  { id: 'week', label: '주간' },
+  { id: 'month', label: '월간' },
+];
+
+function formatRelativeTime(iso) {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMinutes = Math.round((now - date) / 60000);
+  if (diffMinutes < 1) return '방금 전';
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+  if (date.toDateString() === now.toDateString()) {
+    return `오늘 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric' }).format(date);
+}
 
 export function HomeControlPage({ tab, setTab }) {
   const [selectedSetId, setSelectedSetId] = useState('daily');
@@ -22,40 +40,53 @@ export function HomeControlPage({ tab, setTab }) {
   const [powerRange, setPowerRange] = useState('hour');
   const [openControl, setOpenControl] = useState('');
   const [openGestureId, setOpenGestureId] = useState(null);
+
+  const [todaySummary, setTodaySummary] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [gestureSets, setGestureSets] = useState([]);
+  const [radars, setRadars] = useState([]);
+  const [radarAssignments, setRadarAssignments] = useState({});
+  const [devices, setDevices] = useState([]);
   const [bindings, setBindings] = useState({});
-  const [radarAssignments, setRadarAssignments] = useState(() =>
-    Object.fromEntries(
-      gestureSets.flatMap((set) => set.gestures)
-        .filter((g) => g.radars && g.radars.length > 0)
-        .map((g) => [g.id, g.radars])
-    )
-  );
+  const [plugs, setPlugs] = useState([]);
+
+  useEffect(() => {
+    homeApi.getTodayGestureSummary().then(setTodaySummary);
+    homeApi.getGestureHistory().then(setHistory);
+    homeApi.getGestureSets().then(setGestureSets);
+    homeApi.getRadars().then(setRadars);
+    homeApi.getGestureRadarAssignments().then(setRadarAssignments);
+    homeApi.getDevices().then(setDevices);
+    homeApi.getDeviceBindings().then((list) => {
+      const map = {};
+      list.forEach((binding) => {
+        map[`${binding.deviceId}:${binding.controlLabel}`] = binding;
+      });
+      setBindings(map);
+    });
+    homeApi.getPowerPlugs().then(setPlugs);
+  }, []);
 
   const allGestures = gestureSets.flatMap((set) => set.gestures);
   const registeredGestures = allGestures.filter((g) => (radarAssignments[g.id] || []).length > 0);
   const selectedSet = gestureSets.find((set) => set.id === selectedSetId) || gestureSets[0];
-  const selectedDevice = iotDevices.find((device) => device.id === selectedDeviceId) || iotDevices[0];
-  const selectedPlug = smartPlugDevices.find((device) => device.id === selectedPlugId) || smartPlugDevices[0];
-  const onlineCount = iotDevices.filter((device) => device.connection === 'online').length;
-  const availableRadars = initialRadarZones.filter((r) => r.connected);
-  const getRadarName = (radarId) => initialRadarZones.find((r) => r.id === radarId)?.name || '';
+  const selectedDevice = devices.find((device) => device.id === selectedDeviceId) || devices[0];
+  const selectedPlug = plugs.find((device) => device.id === selectedPlugId) || plugs[0];
+  const onlineCount = devices.filter((device) => device.connection === 'online').length;
+  const availableRadars = radars.filter((r) => r.connected);
+  const getRadarName = (radarId) => radars.find((r) => r.id === radarId)?.name || '';
   const getAssignedRadarIds = (gestureId) => radarAssignments[gestureId] || [];
 
-  const toggleRadar = (gestureId, radarId) => {
+  const toggleRadar = async (gestureId, radarId) => {
+    const existing = radarAssignments[gestureId] || [];
+    const next = existing.includes(radarId) ? existing.filter((id) => id !== radarId) : [...existing, radarId];
+    setRadarAssignments((current) => ({ ...current, [gestureId]: next }));
+    const saved = await homeApi.updateGestureRadarAssignment(gestureId, next);
     setRadarAssignments((current) => {
-      const existing = current[gestureId] || [];
-      const next = { ...current };
-      if (existing.includes(radarId)) {
-        const updated = existing.filter((id) => id !== radarId);
-        if (updated.length === 0) {
-          delete next[gestureId];
-        } else {
-          next[gestureId] = updated;
-        }
-      } else {
-        next[gestureId] = [...existing, radarId];
-      }
-      return next;
+      const copy = { ...current };
+      if (saved.radarIds.length === 0) delete copy[gestureId];
+      else copy[gestureId] = saved.radarIds;
+      return copy;
     });
   };
 
@@ -68,28 +99,25 @@ export function HomeControlPage({ tab, setTab }) {
 
   const getControlKey = (deviceId, controlLabel) => `${deviceId}:${controlLabel}`;
   const getControlBinding = (control) => bindings[getControlKey(selectedDevice.id, control.label)];
-  const selectedDeviceBindings = Object.entries(bindings).filter(([key]) => key.startsWith(`${selectedDevice.id}:`));
-  const displayedBinding = selectedDeviceBindings.length > 0 ? `${selectedDeviceBindings.length}개 매핑됨` : '전체 미지정';
+  const selectedDeviceBindingKeys = Object.keys(bindings).filter((key) => key.startsWith(`${selectedDevice.id}:`));
+  const displayedBinding = selectedDeviceBindingKeys.length > 0 ? `${selectedDeviceBindingKeys.length}개 매핑됨` : '전체 미지정';
   const usedGestureIds = new Set(Object.values(bindings).map((binding) => binding.gestureId));
 
-  const clearSelectedDeviceBindings = () => {
+  const clearSelectedDeviceBindings = async () => {
+    await homeApi.clearDeviceBindings(selectedDevice.id);
     setBindings((current) => {
       const next = { ...current };
-      selectedDevice.controls.forEach((control) => { delete next[getControlKey(selectedDevice.id, control.label)]; });
+      Object.keys(next)
+        .filter((key) => key.startsWith(`${selectedDevice.id}:`))
+        .forEach((key) => delete next[key]);
       return next;
     });
     setOpenControl('');
   };
 
-  const setControlBinding = (control, gesture) => {
-    setBindings((current) => ({
-      ...current,
-      [getControlKey(selectedDevice.id, control.label)]: {
-        gestureId: gesture.id,
-        gestureName: gesture.name,
-        action: gesture.action,
-      },
-    }));
+  const setControlBinding = async (control, gesture) => {
+    const saved = await homeApi.setDeviceBinding({ deviceId: selectedDevice.id, controlLabel: control.label, gestureId: gesture.id });
+    setBindings((current) => ({ ...current, [getControlKey(selectedDevice.id, control.label)]: saved }));
     setOpenControl('');
   };
 
@@ -108,16 +136,16 @@ export function HomeControlPage({ tab, setTab }) {
 
       {tab !== 'power' && (
         <div className="home-summary-grid">
-          <Metric label="오늘 인식" value="18회" detail="더미 데이터 기준" />
+          <Metric label="오늘 인식" value={todaySummary ? `${todaySummary.recognizedCount}회` : '—'} detail="최근 24시간 기준" />
           <Metric label="등록된 제스처" value={`${registeredGestures.length}개`} detail="레이더 기준" />
-          <Metric label="연결 IoT" value={`${onlineCount}/${iotDevices.length}`} detail="온라인 기기" />
+          <Metric label="연결 IoT" value={`${onlineCount}/${devices.length}`} detail="온라인 기기" />
         </div>
       )}
 
       {tab === 'history' && (
         <Card title="최근 기록" wide>
           <div className="gesture-history-list">
-            {gestureHistory.map((item) => (
+            {history.map((item) => (
               <article className="gesture-history-item" key={item.id}>
                 <div className="gesture-history-icon">⌁</div>
                 <div>
@@ -125,8 +153,8 @@ export function HomeControlPage({ tab, setTab }) {
                   <span>{item.device} · {item.action}</span>
                 </div>
                 <div className="history-meta">
-                  <span className="radar-tag">{item.radar}</span>
-                  <time>{item.time}</time>
+                  <span className="radar-tag">{item.radarName}</span>
+                  <time>{formatRelativeTime(item.occurredAt)}</time>
                 </div>
               </article>
             ))}
@@ -134,7 +162,7 @@ export function HomeControlPage({ tab, setTab }) {
         </Card>
       )}
 
-      {tab === 'list' && (
+      {tab === 'list' && selectedSet && (
         <div className="gesture-management">
           <div className="gesture-set-list">
             {gestureSets.map((set) => {
@@ -206,11 +234,11 @@ export function HomeControlPage({ tab, setTab }) {
         </div>
       )}
 
-      {tab === 'iot' && (
+      {tab === 'iot' && selectedDevice && (
         <div className="iot-layout">
           <Card title="IoT 기기">
             <div className="iot-device-list">
-              {iotDevices.map((device) => (
+              {devices.map((device) => (
                 <button
                   className={`iot-device-row ${selectedDevice.id === device.id ? 'selected' : ''}`}
                   key={device.id}
@@ -289,7 +317,7 @@ export function HomeControlPage({ tab, setTab }) {
         </div>
       )}
 
-      {tab === 'power' && (
+      {tab === 'power' && selectedPlug && (
         <div className="power-analysis-layout">
           <Card title="WaveAI 요약" wide>
             <div className="power-agent-summary">
@@ -304,7 +332,7 @@ export function HomeControlPage({ tab, setTab }) {
               </div>
               <div className="power-agent-total">
                 <span>현재 전력</span>
-                <strong>{selectedPlug.power_w.toFixed(1)}W</strong>
+                <strong>{selectedPlug.powerW.toFixed(1)}W</strong>
               </div>
             </div>
           </Card>
@@ -351,7 +379,7 @@ export function HomeControlPage({ tab, setTab }) {
           </Card>
 
           <div className="power-device-grid">
-            {smartPlugDevices.map((device) => (
+            {plugs.map((device) => (
               <button
                 type="button"
                 key={device.id}
@@ -361,12 +389,12 @@ export function HomeControlPage({ tab, setTab }) {
                 <span>{device.room}</span>
                 <strong>{device.name}</strong>
                 <div className="power-device-value">
-                  {device.power_w.toFixed(1)}<small>W</small>
+                  {device.powerW.toFixed(1)}<small>W</small>
                 </div>
                 <div className="power-device-meta">
-                  <span>{device.voltage_v.toFixed(1)}V</span>
-                  <span>{(device.current_ma / 1000).toFixed(3)}A</span>
-                  <span>시간당 약 {device.hourlyCost.toFixed(1)}원</span>
+                  <span>{device.voltageV.toFixed(1)}V</span>
+                  <span>{(device.currentMa / 1000).toFixed(3)}A</span>
+                  <span>시간당 약 {device.hourlyCostWon.toFixed(1)}원</span>
                 </div>
               </button>
             ))}

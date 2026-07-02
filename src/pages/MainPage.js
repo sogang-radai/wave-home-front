@@ -5,45 +5,69 @@ import { Metric } from '../components/ui/Metric';
 import { Donut } from '../components/ui/Donut';
 import { PostureScoreGauge } from './posture/PostureScoreGauge';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
-import { dailyMessage } from '../data/overviewData';
-import { smartPlugDevices } from '../data/homeData';
 import postureApi from '../api/postureApi';
 import sleepApi from '../api/sleepApi';
+import homeApi from '../api/homeApi';
+import dashboardApi from '../api/dashboardApi';
 import './main.css';
+
+function formatActivatedAgo(iso) {
+  const diffMinutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (diffMinutes < 60) return `${diffMinutes}분 전 시작됨`;
+  return `${Math.round(diffMinutes / 60)}시간 전 시작됨`;
+}
 
 export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings, onGoToPowerAnalysis }) {
   const todayLabel = koreanWeekdayLabels[new Date().getDay()];
   const todayTodos = todos.filter((t) => t.day === todayLabel);
   const remaining = todayTodos.filter((todo) => !todo.done).length;
-  const totalPower = smartPlugDevices.find((device) => device.id === 'all') || smartPlugDevices[0];
 
   const [postureSummary, setPostureSummary] = useState(null);
   const [sleepSummary, setSleepSummary] = useState(null);
+  const [totalPower, setTotalPower] = useState(null);
+  const [dailyMessage, setDailyMessage] = useState(null);
+  const [currentState, setCurrentState] = useState(null);
   useEffect(() => {
     postureApi.getTodaySummary().then(setPostureSummary);
     sleepApi.getTodaySummary().then(setSleepSummary);
+    homeApi.getPowerPlugs().then((plugs) => setTotalPower(plugs.find((device) => device.id === 'all') || plugs[0]));
+    dashboardApi.getDailyMessage().then(setDailyMessage);
+    dashboardApi.getCurrentState().then(setCurrentState);
   }, []);
 
   return (
     <div className="page-stack">
       <section className="hero card">
-        <div>
-          <h2>{dailyMessage.headline}</h2>
-          <p>{dailyMessage.body}</p>
-        </div>
+        {dailyMessage && (
+          <div>
+            <h2>{dailyMessage.headline}</h2>
+            <p>{dailyMessage.body}</p>
+          </div>
+        )}
       </section>
 
       <section className="main-grid">
         <Card title="현재 상태">
           <div className="state-grid">
-            <Metric label="실내 환경" value="쾌적" detail="온도 24℃ · 조도 낮음" />
-            <Metric label="가전 제어 모드" value="집중 모드" detail="2시간 전 시작됨" />
+            {currentState && (
+              <>
+                <Metric label="실내 환경" value={currentState.indoorEnvironment.label} detail={currentState.indoorEnvironment.detail} />
+                <Metric label="가전 제어 모드" value={currentState.controlMode.label} detail={formatActivatedAgo(currentState.controlMode.activatedAt)} />
+              </>
+            )}
             <Metric
               label="자세 점수"
               value={postureSummary ? `${postureSummary.score}점` : '—'}
               detail={postureSummary ? `거북목 감지 오늘 ${postureSummary.turtleNeckCount}회` : ''}
             />
-            <Metric label="레이더 연결 상태" value="연결됨" detail="방 1 레이더 기준" dot="online" />
+            {currentState && (
+              <Metric
+                label="레이더 연결 상태"
+                value={currentState.radar.connected ? '연결됨' : '연결 대기'}
+                detail={`${currentState.radar.name} 레이더 기준`}
+                dot={currentState.radar.connected ? 'online' : undefined}
+              />
+            )}
           </div>
         </Card>
 
@@ -76,22 +100,27 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings,
             type="button"
             className="dashboard-power-card"
             onClick={onGoToPowerAnalysis}
+            disabled={!totalPower}
           >
-            <span>전력 분석</span>
-            <strong>67.4W</strong>
-            <p>전체 콘센트 현재 사용량</p>
-            <div className="dashboard-power-chart" aria-hidden="true">
-              <ResponsiveContainer width="100%" height={96}>
-                <AreaChart data={totalPower.trend.hour} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
-                  <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="var(--wave-15)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="dashboard-power-meta">
-              <span>235.0V</span>
-              <span>0.287A</span>
-              <span>시간당 약 7.4원</span>
-            </div>
+            {totalPower && (
+              <>
+                <span>전력 분석</span>
+                <strong>{totalPower.powerW.toFixed(1)}W</strong>
+                <p>전체 콘센트 현재 사용량</p>
+                <div className="dashboard-power-chart" aria-hidden="true">
+                  <ResponsiveContainer width="100%" height={96}>
+                    <AreaChart data={totalPower.trend.hour} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+                      <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="var(--wave-15)" dot={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="dashboard-power-meta">
+                  <span>{totalPower.voltageV.toFixed(1)}V</span>
+                  <span>{(totalPower.currentMa / 1000).toFixed(3)}A</span>
+                  <span>시간당 약 {totalPower.hourlyCostWon.toFixed(1)}원</span>
+                </div>
+              </>
+            )}
           </button>
         </div>
 

@@ -2,12 +2,6 @@ import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import settingsApi from '../../api/settingsApi';
 
-export const initialRadarZones = [
-  { id: 'room1', name: '방 1', owner: 'kim', active: true, connected: true },
-  { id: 'room2', name: '방 2', owner: 'park', active: true, connected: true },
-  { id: 'study', name: '서재', owner: 'kim', active: false, connected: false },
-];
-
 // docs/api/settings.md의 Device(interface/settings 중첩 구조)를 화면에서 바로 쓰기 좋은
 // 평평한 view model로 변환한다. 실제 연결 상태 개념이 없는 API라 enabled를 대신 사용한다.
 function toViewDevice(device) {
