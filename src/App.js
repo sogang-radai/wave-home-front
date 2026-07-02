@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import ApprovedActionsContext from './context/ApprovedActionsContext';
-import { pageTitles, initialNotifications, initialAccounts } from './data/appData';
+import { pageTitles } from './data/appData';
 import { initialTodos } from './data/weeklyPlanData';
-import { initialChatConversations, getInsightReply } from './data/chatData';
+import chatApi from './api/chatApi';
+import settingsApi from './api/settingsApi';
 import { WaveTransitionOverlay } from './WaveTransitionOverlay';
 import { InsightChat } from './chat/InsightChat';
 import { ChatPopup } from './chat/ChatPopup';
@@ -18,15 +19,46 @@ import { WeeklyPlanPage } from './pages/WeeklyPlanPage';
 import { HomeControlPage } from './pages/HomeControlPage';
 import { SettingPage } from './pages/settings/SettingPage';
 
+function formatNotificationTime(iso) {
+  const date = new Date(iso);
+  const now = new Date();
+  if (now - date < 60 * 1000) return '방금 전';
+
+  const time = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true }).format(date);
+  if (date.toDateString() === now.toDateString()) return time;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return `어제 ${time}`;
+
+  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric' }).format(date);
+}
+
+function toViewNotification(notification) {
+  return {
+    id: notification.id,
+    type: notification.type,
+    msg: notification.message,
+    time: formatNotificationTime(notification.createdAt),
+    read: notification.read,
+  };
+}
+
 function App() {
   const [page, setPage] = useState('main');
   const [sleepTab, setSleepTab] = useState('report');
   const [postureTab, setPostureTab] = useState('current');
   const [homeTab, setHomeTab] = useState('history');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const markAllNotificationsRead = () => {
-    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
+  }, []);
+
+  const markAllNotificationsRead = async () => {
+    const updated = await settingsApi.markAllNotificationsRead();
+    setNotifications(updated.map(toViewNotification));
   };
   const [todos, setTodos] = useState(initialTodos);
   const toggleTodo = (id) => {
@@ -51,8 +83,12 @@ function App() {
     setHomeTab('power');
     setPage('home');
   };
-  const [chatConversations, setChatConversations] = useState(initialChatConversations);
+  const [chatConversations, setChatConversations] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
+
+  useEffect(() => {
+    chatApi.getConversations().then(setChatConversations);
+  }, []);
   const [waveTransition, setWaveTransition] = useState(false);
   const bubbleAudioCtxRef = useRef(null);
   const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
@@ -143,51 +179,56 @@ function App() {
     setChatMode('page');
   };
 
-  const addChatConversation = () => {
-    const id = `chat-${Date.now()}`;
-    setChatConversations((prev) => [{ id, title: '새 대화', messages: [] }, ...prev]);
-    setActiveChatId(id);
+  const addChatConversation = async () => {
+    const conversation = await chatApi.createConversation();
+    setChatConversations((prev) => [conversation, ...prev]);
+    setActiveChatId(conversation.id);
   };
 
-  const deleteChatConversation = (id) => {
+  const deleteChatConversation = async (id) => {
+    await chatApi.deleteConversation(id);
     setChatConversations((prev) => prev.filter((c) => c.id !== id));
     if (activeChatId === id) setActiveChatId(null);
   };
 
-  const renameChatConversation = (id, title) => {
-    setChatConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
+  const renameChatConversation = async (id, title) => {
+    const conversation = await chatApi.renameConversation(id, title);
+    setChatConversations((prev) => prev.map((c) => (c.id === id ? conversation : c)));
   };
 
-  const sendChatMessage = (text) => {
+  const sendChatMessage = async (text) => {
     if (!text.trim()) return;
-    let targetId = activeChatId;
-    if (!targetId) {
-      targetId = `chat-${Date.now()}`;
-      const newConv = {
-        id: targetId,
-        title: text.slice(0, 22) + (text.length > 22 ? '…' : ''),
-        messages: [],
-      };
-      setChatConversations((prev) => [newConv, ...prev]);
-      setActiveChatId(targetId);
-    }
-    const reply = getInsightReply(text);
+    const wasNewConversation = !activeChatId;
+    const conversation = await chatApi.sendMessage(activeChatId, text.trim());
     setChatConversations((prev) =>
-      prev.map((c) =>
-        c.id === targetId
-          ? { ...c, messages: [...c.messages, { role: 'user', text: text.trim() }, { role: 'assistant', text: reply }] }
-          : c
-      )
+      wasNewConversation
+        ? [conversation, ...prev]
+        : prev.map((c) => (c.id === conversation.id ? conversation : c))
     );
+    if (wasNewConversation) setActiveChatId(conversation.id);
   };
-  const [accounts, setAccounts] = useState(initialAccounts);
-  const [accountId, setAccountId] = useState(initialAccounts[0].id);
-  const account = accounts.find((item) => item.id === accountId) || accounts[0];
-  const renameAccount = (id, name) => {
-    setAccounts((current) => current.map((item) => (item.id === id ? { ...item, name } : item)));
+  const [accounts, setAccounts] = useState([]);
+  const [accountId, setAccountId] = useState(null);
+  const account = accounts.find((item) => item.id === accountId) || accounts[0] || null;
+
+  useEffect(() => {
+    Promise.all([settingsApi.getSession(), settingsApi.getAccounts()]).then(([session, accountList]) => {
+      setAccounts(accountList);
+      setAccountId(session.activeAccount?.id || accountList[0]?.id || null);
+    });
+  }, []);
+
+  const switchAccount = (id) => {
+    setAccountId(id);
+    settingsApi.switchActiveAccount(id);
   };
-  const addAccount = (name) => {
-    setAccounts((current) => [...current, { id: `member-${Date.now()}`, name }]);
+  const renameAccount = async (id, name) => {
+    const updated = await settingsApi.updateAccount(id, { name });
+    setAccounts((current) => current.map((item) => (item.id === id ? updated : item)));
+  };
+  const addAccount = async (name) => {
+    const created = await settingsApi.createAccount({ name });
+    setAccounts((current) => [...current, created]);
   };
 
   const today = useMemo(
@@ -200,6 +241,10 @@ function App() {
       }).format(new Date()),
     []
   );
+
+  if (!account) {
+    return <div className="app-shell" />;
+  }
 
   return (
     <ApprovedActionsContext.Provider value={{ approved: approvedActions, toggle: toggleApprovedAction }}>
@@ -232,7 +277,7 @@ function App() {
           onMarkAllNotificationsRead={markAllNotificationsRead}
           accounts={accounts}
           account={account}
-          onSwitchAccount={setAccountId}
+          onSwitchAccount={switchAccount}
           showInsightChat={page === 'chat'}
           onToggleInsightChat={handleNavigateToChat}
           collapsed={sidebarCollapsed}
@@ -248,7 +293,7 @@ function App() {
             onMarkAllNotificationsRead={markAllNotificationsRead}
             accounts={accounts}
             account={account}
-            onSwitchAccount={setAccountId}
+            onSwitchAccount={switchAccount}
           />
           <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}`}>
             {page === 'main' && (
@@ -272,7 +317,7 @@ function App() {
                 accounts={accounts}
                 accountId={accountId}
                 account={account}
-                onSwitchAccount={setAccountId}
+                onSwitchAccount={switchAccount}
                 onRenameAccount={renameAccount}
                 onAddAccount={addAccount}
                 category={settingCategory}

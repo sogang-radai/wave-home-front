@@ -1,10 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
-
-export const initialRooms = [
-  { id: '7c4a9e2f18b356d0', name: '책상', description: '책상' },
-  { id: '3f91c6e52ad047b8', name: '침실', description: '침실' },
-];
+import settingsApi from '../../api/settingsApi';
 
 export const initialRadarZones = [
   { id: 'room1', name: '방 1', owner: 'kim', active: true, connected: true },
@@ -12,98 +8,17 @@ export const initialRadarZones = [
   { id: 'study', name: '서재', owner: 'kim', active: false, connected: false },
 ];
 
-const initialInputDevices = [
-  {
-    id: '8d2e5a1c49f7036b',
-    room_id: '7c4a9e2f18b356d0',
-    name: '거실 레이더',
-    description: 'Retina-4SN mmWave 레이더',
-    enabled: true,
-    connected: true,
-    class: 'srs_r4sn',
-    model: 'Retina-4SN',
-    ip: '192.168.0.33',
-    mac: 'A4:C1:38:24:9B:11',
-    pointCount: 1284,
-  },
-  {
-    id: '1a6f3e8d02c75491',
-    room_id: '3f91c6e52ad047b8',
-    name: '침실 마이크',
-    description: 'ESP32 + I2S 마이크',
-    enabled: true,
-    connected: true,
-    class: 'wave_mic',
-    model: 'ESP32 + INMP441',
-    ip: '192.168.0.50',
-    mac: '30:AE:A4:92:17:C2',
-    micLevel: 68,
-  },
-  {
-    id: 'c5281a7e93bf406d',
-    room_id: '3f91c6e52ad047b8',
-    name: '침실 카메라',
-    description: 'DroidCam 자세 교정 카메라',
-    enabled: true,
-    connected: true,
-    class: 'wave_cam',
-    model: 'DroidCam',
-    ip: '192.168.0.51',
-    mac: '5C:E9:1E:7B:41:09',
-    port: 4747,
-  },
-];
-
-const initialOutputDevices = [
-  {
-    id: '0f8c2d6b147ae953',
-    room_id: '7c4a9e2f18b356d0',
-    name: '거실 에어컨 IR',
-    description: 'IR Remote · LIRC 송신',
-    enabled: true,
-    connected: true,
-    class: 'ir_remote',
-    model: 'Raspberry Pi 5 LIRC',
-    status: 'Pi 5에 연결됨',
-  },
-  {
-    id: '5e3b80a1f2496cde',
-    room_id: '7c4a9e2f18b356d0',
-    name: '거실 TV',
-    description: '삼성 32인치 모니터',
-    enabled: true,
-    connected: true,
-    class: 'tizen_tv',
-    model: 'Samsung 32 inch',
-    ip: '192.168.0.70',
-    mac: '60:6B:BD:80:32:10',
-    port: 8002,
-  },
-  {
-    id: '9a4c71e36b0285fd',
-    room_id: '7c4a9e2f18b356d0',
-    name: '거실 스마트 플러그',
-    description: 'EP2-H Tuya IoT Plug',
-    enabled: true,
-    connected: true,
-    class: 'tuya_ep2h',
-    model: 'EP2-H',
-    ip: '192.168.0.37',
-    mac: 'E8:DB:84:11:78:44',
-  },
-  {
-    id: 'd7139e58a04b6c21',
-    room_id: '3f91c6e52ad047b8',
-    name: '침실 조명',
-    description: 'Philips Hue 조명 더미',
-    enabled: true,
-    connected: true,
-    class: 'hue_light',
-    model: 'Hue White',
-    ip: '192.168.0.80',
-    mac: '00:17:88:64:AB:02',
-  },
-];
+// docs/api/settings.md의 Device(interface/settings 중첩 구조)를 화면에서 바로 쓰기 좋은
+// 평평한 view model로 변환한다. 실제 연결 상태 개념이 없는 API라 enabled를 대신 사용한다.
+function toViewDevice(device) {
+  const iface = device.interface || {};
+  return {
+    ...device,
+    model: device.description,
+    ip: iface.host,
+    port: iface.port,
+  };
+}
 
 function GearIcon() {
   return (
@@ -129,7 +44,7 @@ function DeviceRow({ device, roomName, onOpenSettings }) {
       <div className="device-row-main">
         <div className="device-row-title">
           <strong>{device.name}</strong>
-          <em className={device.connected ? 'online' : 'idle'}>{device.connected ? '연결됨' : '대기'}</em>
+          <em className={device.enabled ? 'online' : 'idle'}>{device.enabled ? '연결됨' : '대기'}</em>
         </div>
         <span>{device.description}</span>
         <small>{roomName} · {device.model || device.class}</small>
@@ -178,45 +93,41 @@ function DeviceSettingsDialog({ device, roomName, onClose, onToggle }) {
         </div>
 
         <div className="device-detail-grid">
-          <DetailLine label={device.class === 'ir_remote' ? '상태' : '연결상태'} value={device.class === 'ir_remote' ? device.status : device.connected ? '연결됨' : '연결 대기'} />
+          <DetailLine label="연결상태" value={device.enabled ? '연결됨' : '연결 대기'} />
           <DetailLine label="공간" value={roomName} />
           <DetailLine label="모델명" value={device.model} />
           <DetailLine label="IP" value={device.ip} />
-          <DetailLine label="MAC" value={device.mac} />
           <DetailLine label="포트" value={device.port} />
-          <DetailLine label="실시간 포인트 수" value={device.pointCount?.toLocaleString()} />
         </div>
-
-        {device.class === 'wave_mic' && (
-          <div className="mic-level-block">
-            <div>
-              <span>마이크 수신</span>
-              <strong>{device.micLevel}%</strong>
-            </div>
-            <div className="mic-level-bar">
-              <i style={{ width: `${device.micLevel}%` }} />
-            </div>
-          </div>
-        )}
       </section>
     </div>
   );
 }
 
 export function DeviceRegistrationSettings({ rooms }) {
-  const [inputDevices, setInputDevices] = useState(initialInputDevices);
-  const [outputDevices, setOutputDevices] = useState(initialOutputDevices);
+  const [inputDevices, setInputDevices] = useState([]);
+  const [outputDevices, setOutputDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
+
+  useEffect(() => {
+    settingsApi.getDevices().then(({ input_devices, output_devices }) => {
+      setInputDevices(input_devices.map(toViewDevice));
+      setOutputDevices(output_devices.map(toViewDevice));
+    });
+  }, []);
 
   const roomName = (roomId) => rooms.find((room) => room.id === roomId)?.name || '미지정 공간';
   const allDevices = [...inputDevices, ...outputDevices];
   const enabledCount = allDevices.filter((device) => device.enabled).length;
 
-  const toggleDevice = (id) => {
-    const toggle = (device) => (device.id === id ? { ...device, enabled: !device.enabled } : device);
-    setInputDevices((current) => current.map(toggle));
-    setOutputDevices((current) => current.map(toggle));
-    setSelectedDevice((current) => (current?.id === id ? { ...current, enabled: !current.enabled } : current));
+  const toggleDevice = async (id) => {
+    const target = allDevices.find((device) => device.id === id);
+    if (!target) return;
+    const updated = toViewDevice(await settingsApi.updateDevice(id, { enabled: !target.enabled }));
+    const apply = (device) => (device.id === id ? updated : device);
+    setInputDevices((current) => current.map(apply));
+    setOutputDevices((current) => current.map(apply));
+    setSelectedDevice((current) => (current?.id === id ? updated : current));
   };
 
   return (
@@ -261,12 +172,10 @@ export function RoomZoneSettings({ rooms, setRooms }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const addRoom = () => {
+  const addRoom = async () => {
     if (!name.trim()) return;
-    setRooms((current) => [
-      ...current,
-      { id: `room-${Date.now()}`, name: name.trim(), description: description.trim() || name.trim() },
-    ]);
+    const room = await settingsApi.createRoom({ name: name.trim(), description: description.trim() });
+    setRooms((current) => [...current, room]);
     setName('');
     setDescription('');
   };

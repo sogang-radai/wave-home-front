@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './settings.css';
-import { DeviceRegistrationSettings, RoomZoneSettings, initialRooms } from './DeviceSettings';
+import settingsApi from '../../api/settingsApi';
+import { DeviceRegistrationSettings, RoomZoneSettings } from './DeviceSettings';
 import { SleepSettings } from './SleepSettings';
 import { AccountSettings } from './AccountSettings';
 import { PersonalSettings } from './PersonalSettings';
@@ -16,7 +17,11 @@ const settingCategories = [
 ];
 
 export function SettingPage({ accounts, accountId, account, onSwitchAccount, onRenameAccount, onAddAccount, category, setCategory }) {
-  const [rooms, setRooms] = useState(initialRooms);
+  const [rooms, setRooms] = useState([]);
+
+  useEffect(() => {
+    settingsApi.getRooms().then(setRooms);
+  }, []);
 
   return (
     <div className="settings-page">
