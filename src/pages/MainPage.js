@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { Metric } from '../components/ui/Metric';
@@ -6,6 +7,7 @@ import { PostureScoreGauge } from './posture/PostureScoreGauge';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
 import { dailyMessage } from '../data/overviewData';
 import { smartPlugDevices } from '../data/homeData';
+import postureApi from '../api/postureApi';
 import './main.css';
 
 export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings, onGoToPowerAnalysis }) {
@@ -13,6 +15,11 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings,
   const todayTodos = todos.filter((t) => t.day === todayLabel);
   const remaining = todayTodos.filter((todo) => !todo.done).length;
   const totalPower = smartPlugDevices.find((device) => device.id === 'all') || smartPlugDevices[0];
+
+  const [postureSummary, setPostureSummary] = useState(null);
+  useEffect(() => {
+    postureApi.getTodaySummary().then(setPostureSummary);
+  }, []);
 
   return (
     <div className="page-stack">
@@ -28,7 +35,11 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings,
           <div className="state-grid">
             <Metric label="실내 환경" value="쾌적" detail="온도 24℃ · 조도 낮음" />
             <Metric label="가전 제어 모드" value="집중 모드" detail="2시간 전 시작됨" />
-            <Metric label="자세 점수" value="78점" detail="거북목 감지 오늘 4회" />
+            <Metric
+              label="자세 점수"
+              value={postureSummary ? `${postureSummary.score}점` : '—'}
+              detail={postureSummary ? `거북목 감지 오늘 ${postureSummary.turtleNeckCount}회` : ''}
+            />
             <Metric label="레이더 연결 상태" value="연결됨" detail="방 1 레이더 기준" dot="online" />
           </div>
         </Card>
@@ -147,23 +158,29 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings,
         <div className="dashboard-posture-column">
           <div className="dashboard-posture-card">
             <Card title="자세 점수" onClick={() => onNavigate('posture')}>
-              <PostureScoreGauge score={68} />
-              <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
-                거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>9회</span>
-              </p>
-              <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>전주 평균 7.3회 대비 개선</p>
-              <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>71%</p>
-                    <p className="text-xs" style={{ color: 'var(--sub)' }}>바른 자세</p>
+              {postureSummary && (
+                <>
+                  <PostureScoreGauge score={postureSummary.score} />
+                  <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
+                    거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>{postureSummary.turtleNeckCount}회</span>
+                  </p>
+                  <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>
+                    전주 평균 {postureSummary.turtleNeckLastWeekAverageCount}회 대비 개선
+                  </p>
+                  <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
+                    <div className="grid grid-cols-2 gap-2 text-center">
+                      <div>
+                        <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.correctPosturePercent}%</p>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>바른 자세</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.alertAcceptRatePercent}%</p>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>알림 수락</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>62%</p>
-                    <p className="text-xs" style={{ color: 'var(--sub)' }}>알림 수락</p>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </Card>
           </div>
         </div>
