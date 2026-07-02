@@ -8,6 +8,7 @@ import { koreanWeekdayLabels } from '../data/weeklyPlanData';
 import { dailyMessage } from '../data/overviewData';
 import { smartPlugDevices } from '../data/homeData';
 import postureApi from '../api/postureApi';
+import sleepApi from '../api/sleepApi';
 import './main.css';
 
 export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings, onGoToPowerAnalysis }) {
@@ -17,8 +18,10 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings,
   const totalPower = smartPlugDevices.find((device) => device.id === 'all') || smartPlugDevices[0];
 
   const [postureSummary, setPostureSummary] = useState(null);
+  const [sleepSummary, setSleepSummary] = useState(null);
   useEffect(() => {
     postureApi.getTodaySummary().then(setPostureSummary);
+    sleepApi.getTodaySummary().then(setSleepSummary);
   }, []);
 
   return (
@@ -95,44 +98,46 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings,
         <div className="dashboard-sleep-column">
           <div className="dashboard-sleep-card">
             <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
-              <div className="flex items-center gap-8">
-                <Donut pct={0.933} r={48} sw={11}>
-                  <div className="flex flex-col items-center">
-                    <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>7.0</span>
-                    <span className="text-xs" style={{ color: 'var(--sub)' }}>/ 7.5 h</span>
-                  </div>
-                </Donut>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-3 flex items-center gap-10">
-                    <div>
-                      <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
-                      <div className="flex items-baseline gap-0.5">
-                        <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>7.0</span>
-                        <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+              {sleepSummary && (
+                <div className="flex items-center gap-8">
+                  <Donut pct={sleepSummary.achievedHours / sleepSummary.goalHours} r={48} sw={11}>
+                    <div className="flex flex-col items-center">
+                      <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
+                      <span className="text-xs" style={{ color: 'var(--sub)' }}>/ {sleepSummary.goalHours} h</span>
+                    </div>
+                  </Donut>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-3 flex items-center gap-10">
+                      <div>
+                        <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
+                          <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                        </div>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 달성량</p>
                       </div>
-                      <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 달성량</p>
-                    </div>
-                    <div>
-                      <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>목표</p>
-                      <div className="flex items-baseline gap-0.5">
-                        <span className="text-2xl font-bold" style={{ color: 'var(--sub)' }}>7.5</span>
-                        <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                      <div>
+                        <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>목표</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-2xl font-bold" style={{ color: 'var(--sub)' }}>{sleepSummary.goalHours}</span>
+                          <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                        </div>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>일일 목표</p>
                       </div>
-                      <p className="text-xs" style={{ color: 'var(--sub)' }}>일일 목표</p>
                     </div>
-                  </div>
-                  <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
-                    <div className="flex items-center gap-4 text-xs">
-                      <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
-                      <span className="font-semibold" style={{ color: 'var(--ink)' }}>23:42</span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-4 text-xs">
-                      <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
-                      <span className="font-semibold" style={{ color: 'var(--ink)' }}>06:42</span>
+                    <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
+                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>{sleepSummary.bedTime}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-4 text-xs">
+                        <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
+                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>{sleepSummary.wakeTime}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </Card>
           </div>
 

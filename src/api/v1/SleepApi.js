@@ -1,0 +1,35 @@
+import { httpClient } from './httpClient';
+
+export class SleepApi {
+  async getTodaySummary() {
+    return httpClient.get('/sleep/today/summary');
+  }
+
+  async getTodayPlan() {
+    return httpClient.get('/sleep/today/plan');
+  }
+
+  async getTodayPhoneUsage() {
+    return httpClient.get('/sleep/today/phone-usage');
+  }
+
+  async getTodayAutomationSummary() {
+    return httpClient.get('/sleep/today/automation-summary');
+  }
+
+  async getDailyReport(date) {
+    return httpClient.get('/sleep/reports/daily', { date });
+  }
+
+  async getWeeklyReport(weekStart) {
+    return httpClient.get('/sleep/reports/weekly', { weekStart });
+  }
+
+  async getInsights({ period }) {
+    return httpClient.get('/sleep/insights', { period });
+  }
+
+  async updateInsight(insightId, { approved }) {
+    return httpClient.patch(`/insights/${insightId}`, { approved });
+  }
+}
