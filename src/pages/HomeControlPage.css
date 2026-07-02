@@ -443,22 +443,207 @@
   padding: 12px 0;
 }
 
+/* ── Power analysis ─────────────────────────────────────────────────────── */
+
+.power-analysis-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.power-agent-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.power-agent-summary span,
+.power-agent-summary p,
+.power-agent-total span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.power-agent-summary strong {
+  display: block;
+  margin: 5px 0;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.power-agent-summary p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.power-agent-total {
+  min-width: 132px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: right;
+}
+
+.power-agent-total strong {
+  margin: 4px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.power-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.power-chart-head strong,
+.power-chart-head span {
+  display: block;
+}
+
+.power-chart-head strong {
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.power-chart-head span {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.power-range-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--wave-05);
+}
+
+.power-range-tabs button {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.power-range-tabs button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 6px var(--wave-30);
+}
+
+.power-chart {
+  min-height: 260px;
+  padding: 12px 4px 0;
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.power-device-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.power-device-card {
+  min-height: 170px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 8px var(--wave-10);
+}
+
+.power-device-card.selected {
+  border-color: var(--wave);
+  background: linear-gradient(135deg, var(--surface), var(--wave-10));
+  box-shadow: 0 0 0 3px var(--wave-15), 0 1px 8px var(--wave-10);
+}
+
+.power-device-card > span {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.power-device-card > strong {
+  display: block;
+  margin: 6px 0 12px;
+  font-size: 15px;
+}
+
+.power-device-value {
+  margin-bottom: 12px;
+  color: var(--ink);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.power-device-value small {
+  margin-left: 4px;
+  color: var(--sub);
+  font-size: 14px;
+}
+
+.power-device-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.power-device-meta span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--wave-05);
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1100px) {
   .iot-layout {
     grid-template-columns: 1fr;
   }
+
+  .power-device-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
   .home-summary-grid,
   .gesture-set-list,
-  .gesture-card-grid {
+  .gesture-card-grid,
+  .power-device-grid {
     grid-template-columns: 1fr;
   }
 
   .gesture-picker {
     grid-template-columns: 1fr;
+  }
+
+  .power-agent-summary,
+  .power-chart-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .power-agent-total {
+    text-align: left;
   }
 }

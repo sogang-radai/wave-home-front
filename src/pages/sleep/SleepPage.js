@@ -20,7 +20,7 @@ export function SleepPage({ tab, setTab, onGoToSleepSettings }) {
       />
       {tab === 'current' && (
         <div className="dashboard-grid">
-          <Card title="오늘 밤 수면 계획">
+          <Card title="오늘 밤 추천 수면 시간">
             <div className="sleep-plan">
               <strong>23:30 → 06:40</strong>
               <span>목표 수면 7시간 10분</span>
@@ -68,7 +68,7 @@ export function SleepPage({ tab, setTab, onGoToSleepSettings }) {
         <>
           <SleepDailyReport />
           <SleepWeeklyReport />
-          <Card title="AI 수면 리포트">
+          <Card title="WaveAI 수면 리포트">
             <p style={{ fontSize: 13, lineHeight: 1.75, color: 'var(--sub)', marginBottom: 16 }}>
               이번 주 평균 수면 시간은 <strong style={{ color: 'var(--ink)' }}>6.7시간</strong>으로
               목표 7.5시간보다 0.8시간 부족했어요. 어젯밤은 <strong style={{ color: 'var(--ink)' }}>6시간 25분</strong> 수면으로

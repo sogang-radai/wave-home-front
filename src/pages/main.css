@@ -105,28 +105,111 @@
 
 .dashboard-health-grid {
   display: grid;
-  grid-template-columns: minmax(0, 370px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 320px) minmax(0, 1.15fr);
   gap: 20px;
   align-items: start;
 }
 
 .dashboard-sleep-column,
-.dashboard-posture-column {
+.dashboard-posture-column,
+.dashboard-power-column {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
 }
 
+.dashboard-power-column {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.dashboard-posture-column {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dashboard-sleep-column {
+  grid-column: 3;
+  grid-row: 1;
+}
+
 .dashboard-sleep-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 470px;
 }
 
 .dashboard-posture-card {
-  width: 50%;
+  width: 100%;
   max-width: 320px;
   min-width: 280px;
+}
+
+.dashboard-power-card {
+  width: 100%;
+  min-height: 250px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 1px 8px var(--wave-10);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-power-card:hover,
+.dashboard-power-card:focus-visible {
+  border-color: var(--wave);
+  box-shadow: 0 6px 20px var(--wave-25);
+}
+
+.dashboard-power-card > span {
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dashboard-power-card > strong {
+  display: block;
+  margin: 18px 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dashboard-power-card > p {
+  margin: 0 0 16px;
+  color: var(--sub);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dashboard-power-chart {
+  height: 96px;
+  margin: 4px 0 16px;
+  padding: 8px 0 0;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.dashboard-power-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 14px;
+  border-top: 1px solid var(--wave-15);
+}
+
+.dashboard-power-meta span {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: var(--wave-05);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 /* ── Todo list ──────────────────────────────────────────────────────────── */
@@ -381,6 +464,13 @@
     width: 100%;
     max-width: none;
     min-width: 0;
+  }
+
+  .dashboard-sleep-column,
+  .dashboard-posture-column,
+  .dashboard-power-column {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .hero {

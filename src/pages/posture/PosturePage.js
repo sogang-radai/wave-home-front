@@ -128,7 +128,7 @@ export function PosturePage({ tab, setTab }) {
 
       {activeTab === 'actions' && (
         <div className="posture-actions-layout">
-          <Card title="일간 권장 액션">
+          <Card title="WaveAI 추천 일간 권장 액션">
             <div className="posture-action-list">
               {postureDailyInsights.map((item) => (
                 <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
@@ -136,7 +136,7 @@ export function PosturePage({ tab, setTab }) {
             </div>
           </Card>
 
-          <Card title="주간 권장 액션">
+          <Card title="WaveAI 추천 주간 권장 액션">
             <div className="posture-action-list">
               {postureWeeklyInsights.map((item) => (
                 <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />

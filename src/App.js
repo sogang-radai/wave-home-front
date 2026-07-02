@@ -22,6 +22,7 @@ function App() {
   const [page, setPage] = useState('main');
   const [sleepTab, setSleepTab] = useState('report');
   const [postureTab, setPostureTab] = useState('current');
+  const [homeTab, setHomeTab] = useState('history');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
   const markAllNotificationsRead = () => {
@@ -45,6 +46,10 @@ function App() {
   const goToSleepSettings = () => {
     setPage('setting');
     setSettingCategory('sleep');
+  };
+  const goToPowerAnalysis = () => {
+    setHomeTab('power');
+    setPage('home');
   };
   const [chatConversations, setChatConversations] = useState(initialChatConversations);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -252,6 +257,7 @@ function App() {
                 todos={todos}
                 onToggleTodo={toggleTodo}
                 onGoToSleepSettings={goToSleepSettings}
+                onGoToPowerAnalysis={goToPowerAnalysis}
               />
             )}
             {page === 'overview' && <OverviewPage onNavigate={setPage} />}
@@ -260,7 +266,7 @@ function App() {
             )}
             {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
             {page === 'weeklyPlan' && <WeeklyPlanPage todos={todos} onToggleTodo={toggleTodo} onAddTodo={addTodo} onUpdateTodo={updateTodo} />}
-            {page === 'home' && <HomeControlPage />}
+            {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
             {page === 'setting' && (
               <SettingPage
                 accounts={accounts}

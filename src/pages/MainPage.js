@@ -1,15 +1,18 @@
+import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { Metric } from '../components/ui/Metric';
 import { Donut } from '../components/ui/Donut';
 import { PostureScoreGauge } from './posture/PostureScoreGauge';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
 import { dailyMessage } from '../data/overviewData';
+import { smartPlugDevices } from '../data/homeData';
 import './main.css';
 
-export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings }) {
+export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings, onGoToPowerAnalysis }) {
   const todayLabel = koreanWeekdayLabels[new Date().getDay()];
   const todayTodos = todos.filter((t) => t.day === todayLabel);
   const remaining = todayTodos.filter((todo) => !todo.done).length;
+  const totalPower = smartPlugDevices.find((device) => device.id === 'all') || smartPlugDevices[0];
 
   return (
     <div className="page-stack">
@@ -54,6 +57,30 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings 
       </section>
 
       <section className="dashboard-health-grid">
+        <div className="dashboard-power-column">
+          <button
+            type="button"
+            className="dashboard-power-card"
+            onClick={onGoToPowerAnalysis}
+          >
+            <span>전력 분석</span>
+            <strong>67.4W</strong>
+            <p>전체 콘센트 현재 사용량</p>
+            <div className="dashboard-power-chart" aria-hidden="true">
+              <ResponsiveContainer width="100%" height={96}>
+                <AreaChart data={totalPower.trend.hour} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+                  <Area type="monotone" dataKey="value" stroke="var(--wave)" strokeWidth={2.5} fill="var(--wave-15)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="dashboard-power-meta">
+              <span>235.0V</span>
+              <span>0.287A</span>
+              <span>시간당 약 7.4원</span>
+            </div>
+          </button>
+        </div>
+
         <div className="dashboard-sleep-column">
           <div className="dashboard-sleep-card">
             <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
@@ -84,11 +111,11 @@ export function MainPage({ onNavigate, todos, onToggleTodo, onGoToSleepSettings 
                     </div>
                   </div>
                   <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
-                    <div className="flex items-center gap-10 text-xs">
+                    <div className="flex items-center gap-4 text-xs">
                       <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
                       <span className="font-semibold" style={{ color: 'var(--ink)' }}>23:42</span>
                     </div>
-                    <div className="mt-1 flex items-center gap-10 text-xs">
+                    <div className="mt-1 flex items-center gap-4 text-xs">
                       <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
                       <span className="font-semibold" style={{ color: 'var(--ink)' }}>06:42</span>
                     </div>
