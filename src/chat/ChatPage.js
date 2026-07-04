@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import chatApi from '../api/chatApi';
 import { MarkdownMessage } from './MarkdownMessage';
+import { WaveTransitionOverlay } from '../WaveTransitionOverlay';
 import './chat.css';
 
 function ChatConvSidebar({ open, onToggle, conversations, activeConvId, onSelect, onAdd, onDelete, onRename }) {
@@ -96,7 +97,7 @@ function ChatConvSidebar({ open, onToggle, conversations, activeConvId, onSelect
   );
 }
 
-function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, convOpen }) {
+function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, convOpen, waveTransition }) {
   const [draft, setDraft] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -141,6 +142,8 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
           </button>
         )}
       </div>
+      <div className="chat-messages-wrap">
+        {waveTransition && <WaveTransitionOverlay active />}
       <div className="chat-messages-area">
         {isNewChat ? (
           <div className="chat-welcome">
@@ -173,6 +176,7 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
           </div>
         )}
       </div>
+      </div>
 
       <div className="chat-input-area">
         <form
@@ -198,8 +202,15 @@ function ChatMainArea({ messages, isNewChat, onSend, onShrink, onToggleConv, con
   );
 }
 
-export function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv, onDeleteConv, onRenameConv, onSendMessage, onShrink }) {
-  const [convOpen, setConvOpen] = useState(false);
+export function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv, onDeleteConv, onRenameConv, onSendMessage, onShrink, waveTransition }) {
+  const [convOpen, setConvOpen] = useState(() => {
+    try { return localStorage.getItem('chatConvOpen') !== 'false'; } catch { return true; }
+  });
+  const toggleConvOpen = () => setConvOpen((o) => {
+    const next = !o;
+    try { localStorage.setItem('chatConvOpen', String(next)); } catch {}
+    return next;
+  });
   const activeConversation = conversations.find((c) => c.id === activeConvId) || null;
   const messages = activeConversation?.messages || [];
 
@@ -209,7 +220,7 @@ export function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv,
         {convOpen && <div className="chat-conv-overlay" onClick={() => setConvOpen(false)} />}
         <ChatConvSidebar
           open={convOpen}
-          onToggle={() => setConvOpen((o) => !o)}
+          onToggle={toggleConvOpen}
           conversations={conversations}
           activeConvId={activeConvId}
           onSelect={onSelectConv}
@@ -222,8 +233,9 @@ export function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv,
           isNewChat={!activeConvId || messages.length === 0}
           onSend={onSendMessage}
           onShrink={onShrink}
-          onToggleConv={() => setConvOpen((o) => !o)}
+          onToggleConv={toggleConvOpen}
           convOpen={convOpen}
+          waveTransition={waveTransition}
         />
       </div>
     </div>

@@ -26,12 +26,12 @@
 }
 
 .wave-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 9999;
+  z-index: 20;
   pointer-events: none;
   overflow: hidden;
-  animation: wave-overlay-fade 0.78s ease forwards;
+  animation: wave-overlay-fade 0.68s ease forwards;
 }
 
 .wave-overlay-fill {
@@ -42,7 +42,7 @@
     radial-gradient(circle at 78% 24%, var(--accent-plum-bg-1), transparent 24%),
     linear-gradient(145deg, #c9efff 0%, var(--wave) 48%, var(--accent-mint) 100%);
   clip-path: circle(0% at 92% 6%);
-  animation: wave-circle-expand 0.58s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: wave-circle-expand 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .wave-overlay-ripple {

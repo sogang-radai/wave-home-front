@@ -409,6 +409,14 @@
   min-width: 0;
 }
 
+.chat-messages-wrap {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .chat-messages-area {
   flex: 1;
   overflow-y: auto;
@@ -771,6 +779,7 @@
   flex-direction: column;
   overflow: hidden;
   transition: width 0.22s ease, height 0.22s ease;
+  user-select: none;
 }
 
 .chat-popup--popup {
@@ -781,6 +790,18 @@
 .chat-popup--mini {
   width: 320px;
   height: 48px;
+}
+
+.chat-popup-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  cursor: se-resize;
+  z-index: 10;
+  background: radial-gradient(circle at 100% 100%, var(--wave-20) 0%, transparent 70%);
+  border-radius: 0 0 16px 0;
 }
 
 /* ── Popup header ─────────────────────────────────────────────────────────── */

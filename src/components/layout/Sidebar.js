@@ -77,6 +77,14 @@ function SidebarIcon({ name }) {
     );
   }
 
+  if (name === 'lightning') {
+    return (
+      <svg {...common}>
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...common}>
       <path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
@@ -88,6 +96,7 @@ function SidebarIcon({ name }) {
 export function Sidebar({
   page,
   onSelect,
+  onNavigateToChat,
   today,
   showNotifications,
   onToggleNotifications,
@@ -97,8 +106,6 @@ export function Sidebar({
   accounts,
   account,
   onSwitchAccount,
-  showInsightChat,
-  onToggleInsightChat,
   collapsed,
   onCollapsedChange,
   onUnlockDevMenu,
@@ -147,27 +154,20 @@ export function Sidebar({
           <Fragment key={item.id}>
             <button
               className={`nav-item ${page === item.id ? 'active' : ''}`}
-              onClick={() => { onSelect(item.id); if (collapsed) onCollapsedChange(false); }}
+              onClick={() => {
+                if (item.id === 'chat') {
+                  onNavigateToChat?.();
+                } else {
+                  onSelect(item.id);
+                }
+                if (collapsed) onCollapsedChange(false);
+              }}
               title={collapsed ? item.label : undefined}
             >
               <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
               <span className="nav-label">{item.label}</span>
               {page === item.id && <i />}
             </button>
-            {item.id === 'main' && (
-              <button
-                className={`nav-item ${showInsightChat ? 'active' : ''}`}
-                onClick={() => {
-                  onToggleInsightChat();
-                  if (collapsed) onCollapsedChange(false);
-                }}
-                title={collapsed ? 'WaveAI' : undefined}
-              >
-                <span className="nav-icon"><SidebarIcon name="waveai" /></span>
-                <span className="nav-label">WaveAI</span>
-                {showInsightChat && <i />}
-              </button>
-            )}
           </Fragment>
         ))}
       </nav>

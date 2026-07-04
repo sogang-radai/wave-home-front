@@ -1,12 +1,98 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import chatApi from '../api/chatApi';
 import { MarkdownMessage } from './MarkdownMessage';
 import './chat.css';
+
+const POPUP_MIN_W = 280;
+const POPUP_MIN_H = 300;
+const POPUP_MAX_W = 640;
+const POPUP_MAX_H = 720;
+const SNAP_MARGIN = 24;
 
 export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onAddConv, onSendMessage, onExpand, onMini, onClose }) {
   const [draft, setDraft] = useState('');
   const [showConvList, setShowConvList] = useState(false);
   const messagesEndRef = useRef(null);
+  const popupRef = useRef(null);
+
+  // { left, top } in px; null = default CSS bottom-right corner
+  const [pos, setPos] = useState(null);
+  const [size, setSize] = useState({ w: 380, h: 520 });
+  const dragRef = useRef(null);
+  const resizeRef = useRef(null);
+
+  const snapToCorner = useCallback(() => {
+    const el = popupRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const snapLeft = cx < vw / 2;
+    const snapTop = cy < vh / 2;
+    const w = rect.width;
+    const h = rect.height;
+    setPos({
+      left: snapLeft ? SNAP_MARGIN : vw - SNAP_MARGIN - w,
+      top: snapTop ? SNAP_MARGIN : vh - SNAP_MARGIN - h,
+      snapping: true,
+    });
+    setTimeout(() => setPos((p) => p ? { ...p, snapping: false } : p), 420);
+  }, []);
+
+  const handleHeaderPointerDown = useCallback((e) => {
+    if (e.target.closest('button')) return;
+    if (mode === 'mini') return;
+    e.preventDefault();
+    const el = popupRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+    };
+    const onMove = (me) => {
+      if (!dragRef.current) return;
+      const dx = me.clientX - dragRef.current.startX;
+      const dy = me.clientY - dragRef.current.startY;
+      setPos({ left: dragRef.current.startLeft + dx, top: dragRef.current.startTop + dy, snapping: false });
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      snapToCorner();
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }, [mode, snapToCorner]);
+
+  const handleResizePointerDown = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = size.w;
+    const startH = size.h;
+    resizeRef.current = true;
+    const onMove = (me) => {
+      if (!resizeRef.current) return;
+      setSize({
+        w: Math.max(POPUP_MIN_W, Math.min(POPUP_MAX_W, startW + (me.clientX - startX))),
+        h: Math.max(POPUP_MIN_H, Math.min(POPUP_MAX_H, startH + (me.clientY - startY))),
+      });
+    };
+    const onUp = () => {
+      resizeRef.current = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }, [size]);
 
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
   const messages = activeConv?.messages || [];
@@ -31,13 +117,31 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
     setShowConvList(false);
   };
 
+  const popupStyle = pos
+    ? {
+        left: pos.left,
+        top: pos.top,
+        right: 'auto',
+        bottom: 'auto',
+        width: size.w,
+        height: mode === 'mini' ? 48 : size.h,
+        transition: pos.snapping
+          ? 'left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.38s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          : 'width 0.22s ease, height 0.22s ease',
+      }
+    : {
+        width: mode === 'popup' ? size.w : 320,
+        height: mode === 'mini' ? 48 : size.h,
+      };
+
   return (
-    <div className={`chat-popup chat-popup--${mode}`}>
-      {/* Header */}
+    <div ref={popupRef} className={`chat-popup chat-popup--${mode}`} style={popupStyle}>
+      {/* Header — click to toggle mini, drag to move */}
       <div
         className="chat-popup-header"
         onClick={mode === 'mini' ? onMini : undefined}
-        style={mode === 'mini' ? { cursor: 'pointer' } : undefined}
+        style={mode === 'mini' ? { cursor: 'pointer' } : { cursor: 'grab' }}
+        onPointerDown={handleHeaderPointerDown}
       >
         <div className="chat-popup-header-left">
           <span className="chat-popup-icon">✦</span>
@@ -87,6 +191,11 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
           </button>
         </div>
       </div>
+
+      {/* Resize handle — bottom-right corner, popup mode only */}
+      {mode === 'popup' && (
+        <div className="chat-popup-resize-handle" onPointerDown={handleResizePointerDown} />
+      )}
 
       {/* Body — only when popup mode */}
       {mode === 'popup' && (

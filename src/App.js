@@ -4,7 +4,6 @@ import { pageTitles } from './data/appData';
 import chatApi from './api/chatApi';
 import settingsApi from './api/settingsApi';
 import weeklyPlanApi from './api/weeklyPlanApi';
-import { WaveTransitionOverlay } from './WaveTransitionOverlay';
 import { InsightChat } from './chat/InsightChat';
 import { ChatPopup } from './chat/ChatPopup';
 import { ChatPage } from './chat/ChatPage';
@@ -15,6 +14,7 @@ import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/WeeklyPlanPage';
 import { HomeControlPage } from './pages/HomeControlPage';
+import { PowerPage } from './pages/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
 
 function formatNotificationTime(iso) {
@@ -71,6 +71,7 @@ function App() {
 
   useEffect(() => {
     settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
+    settingsApi.getAiAgentSettings().then((s) => { waveAiSoundRef.current = s.waveAiSound ?? true; });
   }, []);
 
   const markAllNotificationsRead = async () => {
@@ -128,8 +129,7 @@ function App() {
     setSleepTab('current');
   };
   const goToPowerAnalysis = () => {
-    setHomeTab('power');
-    setPage('home');
+    setPage('power');
   };
   const [chatConversations, setChatConversations] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -139,11 +139,13 @@ function App() {
   }, []);
   const [waveTransition, setWaveTransition] = useState(false);
   const bubbleAudioCtxRef = useRef(null);
+  const waveAiSoundRef = useRef(true);
   const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
   const [prevPage, setPrevPage] = useState('main');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const playBubbleTransitionSound = async () => {
+    if (!waveAiSoundRef.current) return;
     if (typeof window === 'undefined') return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
@@ -190,7 +192,6 @@ function App() {
       playBubbleTransitionSound();
       setChatMode('page');
       setPage('chat');
-      setSidebarCollapsed(true);
       return;
     }
     if (page === 'chat') {
@@ -199,19 +200,17 @@ function App() {
     }
     setPrevPage(page);
     playBubbleTransitionSound();
+    setPage('chat');
     setWaveTransition(true);
-    setSidebarCollapsed(true);
     setTimeout(() => {
-      setPage('chat');
       setActiveChatId(null);
       setWaveTransition(false);
-    }, 580);
+    }, 750);
   };
 
   const handleShrinkChat = () => {
     setChatMode('popup');
     setPage(prevPage || 'main');
-    setSidebarCollapsed(false);
   };
 
   const handleExpandChat = () => {
@@ -324,7 +323,6 @@ function App() {
 
   return (
     <div className="app-shell">
-      <WaveTransitionOverlay active={waveTransition} />
       <InsightChat open={false} onClose={() => {}} />
       {(chatMode === 'popup' || chatMode === 'mini') && (
         <ChatPopup
@@ -344,6 +342,7 @@ function App() {
       <Sidebar
         page={page}
         onSelect={setPage}
+        onNavigateToChat={handleNavigateToChat}
         today={today}
         showNotifications={showNotifications}
         onToggleNotifications={() => setShowNotifications((value) => !value)}
@@ -353,8 +352,6 @@ function App() {
         accounts={accounts}
         account={account}
         onSwitchAccount={switchAccount}
-        showInsightChat={page === 'chat'}
-        onToggleInsightChat={handleNavigateToChat}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
         onUnlockDevMenu={() => setShowDevSettings(true)}
@@ -395,6 +392,7 @@ function App() {
               onAddTodoFromInsight={addTodoFromInsight}
             />
           )}
+          {page === 'power' && <PowerPage />}
           {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
           {page === 'setting' && (
             <SettingPage
@@ -419,6 +417,7 @@ function App() {
               onRenameConv={renameChatConversation}
               onSendMessage={sendChatMessage}
               onShrink={handleShrinkChat}
+              waveTransition={waveTransition}
             />
           )}
         </main>
