@@ -121,10 +121,11 @@ function App() {
     await weeklyPlanApi.deleteTask(id);
     setTodos((prev) => prev.filter((item) => item.id !== id));
   };
-  const [settingCategory, setSettingCategory] = useState('devices');
+  const [settingCategory, setSettingCategory] = useState('general');
+  const [showDevSettings, setShowDevSettings] = useState(false);
   const goToSleepSettings = () => {
-    setPage('setting');
-    setSettingCategory('sleep');
+    setPage('sleep');
+    setSleepTab('current');
   };
   const goToPowerAnalysis = () => {
     setHomeTab('power');
@@ -356,6 +357,7 @@ function App() {
         onToggleInsightChat={handleNavigateToChat}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
+        onUnlockDevMenu={() => setShowDevSettings(true)}
       />
       <section className="workspace">
         <TopBar
@@ -404,6 +406,7 @@ function App() {
               onAddAccount={addAccount}
               category={settingCategory}
               setCategory={setSettingCategory}
+              showDevSettings={showDevSettings}
             />
           )}
           {page === 'chat' && chatMode === 'page' && (

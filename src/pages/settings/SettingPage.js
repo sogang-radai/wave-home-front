@@ -2,42 +2,47 @@ import { useEffect, useState } from 'react';
 import './settings.css';
 import settingsApi from '../../api/settingsApi';
 import { DeviceRegistrationSettings, RoomZoneSettings } from './DeviceSettings';
-import { SleepSettings } from './SleepSettings';
 import { AccountSettings } from './AccountSettings';
-import { PersonalSettings } from './PersonalSettings';
 import { GeneralSettings } from './GeneralSettings';
+import { AiAgentSettings } from './AiAgentSettings';
+import { AboutSettings } from './AboutSettings';
 
 const settingCategories = [
-  { id: 'devices', label: '기기등록', desc: '입력 장치와 출력 장치를 관리합니다.' },
-  { id: 'rooms', label: '방 / 구역 등록', desc: '장치가 배치된 공간을 등록합니다.' },
-  { id: 'sleep', label: '수면 설정', desc: '오늘 밤 수면 계획과 자동 제어를 관리합니다.' },
-  { id: 'account', label: '계정', desc: '가구 구성원의 프로필을 확인합니다.' },
-  { id: 'personal', label: '개인 설정', desc: '내 이름을 변경합니다.' },
-  { id: 'general', label: '일반', desc: '테마와 언어를 설정합니다.' },
+  { id: 'general', label: '일반', desc: '기본 UI와 시스템 환경' },
+  { id: 'account', label: '계정', desc: '구성원 프로필 관리' },
+  { id: 'devices', label: '장치', desc: '연결된 장치 관리' },
+  { id: 'rooms', label: '구역', desc: '구역과 장치 배치' },
+  { id: 'ai', label: 'AI 에이전트', desc: '프롬프트와 AI 모델' },
+  { id: 'info', label: '정보', desc: '앱 정보와 약관' },
 ];
 
-export function SettingPage({ accounts, accountId, account, onSwitchAccount, onRenameAccount, onAddAccount, category, setCategory }) {
+const devCategory = { id: 'dev', label: '개발자', desc: '개발자 전용 도구' };
+
+export function SettingPage({
+  accounts,
+  accountId,
+  account,
+  onSwitchAccount,
+  onRenameAccount,
+  onAddAccount,
+  category,
+  setCategory,
+  showDevSettings = false,
+}) {
   const [rooms, setRooms] = useState([]);
 
   useEffect(() => {
     settingsApi.getRooms().then(setRooms);
   }, []);
 
+  const categories = showDevSettings ? [...settingCategories, devCategory] : settingCategories;
+  const activeLabel = categories.find((c) => c.id === category)?.label || '';
+
   return (
     <div className="settings-page">
-      <section className="settings-hero card">
-        <div className="settings-hero-profile">
-          <span className="settings-hero-avatar">{account.name.charAt(0)}</span>
-          <div>
-            <p className="eyebrow">설정</p>
-            <h2 className="settings-hero-name">{account.name}</h2>
-          </div>
-        </div>
-      </section>
-
       <div className="settings-layout">
         <nav className="settings-nav">
-          {settingCategories.map((item) => (
+          {categories.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -51,21 +56,28 @@ export function SettingPage({ accounts, accountId, account, onSwitchAccount, onR
         </nav>
 
         <div className="settings-detail">
-          {category === 'devices' && <DeviceRegistrationSettings rooms={rooms} />}
-          {category === 'rooms' && <RoomZoneSettings rooms={rooms} setRooms={setRooms} />}
-          {category === 'sleep' && <SleepSettings />}
+          {category === 'general' && <GeneralSettings heading={activeLabel} />}
           {category === 'account' && (
             <AccountSettings
+              heading={activeLabel}
               accounts={accounts}
               accountId={accountId}
+              account={account}
               onSwitchAccount={onSwitchAccount}
+              onRenameAccount={onRenameAccount}
               onAddAccount={onAddAccount}
             />
           )}
-          {category === 'personal' && (
-            <PersonalSettings key={accountId} account={account} onRenameAccount={onRenameAccount} />
+          {category === 'devices' && <DeviceRegistrationSettings heading={activeLabel} rooms={rooms} />}
+          {category === 'rooms' && <RoomZoneSettings heading={activeLabel} rooms={rooms} setRooms={setRooms} accounts={accounts} />}
+          {category === 'ai' && <AiAgentSettings heading={activeLabel} />}
+          {category === 'info' && <AboutSettings heading={activeLabel} />}
+          {category === 'dev' && showDevSettings && (
+            <section className="settings-panel card">
+              <h2 className="settings-tab-heading">{activeLabel}</h2>
+              <p className="settings-panel-desc">개발자 전용 메뉴입니다. 준비 중입니다.</p>
+            </section>
           )}
-          {category === 'general' && <GeneralSettings />}
         </div>
       </div>
     </div>

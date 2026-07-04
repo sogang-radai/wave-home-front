@@ -1,5 +1,5 @@
-// 실제 네트워크 왕복을 흉내내기 위한 지연. real 클래스와 동일한 async 시그니처를 유지하는 목적.
-export function delay(ms = 300) {
+// Simulates real network round-trip latency. Keeps the same async signature as real API classes.
+export function delay(ms = 80) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 

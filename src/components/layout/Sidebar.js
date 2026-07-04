@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useRef } from 'react';
 import './layout.css';
 import logo from '../../img/logo.png';
 import { pages } from '../../data/appData';
@@ -101,11 +101,25 @@ export function Sidebar({
   onToggleInsightChat,
   collapsed,
   onCollapsedChange,
+  onUnlockDevMenu,
 }) {
+  // Five rapid clicks on the logo unlocks the hidden developer menu. State resets on page refresh.
+  const devClickRef = useRef({ count: 0, last: 0 });
+  const handleLogoClick = () => {
+    const now = Date.now();
+    const state = devClickRef.current;
+    state.count = now - state.last < 400 ? state.count + 1 : 1;
+    state.last = now;
+    if (state.count >= 5) {
+      state.count = 0;
+      onUnlockDevMenu?.();
+    }
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
-        <div className="brand-mark">
+        <div className="brand-mark dev-unlock-target" onClick={handleLogoClick}>
           <img src={logo} alt="WaveHome" />
         </div>
         <div className="brand-text">

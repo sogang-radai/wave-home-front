@@ -4,23 +4,37 @@ import { cloneDeep } from './utils';
 // (read-only radar view). Mirrors insightsStore.js's role for sleep/posture/weekly-plan —
 // there is exactly one source of truth, so a rename/delete in settings is immediately
 // reflected wherever devices are derived from (e.g. home.md's GET /home/radars).
+//
+// The seed mirrors bin/device/device_list.json (the format the backend actually serves),
+// minus the wave_station device which is not a manageable appliance here. room_id is not
+// part of device_list.json, so each device is mapped to a room manually below.
+
+export const ROOM_LIVING = '7c4a9e2f18b356d0';
+export const ROOM_BEDROOM = '3f91c6e52ad047b8';
+export const ROOM_KITCHEN = '2b8d5f1a9e4c7306';
 
 const roomsSeed = [
-  { id: '7c4a9e2f18b356d0', name: '책상', description: '책상' },
-  { id: '3f91c6e52ad047b8', name: '침실', description: '침실' },
+  { id: ROOM_LIVING, name: '거실', description: '거실', primaryAccountId: 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E' },
+  { id: ROOM_BEDROOM, name: '침실', description: '침실', primaryAccountId: 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E' },
+  { id: ROOM_KITCHEN, name: '부엌', description: '부엌', primaryAccountId: null },
 ];
 
+// input: state-collecting devices (radar/camera); output: controllable devices (plug/TV/light).
+// Settings UI merges both into a flat list; HomeApi uses only the radar-derived view.
 const devicesSeed = {
   input_devices: [
     {
-      id: '8d2e5a1c49f7036b',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 레이더',
+      id: '3a7f2c9d10b4e85f',
+      room_id: ROOM_BEDROOM,
+      name: '침실 하방 레이더',
       description: 'SRS R4SN mmWave 레이더',
+      vendor: 'SRS',
+      model: 'Retina-4SN',
       enabled: true,
       class: 'srs_r4sn',
       interface: {
         host: '192.168.0.33',
+        mac: '68:96:6A:4C:69:D4',
         point_cloud: { enabled: true, port: 29172 },
         iq: { enabled: true, port: 29171 },
       },
@@ -36,98 +50,141 @@ const devicesSeed = {
       },
     },
     {
-      id: '1a6f3e8d02c75491',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 마이크',
-      description: 'ESP32 + INMP441, 16kHz 16bit mono',
-      enabled: true,
-      class: 'wave_mic',
-      interface: { host: '192.168.0.50', port: 8765 },
-      settings: { sample_rate: 16000, sample_size: 16, channels: 1 },
-    },
-    {
-      id: '6b904f2e17d83ac5',
-      room_id: '7c4a9e2f18b356d0',
+      id: '27d9a4f3c85b016e',
+      room_id: ROOM_LIVING,
       name: '거실 카메라',
-      description: 'USB Wave Camera',
+      description: '거실 IoT 카메라',
+      vendor: 'Reolink',
+      model: 'E1 Pro',
       enabled: true,
-      class: 'wave_cam',
-      interface: { transport: 'usb', backend: 'v4l2', device: '/dev/video0' },
-    },
-    {
-      id: 'c5281a7e93bf406d',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 카메라',
-      description: 'Network Wave Camera',
-      enabled: true,
-      class: 'wave_cam',
-      interface: { transport: 'tcp', backend: 'droidcam', host: '192.168.0.51', port: 4747 },
-    },
-    {
-      id: '2e8d1795c0463f5a',
-      room_id: '7c4a9e2f18b356d0',
-      name: 'IR 수신기',
-      description: 'LIRC IR 수신',
-      enabled: true,
-      class: 'ir_reciever',
-      interface: { transport: 'lirc', device: '/dev/lirc0' },
+      class: 'reolink_e1_pro',
+      interface: {
+        host: '192.168.0.50',
+        mac: '94:8C:D7:A2:6A:97',
+        user: 'enc:0500120444',
+        password: 'enc:0500120444595d5e51',
+        rtsp_port: 554,
+        go2rtc: true,
+      },
     },
   ],
   output_devices: [
     {
-      id: '9a4c71e36b0285fd',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 스마트 플러그',
-      description: 'EP2H Tuya IoT 플러그',
+      id: '6b0f3e8a92c47d15',
+      room_id: ROOM_LIVING,
+      name: '플러그1',
+      description: '거실 스마트 플러그1 - 에어컨',
+      vendor: 'Tenpl',
+      model: 'EP2-H',
       enabled: true,
       class: 'tuya_ep2h',
       interface: {
         host: '192.168.0.37',
+        mac: '50:8B:B9:9F:6E:83',
         device_id: 'eb61aa6ce49add5d80yfcj',
         local_key: 's^q2?;Ur|q{SlG(>',
         version: '3.3',
       },
     },
     {
-      id: '5e3b80a1f2496cde',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 TV',
-      description: '삼성 32인치 TV',
+      id: '1f8c5a2e7b93064d',
+      room_id: ROOM_LIVING,
+      name: '플러그2',
+      description: '거실 스마트 플러그2 - 선풍기',
+      vendor: 'Tenpl',
+      model: 'EP2-H',
       enabled: true,
-      class: 'tizen_tv',
-      interface: { host: '192.168.0.70', port: 8002, name: 'WaveHome-TV' },
-    },
-    {
-      id: '0f8c2d6b147ae953',
-      room_id: '7c4a9e2f18b356d0',
-      name: '거실 에어컨 IR',
-      description: 'LIRC IR 송신, 에어컨 제어',
-      enabled: true,
-      class: 'ir_remote',
-      interface: { transport: 'lirc', device: '/dev/lirc1', command_list: './ir/ac_commands.txt' },
-    },
-    {
-      id: 'd7139e58a04b6c21',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 조명',
-      description: 'Philips Hue 전구',
-      enabled: true,
-      class: 'hue_light',
-      interface: { bridge_host: '192.168.0.80', username: 'hue-bridge-api-key-placeholder', light_id: 1 },
-    },
-    {
-      id: '4b2a90e7c1586d3f',
-      room_id: '3f91c6e52ad047b8',
-      name: '침실 블라인드',
-      description: 'Tuya 스마트 블라인드',
-      enabled: false,
-      class: 'tuya_blind',
+      class: 'tuya_ep2h',
       interface: {
-        host: '192.168.0.61',
-        device_id: 'bfabcdef12345678',
-        local_key: 'f0e1d2c3b4a59687',
+        host: '192.168.0.37',
+        mac: '50:8B:B9:9F:6E:83',
+        device_id: 'eb61aa6ce49add5d80yfcj',
+        local_key: 's^q2?;Ur|q{SlG(>',
         version: '3.3',
       },
+    },
+    {
+      id: '4a2d9c7f1e60b358',
+      room_id: ROOM_BEDROOM,
+      name: '플러그3',
+      description: '침실 스마트 플러그 - 컴퓨터',
+      vendor: 'Tenpl',
+      model: 'EP2-H',
+      enabled: true,
+      class: 'tuya_ep2h',
+      interface: {
+        host: '192.168.0.37',
+        mac: '50:8B:B9:9F:6E:83',
+        device_id: 'eb61aa6ce49add5d80yfcj',
+        local_key: 's^q2?;Ur|q{SlG(>',
+        version: '3.3',
+      },
+    },
+    {
+      id: '7e3b1d8a5f02c964',
+      room_id: ROOM_KITCHEN,
+      name: '플러그4',
+      description: '부엌 스마트 플러그 - 선풍기',
+      vendor: 'Tenpl',
+      model: 'EP2-H',
+      enabled: true,
+      class: 'tuya_ep2h',
+      interface: {
+        host: '192.168.0.37',
+        mac: '50:8B:B9:9F:6E:83',
+        device_id: 'eb61aa6ce49add5d80yfcj',
+        local_key: 's^q2?;Ur|q{SlG(>',
+        version: '3.3',
+      },
+    },
+    {
+      id: '2c9f6a1b4d78e350',
+      room_id: ROOM_BEDROOM,
+      name: 'TV',
+      description: '침실 책상 - 삼성 32인치 TV',
+      vendor: 'Samsung',
+      model: 'G7 G70D S32DG700',
+      enabled: true,
+      class: 'tizen_tv',
+      interface: {
+        host: '192.168.0.24',
+        mac: '04:E4:B6:A9:8D:0A',
+        port: 8002,
+        name: 'WaveHome-TV',
+      },
+    },
+    {
+      id: '5d0a3f8c26b91e74',
+      room_id: ROOM_LIVING,
+      name: '거실 조명',
+      description: '거실 조명 - 컬러',
+      vendor: 'Philips',
+      model: 'WiZ Color E29',
+      enabled: true,
+      class: 'philips_wiz_e29',
+      interface: { host: '192.168.0.51', mac: '98:77:D5:D0:B4:42', port: 38899 },
+    },
+    {
+      id: '3f7c2a9e14d8065b',
+      room_id: ROOM_BEDROOM,
+      name: '침실 조명',
+      description: '침실 조명 - 화이트',
+      vendor: 'Philips',
+      model: 'WiZ White E29',
+      enabled: true,
+      class: 'philips_wiz_e29',
+      interface: { host: '192.168.0.82', mac: '98:77:D5:D0:B4:42', port: 38899 },
+    },
+    {
+      id: '6a1e4b8d3f05c927',
+      room_id: ROOM_KITCHEN,
+      name: '부엌 조명',
+      description: '부엌 조명 - 화이트',
+      vendor: 'Philips',
+      model: 'WiZ White E29',
+      enabled: true,
+      class: 'philips_wiz_e29',
+      interface: { host: '192.168.0.83', mac: '98:77:D5:D0:B4:42', port: 38899 },
     },
   ],
 };
@@ -146,6 +203,11 @@ export function addRoom(room) {
 export function removeRoom(roomId) {
   const index = rooms.findIndex((room) => room.id === roomId);
   if (index !== -1) rooms.splice(index, 1);
+}
+
+// Reorders the rooms array according to the provided orderedIds sequence.
+export function reorderRooms(orderedIds) {
+  rooms.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
 }
 
 export function getDevices() {

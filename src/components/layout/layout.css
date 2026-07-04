@@ -48,6 +48,11 @@
   object-fit: contain;
 }
 
+.brand-mark.dev-unlock-target {
+  cursor: default;
+  user-select: none;
+}
+
 .brand-text strong,
 .profile strong {
   display: block;
@@ -358,6 +363,7 @@
   flex: 1;
   padding: 28px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 /* Pulse (used in device/radar status) */

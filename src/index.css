@@ -8,6 +8,8 @@ body {
   font-weight: 500;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Reserve scrollbar gutter to prevent layout shift when scrollbar appears/disappears. */
+  scrollbar-gutter: stable;
 }
 
 code {
