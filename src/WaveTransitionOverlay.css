@@ -10,7 +10,7 @@
 }
 
 @keyframes wave-overlay-fade {
-  0%, 78% { opacity: 1; }
+  0%, 60% { opacity: 1; }
   100% { opacity: 0; }
 }
 
@@ -31,18 +31,18 @@
   z-index: 20;
   pointer-events: none;
   overflow: hidden;
-  animation: wave-overlay-fade 0.68s ease forwards;
+  animation: wave-overlay-fade 0.75s ease forwards;
 }
 
 .wave-overlay-fill {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.46), transparent 18%),
-    radial-gradient(circle at 78% 24%, var(--accent-plum-bg-1), transparent 24%),
-    linear-gradient(145deg, #c9efff 0%, var(--wave) 48%, var(--accent-mint) 100%);
+    radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.55), transparent 18%),
+    radial-gradient(circle at 78% 24%, rgba(186, 225, 255, 0.42), transparent 24%),
+    linear-gradient(145deg, #dff3ff 0%, rgba(100, 180, 240, 0.82) 48%, rgba(140, 230, 210, 0.78) 100%);
   clip-path: circle(0% at 92% 6%);
-  animation: wave-circle-expand 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: wave-circle-expand 0.48s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .wave-overlay-ripple {

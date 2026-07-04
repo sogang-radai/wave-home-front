@@ -7,6 +7,7 @@ import weeklyPlanApi from './api/weeklyPlanApi';
 import { InsightChat } from './chat/InsightChat';
 import { ChatPopup } from './chat/ChatPopup';
 import { ChatPage } from './chat/ChatPage';
+import { WaveTransitionOverlay } from './WaveTransitionOverlay';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { MainPage } from './pages/MainPage';
@@ -71,7 +72,6 @@ function App() {
 
   useEffect(() => {
     settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
-    settingsApi.getAiAgentSettings().then((s) => { waveAiSoundRef.current = s.waveAiSound ?? true; });
   }, []);
 
   const markAllNotificationsRead = async () => {
@@ -139,13 +139,14 @@ function App() {
   }, []);
   const [waveTransition, setWaveTransition] = useState(false);
   const bubbleAudioCtxRef = useRef(null);
-  const waveAiSoundRef = useRef(true);
   const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
   const [prevPage, setPrevPage] = useState('main');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const playBubbleTransitionSound = async () => {
-    if (!waveAiSoundRef.current) return;
+    // Read waveAiSound fresh on every call so setting changes apply immediately
+    const aiSettings = await settingsApi.getAiAgentSettings();
+    if (!aiSettings.waveAiSound) return;
     if (typeof window === 'undefined') return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
@@ -258,29 +259,109 @@ function App() {
     setChatConversations((prev) => prev.map((c) => (c.id === id ? { ...c, ...conversation } : c)));
   };
 
-  const sendChatMessage = async (text) => {
+  const sendChatMessage = (text) => {
     if (!text.trim()) return;
-    if (!activeChatId) {
-      const conversation = await chatApi.startConversation(text.trim());
-      setChatConversations((prev) => [conversation, ...prev]);
-      setActiveChatId(conversation.id);
-      return;
-    }
 
-    const result = await chatApi.sendMessage(activeChatId, text.trim());
-    setChatConversations((prev) =>
-      prev.map((c) =>
-        c.id === result.conversationId
-          ? {
-              ...c,
-              ...result.conversation,
-              messages: [...(c.messages || []), ...result.appendedMessages],
-              lastMessagePreview: result.appendedMessages[result.appendedMessages.length - 1]?.text || c.lastMessagePreview,
-              messageCount: (c.messageCount || c.messages?.length || 0) + result.appendedMessages.length,
-            }
-          : c
-      )
-    );
+    chatApi.sendMessageStreaming(activeChatId, text.trim(), {
+      onEvent: (evt) => {
+        if (evt.type === 'user_added') {
+          // If no active conversation, register the new one and set it active
+          setActiveChatId(evt.conversationId);
+          setChatConversations((prev) => {
+            const exists = prev.some((c) => c.id === evt.conversationId);
+            const summary = {
+              id: evt.conversationId,
+              title: evt.conversation?.title || text.trim().slice(0, 22),
+              messages: [evt.message],
+              lastMessagePreview: evt.message.text,
+              messageCount: 1,
+              createdAt: evt.conversation?.createdAt,
+              updatedAt: evt.conversation?.updatedAt,
+            };
+            return exists
+              ? prev.map((c) =>
+                  c.id === evt.conversationId
+                    ? { ...c, messages: [...(c.messages || []), evt.message] }
+                    : c
+                )
+              : [summary, ...prev];
+          });
+        } else if (evt.type === 'assistant_start') {
+          setChatConversations((prev) =>
+            prev.map((c) =>
+              c.id === evt.conversationId
+                ? { ...c, messages: [...(c.messages || []), evt.message] }
+                : c
+            )
+          );
+        } else if (evt.type === 'tool_start' || evt.type === 'tool_end') {
+          setChatConversations((prev) =>
+            prev.map((c) =>
+              c.id === evt.conversationId
+                ? {
+                    ...c,
+                    messages: (c.messages || []).map((m) =>
+                      m.id === evt.messageId
+                        ? {
+                            ...m,
+                            toolEvents: (() => {
+                              const existing = m.toolEvents || [];
+                              const idx = existing.findIndex((t) => t.name === evt.toolEvent.name);
+                              if (idx >= 0) {
+                                return existing.map((t, i) => (i === idx ? evt.toolEvent : t));
+                              }
+                              return [...existing, evt.toolEvent];
+                            })(),
+                          }
+                        : m
+                    ),
+                  }
+                : c
+            )
+          );
+        } else if (evt.type === 'reasoning_delta') {
+          setChatConversations((prev) =>
+            prev.map((c) =>
+              c.id === evt.conversationId
+                ? {
+                    ...c,
+                    messages: (c.messages || []).map((m) =>
+                      m.id === evt.messageId ? { ...m, reasoning: evt.reasoning } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        } else if (evt.type === 'content_delta') {
+          setChatConversations((prev) =>
+            prev.map((c) =>
+              c.id === evt.conversationId
+                ? {
+                    ...c,
+                    messages: (c.messages || []).map((m) =>
+                      m.id === evt.messageId ? { ...m, text: evt.text } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        } else if (evt.type === 'message_done') {
+          setChatConversations((prev) =>
+            prev.map((c) =>
+              c.id === evt.conversationId
+                ? {
+                    ...c,
+                    messages: (c.messages || []).map((m) =>
+                      m.id === evt.messageId ? { ...m, status: 'done', text: evt.text } : m
+                    ),
+                    lastMessagePreview: evt.text,
+                  }
+                : c
+            )
+          );
+        }
+      },
+    });
   };
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState(null);
@@ -337,6 +418,7 @@ function App() {
           onExpand={handleExpandChat}
           onMini={handleMiniChat}
           onClose={handleClosePopupChat}
+          sidebarWidth={sidebarCollapsed ? 76 : 263}
         />
       )}
       <Sidebar
@@ -356,7 +438,8 @@ function App() {
         onCollapsedChange={setSidebarCollapsed}
         onUnlockDevMenu={() => setShowDevSettings(true)}
       />
-      <section className="workspace">
+      <section className="workspace" style={{ position: 'relative' }}>
+        <WaveTransitionOverlay active={waveTransition} />
         <TopBar
           title={pageTitles[page]}
           showNotifications={showNotifications}
@@ -418,6 +501,7 @@ function App() {
               onSendMessage={sendChatMessage}
               onShrink={handleShrinkChat}
               waveTransition={waveTransition}
+              sidebarWidth={sidebarCollapsed ? 76 : 263}
             />
           )}
         </main>
