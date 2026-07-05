@@ -741,6 +741,60 @@ type Notification = {
 
 ---
 
+## 공통 · 푸시 (FCM)
+
+`src/push/push.js`가 사용. Firebase JS SDK(`getToken`)로 FCM 등록 토큰을 발급받아 서버에 저장하고,
+`notification`이 새로 생성될 때(백엔드 `notify_account`, `firebase_admin.messaging`) 저장된 모든
+토큰으로 푸시가 함께 발송된다. 아이콘/이미지/제목/본문을 요청마다 지정할 수 있다.
+
+### GET `/push/public-key`
+
+Firebase Console의 "웹 푸시 인증서" 키. 프론트에서 `getToken(messaging, { vapidKey })`에 전달.
+
+**Response 200**
+```json
+{ "publicKey": "BF7g...(Firebase 웹 푸시 인증서 공개키)" }
+```
+
+### POST `/push/subscribe`
+
+`getToken()`이 반환한 FCM 등록 토큰을 전달. `token` 기준으로 upsert(이미 있으면 계정만 갱신).
+
+**Request Body**
+```json
+{ "token": "d3F...(FCM registration token)" }
+```
+**Response 201**
+```json
+{ "ok": true }
+```
+
+### POST `/push/unsubscribe`
+
+**Request Body**
+```json
+{ "token": "d3F...(FCM registration token)" }
+```
+**Response 200**
+```json
+{ "ok": true }
+```
+
+### POST `/push/test` (개발용)
+
+알림 패널 + FCM 발송을 한 번에 검증하기 위한 엔드포인트. `icon`/`image`는 선택.
+
+**Request Body**
+```json
+{ "message": "테스트 알림입니다.", "icon": "/logo192.png", "image": "/logo512.png" }
+```
+**Response 200**
+```json
+{ "ok": true }
+```
+
+---
+
 ## 전체 엔드포인트 요약
 
 ```http
@@ -773,6 +827,11 @@ GET    /api/v1/settings/tts-speakers
 
 GET    /api/v1/notifications
 PATCH  /api/v1/notifications/read-all
+
+GET    /api/v1/push/public-key
+POST   /api/v1/push/subscribe
+POST   /api/v1/push/unsubscribe
+POST   /api/v1/push/test
 ```
 
 ## 프론트 API 클래스 메서드 시그니처 (구현 예정)
@@ -809,6 +868,11 @@ settingsApi.getTtsSpeakers()
 
 settingsApi.getNotifications()
 settingsApi.markAllNotificationsRead()
+
+pushApi.getPublicKey()
+pushApi.subscribe(token)
+pushApi.unsubscribe(token)
+pushApi.sendTest(message, { icon, image })
 ```
 
 ## 프론트 연동 지점
@@ -819,5 +883,6 @@ settingsApi.markAllNotificationsRead()
 - `src/pages/settings/SleepSettings.js` → `/settings/sleep`, `/settings/sounds`.
 - `src/pages/settings/GeneralSettings.js` → `/settings/general`, `/settings/sounds`, `/settings/tts-speakers`.
 - `src/App.js`의 `notifications`/`markAllNotificationsRead` → `/notifications`, `/notifications/read-all`.
+- `src/pages/settings/GeneralSettings.js`의 푸시 토글, `src/push/push.js` → `/push/public-key`, `/push/subscribe`, `/push/unsubscribe`.
 - Mock 시드 데이터: `src/data/appData.js`(accounts, notifications), `src/pages/settings/DeviceSettings.js`
   내부의 `initialRooms`/`initialInputDevices`/`initialOutputDevices`(mock 클래스로 옮겨질 예정).

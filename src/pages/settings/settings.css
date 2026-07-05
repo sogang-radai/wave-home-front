@@ -707,6 +707,24 @@
   font: inherit;
 }
 
+.ghost-btn {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ghost-btn:hover {
+  background: var(--wave-10);
+}
+
 .tts-setting-block {
   padding-top: 13px;
 }

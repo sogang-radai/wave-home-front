@@ -16,6 +16,7 @@ import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/WeeklyPlanPage';
 import { HomeControlPage } from './pages/HomeControlPage';
 import { SettingPage } from './pages/settings/SettingPage';
+import { PUSH_RECEIVED_EVENT } from './push/push';
 
 function formatNotificationTime(iso) {
   const date = new Date(iso);
@@ -71,6 +72,13 @@ function App() {
 
   useEffect(() => {
     settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
+  }, []);
+
+  useEffect(() => {
+    // FCM 푸시가 도착하면(포그라운드/백그라운드 모두) 새로고침 없이 알림 패널을 다시 불러온다.
+    const refetch = () => settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
+    window.addEventListener(PUSH_RECEIVED_EVENT, refetch);
+    return () => window.removeEventListener(PUSH_RECEIVED_EVENT, refetch);
   }, []);
 
   const markAllNotificationsRead = async () => {
