@@ -49,7 +49,7 @@ export function AccountSettings({ heading, accounts, accountId, account, onSwitc
             {/* Dummy: avatar image upload is not yet supported. */}
             <button type="button" className="account-avatar-edit" title="사진 변경 (준비 중)" aria-label="사진 변경">
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" />
+                <path d="M9 5v15M1 12h15" />
               </svg>
             </button>
           </div>

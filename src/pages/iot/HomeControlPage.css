@@ -557,7 +557,7 @@
 
 .power-device-card {
   min-height: 170px;
-  padding: 16px;
+  padding: 4px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface);

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import chatApi from '../api/chatApi';
-import settingsApi from '../api/settingsApi';
-import { MarkdownMessage } from './MarkdownMessage';
+import { ChatMessages } from './ChatMessages';
+import { ConversationList } from './ConversationList';
 import './chat.css';
 
 const POPUP_MIN_W = 280;
@@ -12,128 +11,145 @@ const MINI_MIN_W = 200;
 const MINI_MAX_W = 600;
 const MINI_H = 48;
 const SNAP_MARGIN = 20;
+const TOPBAR_H = 64; // .topbar height in layout.css — popup/mini must never cover it
+const TOP_MIN = TOPBAR_H + SNAP_MARGIN;
+const DRAG_THRESHOLD = 3;
 
-const STORAGE_KEY_POS = 'chatPopupPos';
+const STORAGE_KEY_CORNER = 'chatPopupCorner';
 const STORAGE_KEY_SIZE = 'chatPopupSize';
 
-function loadStoredPos() {
+function loadStoredCorner() {
   try {
-    const v = localStorage.getItem(STORAGE_KEY_POS);
-    return v ? JSON.parse(v) : null;
+    const v = localStorage.getItem(STORAGE_KEY_CORNER);
+    if (!v) return null;
+    const parsed = JSON.parse(v);
+    if (parsed?.h && parsed?.v) return parsed;
+    return null;
   } catch { return null; }
 }
 function loadStoredSize() {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY_SIZE);
-    return v ? JSON.parse(v) : null;
-  } catch { return null; }
+  try { const v = localStorage.getItem(STORAGE_KEY_SIZE); return v ? JSON.parse(v) : null; } catch { return null; }
 }
-function savePos(p) {
-  try { localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(p)); } catch {}
-}
-function saveSize(s) {
-  try { localStorage.setItem(STORAGE_KEY_SIZE, JSON.stringify(s)); } catch {}
+function saveCorner(c) { try { localStorage.setItem(STORAGE_KEY_CORNER, JSON.stringify(c)); } catch {} }
+function saveSize(s) { try { localStorage.setItem(STORAGE_KEY_SIZE, JSON.stringify(s)); } catch {} }
+
+function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+// Position is always derived from {h, v} + current size + viewport + sidebar
+// width — never stored as raw pixels. This is what makes the popup track the
+// sidebar collapsing/expanding and window resizes without any special-cased
+// "shift" logic (and without the bounce that caused).
+function computeCornerPos(corner, w, h, sidebarWidth) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const leftMin = sidebarWidth + SNAP_MARGIN;
+  const leftMax = Math.max(leftMin, vw - SNAP_MARGIN - w);
+  const topMax = Math.max(TOP_MIN, vh - SNAP_MARGIN - h);
+  return {
+    left: corner.h === 'left' ? leftMin : leftMax,
+    top: corner.v === 'top' ? TOP_MIN : topMax,
+  };
 }
 
-function useAutoResizeTextarea(value) {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
-  }, [value]);
-  return ref;
+// Which corner direction is nearest to a given rect center (respecting the
+// sidebar/topbar exclusion zones).
+function nearestCornerDirection(centerX, centerY, sidebarWidth) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const midX = (sidebarWidth + vw) / 2;
+  const midY = (TOP_MIN + vh) / 2;
+  return {
+    h: centerX < midX ? 'left' : 'right',
+    v: centerY < midY ? 'top' : 'bottom',
+  };
 }
 
-export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onAddConv, onSendMessage, onExpand, onMini, onClose, sidebarWidth = 263 }) {
-  const [draft, setDraft] = useState('');
-  const [showConvList, setShowConvList] = useState(false);
-  const messagesEndRef = useRef(null);
+function PopupConvPanel({ conversations, activeConvId, onSelectConv, onAddConv, onDeleteConv, onRenameConv, onClose }) {
+  return (
+    <div className="chat-popup-conv-panel">
+      <ConversationList
+        conversations={conversations}
+        activeConvId={activeConvId}
+        onSelect={(id) => { onSelectConv(id); onClose(); }}
+        onAdd={() => { onAddConv(); onClose(); }}
+        onDelete={onDeleteConv}
+        onRename={onRenameConv}
+      />
+    </div>
+  );
+}
+
+export function ChatPopup({
+  mode,
+  conversations,
+  activeConvId,
+  onSelectConv,
+  onAddConv,
+  onDeleteConv,
+  onRenameConv,
+  onSendMessage,
+  onExpand,
+  onMini,
+  onClose,
+  sidebarWidth = 263,
+  forceTopRight = false,
+  onForceTopRightConsumed,
+}) {
   const popupRef = useRef(null);
-  const ctrlEnterRef = useRef(false);
-  const textareaRef = useAutoResizeTextarea(draft);
+  const [showConvList, setShowConvList] = useState(false);
 
-  // Initial position: bottom-right corner
-  const getDefaultPos = useCallback(() => {
-    const w = 380;
-    const h = 520;
-    return {
-      left: window.innerWidth - SNAP_MARGIN - w,
-      top: window.innerHeight - SNAP_MARGIN - h,
-      snapping: false,
-    };
-  }, []);
-
-  const [pos, setPos] = useState(() => {
-    const stored = loadStoredPos();
-    return stored ? { ...stored, snapping: false } : null;
-  });
+  // Size state (raw w/h — independent of which corner we're snapped to)
   const [size, setSize] = useState(() => loadStoredSize() || { w: 380, h: 520 });
-  // Track whether we've entered mini for the first time this session (for animation)
-  const [prevMode, setPrevMode] = useState(mode);
 
-  // When entering mini mode for the first time, snap to bottom-right
-  useEffect(() => {
-    if (mode === 'mini' && prevMode === 'page') {
-      const mw = Math.min(MINI_MAX_W, Math.max(MINI_MIN_W, size.w));
-      const newPos = {
-        left: window.innerWidth - SNAP_MARGIN - mw,
-        top: window.innerHeight - SNAP_MARGIN - MINI_H,
-        snapping: true,
-      };
-      setPos(newPos);
-      setTimeout(() => setPos((p) => p ? { ...p, snapping: false } : p), 450);
-    }
-    setPrevMode(mode);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  // Which corner the popup is docked to — the only thing we persist for
+  // position. Actual pixel position is always derived from this + size.
+  const [corner, setCorner] = useState(() => (
+    forceTopRight ? { h: 'right', v: 'top' } : (loadStoredCorner() || { h: 'right', v: 'bottom' })
+  ));
 
+  // Transient exact position while actively dragging/resizing. Null once the
+  // gesture ends and we fall back to the corner-derived position.
+  const [dragPos, setDragPos] = useState(null);
+
+  // True right after a drag/resize snap-confirm, so the CSS transition uses
+  // the springy "snap" easing instead of the plain mode-change easing.
+  const [snapping, setSnapping] = useState(false);
+  // True only while the pointer is actively dragging/resizing — disables CSS
+  // transitions so the popup tracks the cursor with zero lag.
+  const [interacting, setInteracting] = useState(false);
+  // Set to true during a header drag that actually moved the popup; used to
+  // suppress the click-to-toggle-mini handler firing right after a drag.
+  const didDragRef = useRef(false);
+
+  const isMini = mode === 'mini';
+  const currentW = isMini ? clamp(size.w, MINI_MIN_W, MINI_MAX_W) : size.w;
+  const currentH = isMini ? MINI_H : size.h;
+
+  useEffect(() => { saveCorner(corner); }, [corner]);
+
+  // Notify the parent once we've consumed the one-shot force-top-right flag.
   useEffect(() => {
-    settingsApi.getAiAgentSettings().then((s) => {
-      ctrlEnterRef.current = s.ctrlEnterSend ?? false;
-    });
+    if (forceTopRight) onForceTopRightConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const snapToCorner = useCallback((currentPos, currentSize, isMini) => {
-    const el = popupRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+  // Re-render on viewport resize so the corner-derived position recalculates.
+  useEffect(() => {
+    const onResize = () => setCorner((c) => ({ ...c }));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const confirmSnap = useCallback((rect) => {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const w = currentSize.w;
-    const h = currentSize.h;
-
-    if (isMini) {
-      // Mini mode snaps to any of 4 edges (full viewport)
-      const snapLeft = cx < vw / 2;
-      const snapTop = cy < vh / 2;
-      const newPos = {
-        left: snapLeft ? SNAP_MARGIN : vw - SNAP_MARGIN - w,
-        top: snapTop ? SNAP_MARGIN : vh - SNAP_MARGIN - MINI_H,
-        snapping: true,
-      };
-      setPos(newPos);
-      savePos({ left: newPos.left, top: newPos.top });
-      setTimeout(() => setPos((p) => p ? { ...p, snapping: false } : p), 420);
-    } else {
-      // Popup mode: snap to corners, left boundary = sidebarWidth
-      const leftMin = sidebarWidth + SNAP_MARGIN;
-      const snapLeft = cx < (vw + sidebarWidth) / 2;
-      const snapTop = cy < vh / 2;
-      const newPos = {
-        left: snapLeft ? leftMin : vw - SNAP_MARGIN - w,
-        top: snapTop ? SNAP_MARGIN : vh - SNAP_MARGIN - h,
-        snapping: true,
-      };
-      setPos(newPos);
-      savePos({ left: newPos.left, top: newPos.top });
-      setTimeout(() => setPos((p) => p ? { ...p, snapping: false } : p), 420);
-    }
+    setCorner(nearestCornerDirection(cx, cy, sidebarWidth));
+    setDragPos(null);
+    setSnapping(true);
+    setTimeout(() => setSnapping(false), 380);
   }, [sidebarWidth]);
 
+  // ── Header drag (move) ───────────────────────────────────────────────────
   const handleHeaderPointerDown = useCallback((e) => {
     if (e.target.closest('button')) return;
     e.preventDefault();
@@ -144,23 +160,39 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
     const startY = e.clientY;
     const startLeft = rect.left;
     const startTop = rect.top;
-    let moved = false;
+    didDragRef.current = false;
+    setInteracting(true);
+    setSnapping(false);
 
     const onMove = (me) => {
       const dx = me.clientX - startX;
-      const dy = mode === 'mini' ? me.clientY - startY : me.clientY - startY;
-      moved = true;
-      setPos({ left: startLeft + dx, top: startTop + dy, snapping: false });
+      const dy = me.clientY - startY;
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) didDragRef.current = true;
+      const nextTop = Math.max(TOP_MIN, startTop + dy);
+      setDragPos({ left: startLeft + dx, top: nextTop });
     };
     const onUp = () => {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
-      if (moved) snapToCorner(pos, size, mode === 'mini');
+      setInteracting(false);
+      if (didDragRef.current) {
+        const el2 = popupRef.current;
+        if (el2) confirmSnap(el2.getBoundingClientRect());
+      } else {
+        setDragPos(null);
+      }
     };
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
-  }, [mode, pos, size, snapToCorner]);
+  }, [confirmSnap]);
 
+  // Suppress the mini-mode label click right after a drag ends
+  const handleMiniLabelClick = useCallback(() => {
+    if (didDragRef.current) return;
+    onMini();
+  }, [onMini]);
+
+  // ── Resize drag ──────────────────────────────────────────────────────────
   const handleResizePointerDown = useCallback((e, dir) => {
     e.preventDefault();
     e.stopPropagation();
@@ -173,6 +205,8 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
     const startH = rect.height;
     const startLeft = rect.left;
     const startTop = rect.top;
+    setInteracting(true);
+    setSnapping(false);
 
     const onMove = (me) => {
       const dx = me.clientX - startX;
@@ -182,108 +216,74 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
       let newLeft = startLeft;
       let newTop = startTop;
 
-      if (mode === 'mini') {
+      if (isMini) {
         // Mini: horizontal resize only
-        if (dir.includes('e')) newW = Math.max(MINI_MIN_W, Math.min(MINI_MAX_W, startW + dx));
+        if (dir.includes('e')) newW = clamp(startW + dx, MINI_MIN_W, MINI_MAX_W);
         if (dir.includes('w')) {
-          newW = Math.max(MINI_MIN_W, Math.min(MINI_MAX_W, startW - dx));
+          newW = clamp(startW - dx, MINI_MIN_W, MINI_MAX_W);
           newLeft = startLeft + (startW - newW);
         }
       } else {
-        if (dir.includes('e')) newW = Math.max(POPUP_MIN_W, Math.min(POPUP_MAX_W, startW + dx));
+        if (dir.includes('e')) newW = clamp(startW + dx, POPUP_MIN_W, POPUP_MAX_W);
         if (dir.includes('w')) {
-          newW = Math.max(POPUP_MIN_W, Math.min(POPUP_MAX_W, startW - dx));
+          newW = clamp(startW - dx, POPUP_MIN_W, POPUP_MAX_W);
           newLeft = startLeft + (startW - newW);
         }
-        if (dir.includes('s')) newH = Math.max(POPUP_MIN_H, Math.min(POPUP_MAX_H, startH + dy));
+        if (dir.includes('s')) newH = clamp(startH + dy, POPUP_MIN_H, POPUP_MAX_H);
         if (dir.includes('n')) {
-          newH = Math.max(POPUP_MIN_H, Math.min(POPUP_MAX_H, startH - dy));
+          newH = clamp(startH - dy, POPUP_MIN_H, POPUP_MAX_H);
           newTop = startTop + (startH - newH);
         }
       }
+      newTop = Math.max(TOP_MIN, newTop);
 
-      setSize((prev) => ({ ...prev, w: newW, h: mode === 'mini' ? prev.h : newH }));
-      setPos({ left: newLeft, top: newTop, snapping: false });
+      setSize((prev) => ({ w: newW, h: isMini ? prev.h : newH }));
+      setDragPos({ left: newLeft, top: newTop });
     };
 
     const onUp = () => {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
-      // Save after resize
-      setSize((s) => { saveSize(s); return s; });
-      setPos((p) => { if (p) savePos({ left: p.left, top: p.top }); return p; });
+      setInteracting(false);
+      const el2 = popupRef.current;
+      if (el2) {
+        const finalRect = el2.getBoundingClientRect();
+        // In mini mode the rendered height is always MINI_H — preserve the
+        // stored popup-mode height rather than overwriting it with that.
+        saveSize({ w: finalRect.width, h: isMini ? size.h : finalRect.height });
+        confirmSnap(finalRect);
+      }
     };
 
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
-  }, [mode]);
+  }, [isMini, confirmSnap, size.h]);
 
-  // Initialize pos on first mount if not stored
-  useEffect(() => {
-    if (!pos) {
-      setPos(getDefaultPos());
-    }
-  }, [pos, getDefaultPos]);
+  // ── Popup style ──────────────────────────────────────────────────────────
+  const cornerPos = computeCornerPos(corner, currentW, currentH, sidebarWidth);
+  const pos = dragPos || cornerPos;
 
+  const snapTransition = 'left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.28s ease, height 0.28s ease';
+  const modeTransition = 'width 0.28s ease, height 0.28s ease, left 0.28s ease, top 0.28s ease';
+  // While interacting, disable all transitions so the popup tracks the cursor immediately.
+  const transitionValue = interacting ? 'none' : (snapping ? snapTransition : modeTransition);
+
+  const popupStyle = {
+    left: pos.left,
+    top: pos.top,
+    right: 'auto',
+    bottom: 'auto',
+    width: currentW,
+    height: currentH,
+    transition: transitionValue,
+  };
+
+  // ── Active conversation data ──────────────────────────────────────────────
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
   const messages = activeConv?.messages || [];
   const isNewChat = !activeConvId || messages.length === 0;
 
-  const [popupSuggestions, setPopupSuggestions] = useState([]);
-  useEffect(() => {
-    chatApi.getSuggestions().then((res) => {
-      setPopupSuggestions([...res.suggestionPool].sort(() => Math.random() - 0.5).slice(0, 3));
-    });
-  }, []);
-
-  useEffect(() => {
-    if (mode === 'popup') messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, mode]);
-
-  const handleSend = (text) => {
-    const t = (text !== undefined ? text : draft).trim();
-    if (!t) return;
-    onSendMessage(t);
-    setDraft('');
-    setShowConvList(false);
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      if (ctrlEnterRef.current) {
-        if (e.ctrlKey || e.metaKey) { e.preventDefault(); handleSend(); }
-      } else {
-        if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); handleSend(); }
-      }
-    }
-  };
-
-  const isMini = mode === 'mini';
-  const currentW = isMini ? Math.min(MINI_MAX_W, Math.max(MINI_MIN_W, size.w)) : size.w;
-  const currentH = isMini ? MINI_H : size.h;
-
-  const snapping = pos?.snapping ?? false;
-  const snapTransition = 'left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.38s cubic-bezier(0.34, 1.56, 0.64, 1)';
-  const modeTransition = 'width 0.25s ease, height 0.25s ease';
-
-  const popupStyle = pos
-    ? {
-        left: pos.left,
-        top: pos.top,
-        right: 'auto',
-        bottom: 'auto',
-        width: currentW,
-        height: currentH,
-        transition: snapping ? snapTransition : modeTransition,
-      }
-    : {
-        width: currentW,
-        height: currentH,
-        transition: modeTransition,
-      };
-
-  // 8-direction resize handle configs: [dir, cursor]
+  // ── 8-direction resize handles ───────────────────────────────────────────
   const HANDLES = [
     ['n', 'n-resize'],
     ['ne', 'ne-resize'],
@@ -294,11 +294,60 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
     ['w', 'w-resize'],
     ['nw', 'nw-resize'],
   ];
-
-  // In mini mode only w/e handles are active
   const activeHandles = isMini
     ? HANDLES.filter(([d]) => d === 'w' || d === 'e')
     : HANDLES;
+
+  const topbarLeft = (
+    <div
+      className="chat-popup-header-left"
+      style={isMini ? { cursor: 'pointer', flex: 1 } : {}}
+      onClick={isMini ? handleMiniLabelClick : undefined}
+    >
+      <span className="chat-popup-icon">✦</span>
+      <span className={isMini ? 'chat-popup-mini-label' : 'chat-popup-conv-label'}>
+        {activeConv ? activeConv.title : 'WaveAI'}
+      </span>
+    </div>
+  );
+
+  const topbarRight = (
+    <>
+      {!isMini && (
+        <button
+          className={`chat-popup-action-btn${showConvList ? ' active' : ''}`}
+          onClick={() => setShowConvList((v) => !v)}
+          title="대화 목록"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      )}
+      <button className="chat-popup-action-btn" onClick={onMini} title={isMini ? '팝업으로 열기' : '한 줄로 접기'}>
+        {isMini ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        ) : (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        )}
+      </button>
+      <button className="chat-popup-action-btn" onClick={onExpand} title="전체 화면으로 열기">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+          <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+        </svg>
+      </button>
+      <button className="chat-popup-action-btn" onClick={onClose} title="닫기">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </>
+  );
 
   return (
     <div ref={popupRef} className={`chat-popup chat-popup--${mode}`} style={popupStyle}>
@@ -312,144 +361,39 @@ export function ChatPopup({ mode, conversations, activeConvId, onSelectConv, onA
         />
       ))}
 
-      {/* Header */}
+      {/* Header — drag to move */}
       <div
         className="chat-popup-header"
         onPointerDown={handleHeaderPointerDown}
-        style={{ cursor: 'grab' }}
+        style={{ cursor: 'grab', userSelect: 'none' }}
       >
-        <div className="chat-popup-header-left" onClick={isMini ? onMini : undefined} style={isMini ? { cursor: 'pointer', flex: 1 } : {}}>
-          <span className="chat-popup-icon">✦</span>
-          <span className={isMini ? 'chat-popup-mini-label' : 'chat-popup-conv-label'}>
-            {activeConv ? activeConv.title : 'WaveAI'}
-          </span>
-        </div>
+        {topbarLeft}
         <div className="chat-popup-header-actions" onClick={(e) => e.stopPropagation()}>
-          {!isMini && (
-            <button
-              className={`chat-popup-action-btn${showConvList ? ' active' : ''}`}
-              onClick={() => setShowConvList((v) => !v)}
-              title="대화 목록"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-          )}
-          <button className="chat-popup-action-btn" onClick={onMini} title={isMini ? '팝업으로 열기' : '한 줄로 접기'}>
-            {isMini ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-            ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            )}
-          </button>
-          <button className="chat-popup-action-btn" onClick={onExpand} title="전체 화면으로 열기">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
-              <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
-            </svg>
-          </button>
-          <button className="chat-popup-action-btn" onClick={onClose} title="닫기">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          {topbarRight}
         </div>
       </div>
 
       {/* Body — only when popup mode */}
       {!isMini && (
-        <>
-          {showConvList ? (
-            <div className="chat-popup-conv-panel">
-              <button
-                className="chat-popup-conv-new"
-                onClick={() => { onAddConv(); setShowConvList(false); }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                새 대화
-              </button>
-              <div className="chat-popup-conv-scroll">
-                {conversations.length === 0 && (
-                  <p className="chat-popup-conv-empty">대화 내역이 없습니다</p>
-                )}
-                {conversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    className={`chat-popup-conv-row${conv.id === activeConvId ? ' active' : ''}`}
-                    onClick={() => { onSelectConv(conv.id); setShowConvList(false); }}
-                  >
-                    {conv.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="chat-popup-messages">
-                {isNewChat ? (
-                  <div className="chat-popup-welcome">
-                    <p className="chat-popup-welcome-hint">무엇이든 물어보세요</p>
-                    {popupSuggestions.map((s) => (
-                      <button
-                        key={s.id || s.label}
-                        className="chat-popup-suggestion"
-                        onClick={() => handleSend(s.prompt)}
-                      >
-                        <span className="chat-popup-suggestion-icon">{s.icon}</span>
-                        <span>{s.prompt}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="chat-popup-bubble-list">
-                    {messages.map((msg, i) => (
-                      <div
-                        key={msg.id || i}
-                        className={`chat-popup-bubble-row ${msg.role}${i === messages.length - 1 ? ' is-new' : ''}`}
-                      >
-                        {msg.role === 'assistant' && (
-                          <span className="chat-popup-avatar">✦</span>
-                        )}
-                        <div className={`chat-popup-bubble ${msg.role}`}>
-                          {msg.role === 'assistant' ? <MarkdownMessage text={msg.text} /> : msg.text}
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </div>
-              <div className="chat-popup-input-area">
-                <form
-                  className="chat-popup-input-form"
-                  onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                >
-                  <textarea
-                    ref={textareaRef}
-                    className="chat-popup-input"
-                    rows={1}
-                    placeholder="메시지를 입력하세요..."
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
-                  <button type="submit" className="chat-send-btn" disabled={!draft.trim()} aria-label="보내기">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                  </button>
-                </form>
-              </div>
-            </>
-          )}
-        </>
+        showConvList ? (
+          <PopupConvPanel
+            conversations={conversations}
+            activeConvId={activeConvId}
+            onSelectConv={onSelectConv}
+            onAddConv={onAddConv}
+            onDeleteConv={onDeleteConv}
+            onRenameConv={onRenameConv}
+            onClose={() => setShowConvList(false)}
+          />
+        ) : (
+          <ChatMessages
+            messages={messages}
+            isNewChat={isNewChat}
+            chatEntered={true}
+            onSend={onSendMessage}
+            compact={true}
+          />
+        )
       )}
     </div>
   );

@@ -10,6 +10,10 @@
   background: var(--surface);
   border-right: 1px solid var(--line);
   transition: width 0.25s ease;
+  /* Sticky establishes its own stacking context; without an explicit z-index the
+     workspace/topbar (later in DOM order) paints over anything poking past the
+     sidebar's edge, such as the collapsed collapse-button. */
+  z-index: 30;
 }
 
 .sidebar.collapsed {
@@ -89,9 +93,15 @@
   display: none;
 }
 
+.sidebar.collapsed .brand {
+  position: relative;
+}
+
 .sidebar.collapsed .collapse-button {
   position: absolute;
   right: -13px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 26px;
   height: 26px;
   display: grid;
@@ -101,6 +111,7 @@
   background: var(--surface);
   font-size: 18px;
   box-shadow: 0 2px 8px var(--wave-20);
+  z-index: 200;
 }
 
 /* Nav */
@@ -234,6 +245,33 @@
 
 .insight-trigger.active {
   background: var(--wave);
+}
+
+/* WaveAI header trigger */
+.wave-ai-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--wave-30);
+  border-radius: 999px;
+  background: var(--wave-10);
+  color: var(--wave);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+.wave-ai-trigger:hover:not(:disabled) {
+  background: var(--wave-20);
+  border-color: var(--wave);
+}
+
+.wave-ai-trigger:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* Bell */
@@ -513,8 +551,15 @@
   }
 
   .top-actions-mobile .insight-trigger-label,
-  .top-actions-mobile .profile-text {
+  .top-actions-mobile .profile-text,
+  .top-actions-mobile .wave-ai-trigger span {
     display: none;
+  }
+
+  .top-actions-mobile .wave-ai-trigger {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
   }
 
   .insight-trigger {

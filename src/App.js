@@ -7,15 +7,14 @@ import weeklyPlanApi from './api/weeklyPlanApi';
 import { InsightChat } from './chat/InsightChat';
 import { ChatPopup } from './chat/ChatPopup';
 import { ChatPage } from './chat/ChatPage';
-import { WaveTransitionOverlay } from './WaveTransitionOverlay';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { MainPage } from './pages/MainPage';
 import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
-import { WeeklyPlanPage } from './pages/WeeklyPlanPage';
-import { HomeControlPage } from './pages/HomeControlPage';
-import { PowerPage } from './pages/PowerPage';
+import { WeeklyPlanPage } from './pages/plan/WeeklyPlanPage';
+import { HomeControlPage } from './pages/iot/HomeControlPage';
+import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
 
 function formatNotificationTime(iso) {
@@ -142,6 +141,9 @@ function App() {
   const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
   const [prevPage, setPrevPage] = useState('main');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // One-shot flag: force the popup to open snapped to the top-right corner
+  // (used by the header WaveAI button). Consumed once by ChatPopup on mount.
+  const [chatForceTopRight, setChatForceTopRight] = useState(false);
 
   const playBubbleTransitionSound = async () => {
     // Read waveAiSound fresh on every call so setting changes apply immediately
@@ -196,15 +198,22 @@ function App() {
       return;
     }
     if (page === 'chat') {
+      // Already on chat page — start a new conversation (welcome)
       setActiveChatId(null);
       return;
     }
     setPrevPage(page);
     playBubbleTransitionSound();
     setPage('chat');
+
+    // Restore most recent conversation if one exists; otherwise show welcome
+    const mostRecent = chatConversations[0];
+    if (mostRecent && !activeChatId) {
+      setActiveChatId(mostRecent.id);
+    }
+
     setWaveTransition(true);
     setTimeout(() => {
-      setActiveChatId(null);
       setWaveTransition(false);
     }, 750);
   };
@@ -227,6 +236,15 @@ function App() {
     setChatMode('page');
   };
 
+  // Header "WaveAI" button — opens a fresh mini chat snapped to the top-right
+  // corner. No conversation is created yet — it only enters the list once the
+  // first message is actually sent (see sendChatMessage's `user_added` handling).
+  const handleHeaderWaveAiOpen = () => {
+    setActiveChatId(null);
+    setChatForceTopRight(true);
+    setChatMode('mini');
+  };
+
   const mergeChatConversation = (conversation) => {
     setChatConversations((prev) => {
       const exists = prev.some((item) => item.id === conversation.id);
@@ -242,10 +260,10 @@ function App() {
     mergeChatConversation(conversation);
   };
 
-  const addChatConversation = async () => {
-    const conversation = await chatApi.createConversation({ title: '새 대화' });
-    setChatConversations((prev) => [conversation, ...prev]);
-    setActiveChatId(conversation.id);
+  // "새 대화" only clears the active selection (welcome screen) — it doesn't
+  // join the conversation list until the user actually sends a message.
+  const addChatConversation = () => {
+    setActiveChatId(null);
   };
 
   const deleteChatConversation = async (id) => {
@@ -419,6 +437,8 @@ function App() {
           onMini={handleMiniChat}
           onClose={handleClosePopupChat}
           sidebarWidth={sidebarCollapsed ? 76 : 263}
+          forceTopRight={chatForceTopRight}
+          onForceTopRightConsumed={() => setChatForceTopRight(false)}
         />
       )}
       <Sidebar
@@ -438,8 +458,7 @@ function App() {
         onCollapsedChange={setSidebarCollapsed}
         onUnlockDevMenu={() => setShowDevSettings(true)}
       />
-      <section className="workspace" style={{ position: 'relative' }}>
-        <WaveTransitionOverlay active={waveTransition} />
+      <section className="workspace">
         <TopBar
           title={pageTitles[page]}
           showNotifications={showNotifications}
@@ -450,6 +469,8 @@ function App() {
           accounts={accounts}
           account={account}
           onSwitchAccount={switchAccount}
+          onOpenWaveAi={handleHeaderWaveAiOpen}
+          waveAiDisabled={chatMode !== 'page' || page === 'chat'}
         />
         <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}`}>
           {page === 'main' && (

@@ -138,6 +138,27 @@ const defaultAiAgentSettings = {
   waveAiSound: true,
 };
 
+// Chat-related toggles (ctrlEnterSend, waveAiSound, etc.) are persisted to
+// localStorage so they survive a page refresh, unlike the rest of the mock state.
+const AI_AGENT_SETTINGS_STORAGE_KEY = 'aiAgentSettings';
+
+function loadPersistedAiAgentSettings() {
+  try {
+    const raw = localStorage.getItem(AI_AGENT_SETTINGS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistAiAgentSettings(settings) {
+  try {
+    localStorage.setItem(AI_AGENT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // ignore write errors (e.g. storage disabled)
+  }
+}
+
 const accountsSeed = [
   { id: 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E', name: '김건강' },
   { id: 'acc_01J2ZQ8YV6E3N9P5K7M1R4T2WA', name: '박웰빙' },
@@ -202,7 +223,7 @@ let sleepConfigs = Object.fromEntries(accountsSeed.map((account) => [account.id,
 let generalSettings = Object.fromEntries(accountsSeed.map((account) => [account.id, cloneDeep(defaultGeneralSettings)]));
 let notifications = cloneDeep(notificationsSeed);
 let aiModels = cloneDeep(aiModelsSeed);
-let aiAgentSettings = cloneDeep(defaultAiAgentSettings);
+let aiAgentSettings = { ...cloneDeep(defaultAiAgentSettings), ...loadPersistedAiAgentSettings() };
 
 // roomId -> array of member accountIds. Room membership is stored in-memory only.
 let roomMembers = {
@@ -472,6 +493,7 @@ export class SettingsApi {
     }
     if (ctrlEnterSend !== undefined) aiAgentSettings.ctrlEnterSend = Boolean(ctrlEnterSend);
     if (waveAiSound !== undefined) aiAgentSettings.waveAiSound = Boolean(waveAiSound);
+    persistAiAgentSettings(aiAgentSettings);
     return cloneDeep(aiAgentSettings);
   }
 

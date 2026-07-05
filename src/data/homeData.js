@@ -92,6 +92,85 @@ export const iotDevices = [
   },
 ];
 
+// ── Power page mock trend generators ────────────────────────────────────────
+// Deterministic (seeded) pseudo-random generators so charts stay stable across
+// re-renders for the same plug/range, without needing to store huge static arrays.
+
+const COMBO_RANGE_CONFIG = {
+  min1: { points: 60, stepSeconds: 1 },
+  min10: { points: 60, stepSeconds: 10 },
+  min30: { points: 60, stepSeconds: 30 },
+  hour: { points: 60, stepSeconds: 60 },
+};
+
+export function hashSeed(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h || 1;
+}
+
+export function seededRandom(seed) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function formatAgoLabel(secondsAgo) {
+  if (secondsAgo === 0) return '지금';
+  if (secondsAgo < 60) return `-${secondsAgo}s`;
+  return `-${Math.round(secondsAgo / 60)}분`;
+}
+
+// Combo ranges (1분/10분/30분/1시간): W line + Wh-per-sample bar, same series.
+export function generatePowerComboTrend(range, baseW, plugId = 'plug') {
+  const cfg = COMBO_RANGE_CONFIG[range] || COMBO_RANGE_CONFIG.min1;
+  const rand = seededRandom(hashSeed(`${plugId}:${range}`));
+  const data = [];
+  for (let i = 0; i < cfg.points; i++) {
+    const noise = (rand() - 0.5) * baseW * 0.18;
+    const wave = Math.sin(i / 6) * baseW * 0.08;
+    const value = Math.max(0, +(baseW + noise + wave).toFixed(1));
+    const secondsAgo = (cfg.points - 1 - i) * cfg.stepSeconds;
+    data.push({
+      label: formatAgoLabel(secondsAgo),
+      value,
+      wh: +(value * (cfg.stepSeconds / 3600)).toFixed(4),
+    });
+  }
+  return data;
+}
+
+// Period ranges (일간/주간/월간/연간): Wh bars only.
+export function generatePowerPeriodTrend(range, baseW, plugId = 'plug') {
+  const rand = seededRandom(hashSeed(`${plugId}:${range}:period`));
+  const dailyWh = baseW * 24; // Wh consumed in a full day if run continuously at baseW
+  if (range === 'day') {
+    // Hour-of-day usage curve peaking in the evening, in Wh-per-hour (~baseW average)
+    return Array.from({ length: 24 }, (_, h) => {
+      const factor = 0.55 + 0.45 * Math.sin(((h - 6) / 24) * Math.PI * 2 - Math.PI / 2);
+      return { label: `${h}시`, wh: Math.max(0.1, +(baseW * factor * (0.85 + rand() * 0.3)).toFixed(2)) };
+    });
+  }
+  if (range === 'week') {
+    const days = ['월', '화', '수', '목', '금', '토', '일'];
+    return days.map((d) => ({ label: d, wh: +(dailyWh * (0.8 + rand() * 0.4)).toFixed(1) }));
+  }
+  if (range === 'month') {
+    const now = new Date();
+    const dayCount = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return Array.from({ length: dayCount }, (_, i) => ({
+      label: `${i + 1}`,
+      wh: +(dailyWh * (0.75 + rand() * 0.5)).toFixed(1),
+    }));
+  }
+  // year — monthly totals in kWh
+  const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+  return months.map((m) => ({ label: m, wh: +((dailyWh * 30 * (0.7 + rand() * 0.5)) / 1000).toFixed(1), unitKwh: true }));
+}
+
 export const powerRanges = [
   { id: 'hour', label: '시간' },
   { id: 'day', label: '일간' },

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Card } from '../components/ui/Card';
-import { Tabs } from '../components/ui/Tabs';
-import { Metric } from '../components/ui/Metric';
-import homeApi from '../api/homeApi';
+import { Card } from '../../components/ui/Card';
+import { Tabs } from '../../components/ui/Tabs';
+import { Metric } from '../../components/ui/Metric';
+import homeApi from '../../api/homeApi';
 import './HomeControlPage.css';
 
 function formatRelativeTime(iso) {

@@ -2,8 +2,8 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   CAT_STYLE, ENG_LABELS, CAL_H, CAL_END_MIN,
   minToY, yToMin, snapMin, fmtTime, getWeekDates,
-} from '../data/weeklyPlanData';
-import weeklyPlanApi from '../api/weeklyPlanApi';
+} from '../../data/weeklyPlanData';
+import weeklyPlanApi from '../../api/weeklyPlanApi';
 
 export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight }) {
   const [weekOffset, setWeekOffset] = useState(0);

@@ -1,0 +1,574 @@
+/* ── Power page ──────────────────────────────────────────────────────────── */
+
+.power-page {
+  --power-green: #22c55e;
+  /* Desaturated/lightened blue — the original #3b82f6 read too dark against
+     the light theme once used as a large fill area. */
+  --power-blue: #7fa8e0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.power-page.mounted {
+  opacity: 1;
+}
+
+/* ── Live indicator dot ──────────────────────────────────────────────────── */
+
+.power-live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--power-green);
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  animation: power-pulse 1.6s ease-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes power-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+  70% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* Static (non-pulsing) live dot — used on source cards, where a pulsing dot
+   per-card became too visually busy once every card showed one. */
+.power-dot-static {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--power-green);
+  flex-shrink: 0;
+}
+
+/* ── Stat cards row ──────────────────────────────────────────────────────── */
+
+.power-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.power-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: box-shadow 0.15s;
+}
+
+.power-stat-card--empty {
+  visibility: hidden;
+}
+
+.power-stat-label {
+  font-size: 11.5px;
+  color: var(--sub);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.power-stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.power-stat-value strong {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.power-stat-value small {
+  font-size: 13px;
+  color: var(--sub);
+  font-weight: 500;
+}
+
+.power-stat-card.accent .power-stat-value strong {
+  color: var(--wave);
+}
+
+.power-stat-sub {
+  font-size: 11px;
+  color: var(--sub);
+  opacity: 0.7;
+}
+
+/* ── Chart card ──────────────────────────────────────────────────────────── */
+
+.power-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px 14px;
+}
+
+.power-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.power-chart-title strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.power-chart-title span {
+  font-size: 12px;
+  color: var(--sub);
+}
+
+.power-chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.power-tab-group {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.power-tab {
+  padding: 4px 11px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.power-tab.active {
+  background: var(--wave);
+  color: #fff;
+  display: flex;
+}
+
+.power-tab-suffix {
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.power-tab-group.disabled {
+  opacity: 0.45;
+}
+
+.power-tab-group.disabled .power-tab {
+  cursor: not-allowed;
+}
+
+.power-range-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.power-combo-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: 7px;
+  transition: background 0.12s;
+}
+
+.power-combo-wrap.active {
+  background: var(--wave);
+}
+
+/* Clicking the label selects the remembered interval directly; the caret
+   (separate button) opens the picker — two distinct click targets. */
+.power-combo-label {
+  padding: 4px 4px 4px 11px;
+  border: none;
+  background: transparent;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.power-combo-wrap.active .power-combo-label {
+  color: #fff;
+}
+
+.power-combo-caret-btn {
+  display: flex;
+  align-items: center;
+  padding: 4px 9px 4px 3px;
+  border: none;
+  background: transparent;
+  color: var(--sub);
+  cursor: pointer;
+}
+
+.power-combo-wrap.active .power-combo-caret-btn {
+  color: #fff;
+}
+
+.power-combo-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 88px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.power-combo-menu-item {
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.power-combo-menu-item:hover {
+  background: var(--wave-10);
+}
+
+.power-combo-menu-item.active {
+  background: var(--wave-10);
+  color: var(--wave);
+  font-weight: 700;
+}
+
+.power-toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--line);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.power-range-toolbar .power-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* ── AI report banner ────────────────────────────────────────────────────── */
+
+.power-report-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: var(--wave-08);
+  border: 1px solid var(--wave-15);
+}
+
+.power-report-banner p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.power-report-icon {
+  color: var(--wave);
+  font-size: 17px;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+.power-report-banner.unsupported {
+  background: var(--bg);
+  border-style: dashed;
+  border-color: var(--line);
+}
+
+.power-report-banner.unsupported p {
+  color: var(--sub);
+}
+
+.power-report-banner.unsupported .power-report-icon {
+  color: var(--sub);
+}
+
+/* ── 전력 소스 heading ───────────────────────────────────────────────────── */
+
+.power-source-heading {
+  margin: 4px 0 -2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ── Chart reveal animation ─────────────────────────────────────────────── */
+/* Curtain-drop reveal: content becomes visible top-down. Only applied on
+   mount / range-group changes — never for switches *within* the combo
+   group, so it never feels sluggish during quick tab flips. */
+
+.power-chart-reveal.animate {
+  animation: power-chart-reveal-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes power-chart-reveal-in {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0% 0); }
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+
+.power-tooltip {
+  background: var(--surface);
+  border: 1px solid var(--wave-20);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.power-tooltip-label {
+  color: var(--sub);
+  margin-bottom: 5px;
+  font-size: 11px;
+}
+
+.power-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.power-tooltip-row strong {
+  font-weight: 600;
+}
+
+/* ── Device cards ────────────────────────────────────────────────────────── */
+
+.power-device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.power-device-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.power-device-card:hover {
+  border-color: var(--wave-30);
+  box-shadow: 0 2px 10px var(--wave-10);
+}
+
+.power-device-card.selected {
+  border-color: var(--wave);
+  box-shadow: 0 0 0 3px var(--wave-15);
+}
+
+/* Only the body (name/wattage/stats) dims when disabled — the toggle and the
+   online dot stay fully visible since they aren't affected by this state. */
+.power-device-card.disabled .power-device-body {
+  opacity: 0.5;
+}
+
+.power-device-card.disabled:hover {
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+/* Toggle + online dot float top-right, stacked vertically, above the card
+   body button. The dot always shows the device's connectivity (green =
+   online in this mock) independently of the enable/disable toggle above it. */
+.power-device-side {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.power-device-side .power-dot-static {
+  margin-right: 0;
+}
+
+/* Small size modifier for .toggle-switch (base defined in posture.css) */
+.toggle-switch.toggle-switch--sm {
+  width: 32px;
+  height: 18px;
+}
+
+.toggle-switch.toggle-switch--sm i {
+  width: 12px;
+  height: 12px;
+  top: 3px;
+  left: 3px;
+}
+
+.toggle-switch.toggle-switch--sm.on i {
+  transform: translateX(14px);
+}
+
+.power-device-body {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 12px 14px 12px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font: inherit;
+  color: inherit;
+}
+
+.power-device-body:disabled {
+  cursor: not-allowed;
+}
+
+/* Thumbnail + room/title pushed to the top-left of the card */
+.power-device-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding-right: 32px; /* leave room for the toggle+dot floating top-right */
+}
+
+.power-device-thumb {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--wave-08);
+  color: var(--wave);
+  overflow: hidden;
+}
+
+.power-device-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.power-device-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.power-device-room {
+  display: block;
+  font-size: 11px;
+  color: var(--sub);
+  margin-bottom: 2px;
+}
+
+.power-device-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Large centered wattage reading — the focal point of the card */
+.power-device-center {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 0;
+}
+
+.power-device-w-big {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.power-device-card.selected .power-device-w-big {
+  color: var(--wave);
+}
+
+.power-device-center small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sub);
+}
+
+.power-device-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.power-device-va,
+.power-device-cost {
+  font-size: 11.5px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .power-stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .power-stat-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .power-chart-head {
+    flex-direction: column;
+  }
+}

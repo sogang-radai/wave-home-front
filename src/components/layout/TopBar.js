@@ -10,6 +10,15 @@ export function BellIcon() {
   );
 }
 
+export function WaveSparkIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 3l1.8 5.1L19 10l-5.2 1.9L12 17l-1.8-5.1L5 10l5.2-1.9L12 3Z" />
+      <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+    </svg>
+  );
+}
+
 function ProfileMenu({ accounts, activeId, onSelect }) {
   return (
     <div className="profile-menu">
@@ -44,12 +53,26 @@ export function TopActionsCluster({
   accounts,
   account,
   onSwitchAccount,
+  onOpenWaveAi,
+  waveAiDisabled,
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
 
   return (
     <div className={`top-actions top-actions-${variant}`}>
+      {onOpenWaveAi && (
+        <button
+          className="wave-ai-trigger"
+          aria-label="WaveAI 새 대화"
+          title={waveAiDisabled ? 'WaveAI 대화창이 이미 열려 있어요' : 'WaveAI 새 대화 열기'}
+          onClick={onOpenWaveAi}
+          disabled={waveAiDisabled}
+        >
+          <WaveSparkIcon />
+          <span>WaveAI</span>
+        </button>
+      )}
       <button className="bell" aria-label="알림" onClick={onToggleNotifications}>
         <BellIcon />
         {unreadCount > 0 && <b>{unreadCount}</b>}
