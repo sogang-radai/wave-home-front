@@ -1,7 +1,7 @@
 # Settings API (설정)
 
-구현 예정 프론트 코드: `src/api/settingsApi.js`(진입점) · `src/api/mock/SettingsApi.js`(mock) ·
-`src/api/v1/SettingsApi.js`(real). 아직 클래스는 없고, 이 문서가 그 클래스들의 메서드 시그니처 계약이다.
+구현된 프론트 코드: `src/api/settingsApi.js` · `src/api/mock/SettingsApi.js` ·
+`src/api/v1/SettingsApi.js`. 아직 클래스는 없고, 이 문서가 그 클래스들의 메서드 시그니처 계약이다.
 
 가구 구성원(계정), 세션의 활성 구성원, 방/구역, 기기, 수면 설정, 일반 설정, 알림까지 "설정" 화면
 (`src/pages/settings/*`)에서 쓰는 리소스를 다룬다. 알림은 헤더/사이드바 전역 기능이라 별도 도메인이
@@ -13,9 +13,10 @@
 - 인증: 복잡한 OAuth/JWT/비밀번호 로그인은 전제하지 않는다. 서버 세션 쿠키(`sid`)로 현재 브라우저/기기의 활성 구성원만 기억한다.
 - 활성 가구 구성원 기준으로 동작하는 엔드포인트(수면/일반 설정/개인 알림 등)는 path나 body에 별도
   `accountId`를 넣지 않고 세션의 `activeAccount`를 기준으로 동작한다.
-- ID는 사용자가 보는 값이 아니라 시스템 내부 추적용 stable identifier다. 프론트는 문자열로만 다룬다.
-  예: `acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E`, `room_01J2ZQ8ZK2M8P6X4W9A1D3F7G0`,
-  `8d2e5a1c49f7036b`, `noti_01J2ZQA4S2D9M8R6K1P0V3X7YB`.
+- ID는 DB INTEGER `id`를 JSON number로 그대로 노출한다.
+  구성원·방·할일·대화·알림·룰·IR·이벤트 등 대부분의 리소스가 해당한다.
+- **예외**: `device.id`는 16자 hex 등 물리 장비 식별 **문자열**. AI 모델 카탈로그 id(`gemini-flash2.5` 등)도 문자열.
+- **방 정렬 순서**는 서버에 저장하지 않는다. 프론트 `localStorage`(`wavehome_room_order`)에만 둔다.
 - 설정 폼 중심 API는 JS/React 연동 편의를 위해 camelCase를 기본으로 한다. 단, `/devices`는 실제 장비
   설정 포맷을 그대로 반영해 `input_devices`, `room_id`, `class`, `interface` 같은 snake_case 필드를 쓴다.
 - DELETE 성공 응답은 프론트 처리 편의를 위해 `200 OK`와 삭제된 ID를 반환하는 방식으로 통일한다.
@@ -54,7 +55,7 @@
 ```json
 {
   "activeAccount": {
-    "id": "acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+    "id": 1,
     "name": "김건강"
   }
 }
@@ -66,14 +67,14 @@
 
 **Request Body**
 ```json
-{ "accountId": "acc_01J2ZQ8YV6E3N9P5K7M1R4T2WA" }
+{ "accountId": 2 }
 ```
 
 **Response 200**
 ```json
 {
   "activeAccount": {
-    "id": "acc_01J2ZQ8YV6E3N9P5K7M1R4T2WA",
+    "id": 2,
     "name": "박웰빙"
   }
 }
@@ -94,8 +95,8 @@
 **Response 200**
 ```json
 [
-  { "id": "acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E", "name": "김건강" },
-  { "id": "acc_01J2ZQ8YV6E3N9P5K7M1R4T2WA", "name": "박웰빙" }
+  { "id": 1, "name": "김건강" },
+  { "id": 2, "name": "박웰빙" }
 ]
 ```
 
@@ -110,7 +111,7 @@
 
 **Response 201**
 ```json
-{ "id": "acc_01J2ZQ91BN4R8E5Y6W3T0P7M2C", "name": "이건강" }
+{ "id": 3, "name": "이건강" }
 ```
 
 **Response 400** (이름을 입력 안하면 버튼이 활성화되지 않도록 막아놓을 거긴 함.)
@@ -129,7 +130,7 @@
 
 **Response 200**
 ```json
-{ "id": "acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E", "name": "김건강2" }
+{ "id": 1, "name": "김건강2" }
 ```
 
 **Response 404**
@@ -149,12 +150,12 @@
 ```json
 [
   {
-    "id": "room_01J2ZQ8ZK2M8P6X4W9A1D3F7G0",
+    "id": 1,
     "name": "책상",
     "description": "1인 업무 공간"
   },
   {
-    "id": "room_01J2ZQ92F0T6W8P4B3M7R1K5YD",
+    "id": 2,
     "name": "침실",
     "description": "취침 공간"
   }
@@ -171,7 +172,7 @@
 **Response 201**
 ```json
 {
-  "id": "room_01J2ZQ9A3Y7C5M8N1R4P6T0W2K",
+  "id": 4,
   "name": "거실",
   "description": "거실"
 }
@@ -194,7 +195,7 @@
 **Response 200**
 ```json
 {
-  "id": "room_01J2ZQ92F0T6W8P4B3M7R1K5YD",
+  "id": 2,
   "name": "안방",
   "description": "취침 공간"
 }
@@ -211,7 +212,7 @@
 
 **Response 200**
 ```json
-{ "id": "room_01J2ZQ9A3Y7C5M8N1R4P6T0W2K" }
+{ "id": 4 }
 ```
 
 **Response 404**
@@ -248,7 +249,7 @@
 ```ts
 type Device = {
   id: string;
-  room_id: string;
+  room_id: number | null;
   name: string;
   description: string;
   enabled: boolean;
@@ -279,7 +280,7 @@ type DevicesResponse = {
   "input_devices": [
     {
       "id": "8d2e5a1c49f7036b",
-      "room_id": "7c4a9e2f18b356d0",
+      "room_id": 1,
       "name": "거실 레이더",
       "description": "SRS R4SN mmWave 레이더",
       "enabled": true,
@@ -308,7 +309,7 @@ type DevicesResponse = {
     },
     {
       "id": "1a6f3e8d02c75491",
-      "room_id": "3f91c6e52ad047b8",
+      "room_id": 2,
       "name": "침실 마이크",
       "description": "ESP32 + INMP441, 16kHz 16bit mono",
       "enabled": true,
@@ -325,7 +326,7 @@ type DevicesResponse = {
     },
     {
       "id": "6b904f2e17d83ac5",
-      "room_id": "7c4a9e2f18b356d0",
+      "room_id": 1,
       "name": "거실 카메라",
       "description": "USB Wave Camera",
       "enabled": true,
@@ -338,7 +339,7 @@ type DevicesResponse = {
     },
     {
       "id": "c5281a7e93bf406d",
-      "room_id": "3f91c6e52ad047b8",
+      "room_id": 2,
       "name": "침실 카메라",
       "description": "Network Wave Camera",
       "enabled": true,
@@ -352,7 +353,7 @@ type DevicesResponse = {
     },
     {
       "id": "2e8d1795c0463f5a",
-      "room_id": "7c4a9e2f18b356d0",
+      "room_id": 1,
       "name": "IR 수신기",
       "description": "LIRC IR 수신",
       "enabled": true,
@@ -366,7 +367,7 @@ type DevicesResponse = {
   "output_devices": [
     {
       "id": "9a4c71e36b0285fd",
-      "room_id": "7c4a9e2f18b356d0",
+      "room_id": 1,
       "name": "거실 스마트 플러그",
       "description": "EP2H Tuya IoT 플러그",
       "enabled": true,
@@ -380,7 +381,7 @@ type DevicesResponse = {
     },
     {
       "id": "5e3b80a1f2496cde",
-      "room_id": "7c4a9e2f18b356d0",
+      "room_id": 1,
       "name": "거실 TV",
       "description": "삼성 32인치 TV",
       "enabled": true,
@@ -393,7 +394,7 @@ type DevicesResponse = {
     },
     {
       "id": "0f8c2d6b147ae953",
-      "room_id": "7c4a9e2f18b356d0",
+      "room_id": 1,
       "name": "거실 에어컨 IR",
       "description": "LIRC IR 송신, 에어컨 제어",
       "enabled": true,
@@ -406,7 +407,7 @@ type DevicesResponse = {
     },
     {
       "id": "d7139e58a04b6c21",
-      "room_id": "3f91c6e52ad047b8",
+      "room_id": 2,
       "name": "침실 조명",
       "description": "Philips Hue 전구",
       "enabled": true,
@@ -419,7 +420,7 @@ type DevicesResponse = {
     },
     {
       "id": "4b2a90e7c1586d3f",
-      "room_id": "3f91c6e52ad047b8",
+      "room_id": 2,
       "name": "침실 블라인드",
       "description": "Tuya 스마트 블라인드",
       "enabled": false,
@@ -442,7 +443,7 @@ type DevicesResponse = {
 **Request Body**
 ```json
 {
-  "room_id": "7c4a9e2f18b356d0",
+  "room_id": 1,
   "name": "거실 에어컨 IR",
   "description": "LIRC IR 송신, 에어컨 제어",
   "enabled": true,
@@ -459,7 +460,7 @@ type DevicesResponse = {
 ```json
 {
   "id": "0f8c2d6b147ae953",
-  "room_id": "7c4a9e2f18b356d0",
+  "room_id": 1,
   "name": "거실 에어컨 IR",
   "description": "LIRC IR 송신, 에어컨 제어",
   "enabled": true,
@@ -482,7 +483,7 @@ type DevicesResponse = {
 {
   "enabled": false,
   "name": "거실 에어컨 IR",
-  "room_id": "7c4a9e2f18b356d0"
+  "room_id": 1
 }
 ```
 
@@ -490,7 +491,7 @@ type DevicesResponse = {
 ```json
 {
   "id": "0f8c2d6b147ae953",
-  "room_id": "7c4a9e2f18b356d0",
+  "room_id": 1,
   "name": "거실 에어컨 IR",
   "description": "LIRC IR 송신, 에어컨 제어",
   "enabled": false,
@@ -691,7 +692,7 @@ type SleepConfig = {
 
 ```ts
 type Notification = {
-  id: string;
+  id: number;
   type: 'timer' | 'sleep' | 'posture' | 'temperature';
   message: string;
   createdAt: string; // ISO 8601, 예: '2026-07-02T07:12:00+09:00'
@@ -704,14 +705,14 @@ type Notification = {
 ```json
 [
   {
-    "id": "noti_01J2ZQA4S2D9M8R6K1P0V3X7YB",
+    "id": 1,
     "type": "timer",
     "message": "착석 1시간 48분 경과 — 스트레칭을 해보세요",
     "createdAt": "2026-07-02T07:10:00+09:00",
     "read": false
   },
   {
-    "id": "noti_01J2ZQAF8K6T3P9W2M5R0C1Y4D",
+    "id": 2,
     "type": "sleep",
     "message": "오늘 수면 목표까지 30분 부족합니다",
     "createdAt": "2026-07-02T07:12:00+09:00",
@@ -730,7 +731,7 @@ type Notification = {
 ```json
 [
   {
-    "id": "noti_01J2ZQA4S2D9M8R6K1P0V3X7YB",
+    "id": 1,
     "type": "timer",
     "message": "착석 1시간 48분 경과 — 스트레칭을 해보세요",
     "createdAt": "2026-07-02T07:10:00+09:00",
@@ -756,11 +757,16 @@ GET    /api/v1/rooms
 POST   /api/v1/rooms
 PATCH  /api/v1/rooms/{roomId}
 DELETE /api/v1/rooms/{roomId}
+PUT    /api/v1/rooms/order
+GET    /api/v1/rooms/{roomId}/members
+PUT    /api/v1/rooms/{roomId}/members
 
 GET    /api/v1/devices
 POST   /api/v1/devices
 PATCH  /api/v1/devices/{deviceId}
 DELETE /api/v1/devices/{deviceId}
+PUT    /api/v1/devices/{deviceId}/room
+DELETE /api/v1/devices/{deviceId}/room
 
 GET    /api/v1/settings/sleep
 PUT    /api/v1/settings/sleep
@@ -771,13 +777,97 @@ PUT    /api/v1/settings/general
 GET    /api/v1/settings/sounds
 GET    /api/v1/settings/tts-speakers
 
+GET    /api/v1/settings/ai-models
+GET    /api/v1/settings/ai-agent
+PUT    /api/v1/settings/ai-agent
+
 GET    /api/v1/notifications
 PATCH  /api/v1/notifications/read-all
 ```
 
-## 프론트 API 클래스 메서드 시그니처 (구현 예정)
+---
 
-`src/api/settingsApi.js` 기준 진입점은 mock/real 구현이 1:1로 맞도록 아래 메서드를 제공한다.
+## 구역 멤버 (Rooms 확장)
+
+`src/pages/settings/DeviceSettings.js` — `RoomZoneSettings`
+
+구역 **드래그 정렬**은 API가 아니라 브라우저 `localStorage`(`wavehome_room_order`, INTEGER id 배열)에만 저장한다.
+
+### GET `/rooms/{roomId}/members`
+
+**Response 200**
+```json
+[1, 2]
+```
+
+### PUT `/rooms/{roomId}/members`
+
+**Request Body**
+```json
+{ "accountIds": [1] }
+```
+
+**Response 200** — 갱신된 member id 배열
+
+---
+
+## 장치·방 배치
+
+### PUT `/devices/{deviceId}/room`
+
+**Request Body** `{ "roomId": 1 }`
+
+### DELETE `/devices/{deviceId}/room`
+
+방 할당 해제. **Response 200** `{ "id": "…" }`
+
+---
+
+## AI 에이전트 설정
+
+`src/pages/settings/AiAgentSettings.js`, `src/App.js`, `src/chat/ChatMessages.js`
+
+### GET `/settings/ai-models`
+
+**Response 200**
+```json
+[
+  {
+    "id": "gemini-flash2.5",
+    "vendor": "google",
+    "name": "gemini-flash2.5",
+    "provider": "Google",
+    "local": false,
+    "embedding": false,
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "apiKey": null
+  }
+]
+```
+
+> `apiKey`는 서버 설정에서 마스킹하거나 내려주지 않을 수 있다.
+
+### GET `/settings/ai-agent`
+
+**Response 200**
+```json
+{
+  "personalPrompt": "",
+  "selectedModelId": "gemini-flash2.5",
+  "ctrlEnterSend": false,
+  "waveAiSound": true
+}
+```
+
+### PUT `/settings/ai-agent`
+
+부분 수정 가능.
+
+---
+
+## 프론트 API 클래스 메서드 시그니처
+
+`src/api/settingsApi.js` — mock/real 1:1 대응.
 
 ```js
 settingsApi.getSession()
@@ -792,11 +882,15 @@ settingsApi.getRooms()
 settingsApi.createRoom({ name, description })
 settingsApi.updateRoom(roomId, { name, description })
 settingsApi.deleteRoom(roomId)
+settingsApi.getRoomMembers(roomId)
+settingsApi.updateRoomMembers(roomId, accountIds)
 
 settingsApi.getDevices()
 settingsApi.createDevice(payload)
 settingsApi.updateDevice(deviceId, payload)
 settingsApi.deleteDevice(deviceId)
+settingsApi.assignDeviceToRoom(deviceId, roomId)
+settingsApi.unassignDeviceFromRoom(deviceId)
 
 settingsApi.getSleepConfig()
 settingsApi.updateSleepConfig(payload)
@@ -806,6 +900,10 @@ settingsApi.updateGeneralSettings(payload)
 
 settingsApi.getSounds()
 settingsApi.getTtsSpeakers()
+
+settingsApi.getAiModels()
+settingsApi.getAiAgentSettings()
+settingsApi.updateAiAgentSettings({ personalPrompt, selectedModelId, ctrlEnterSend, waveAiSound })
 
 settingsApi.getNotifications()
 settingsApi.markAllNotificationsRead()

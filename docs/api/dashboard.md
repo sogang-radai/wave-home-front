@@ -1,6 +1,6 @@
 # Dashboard API (메인 대시보드)
 
-구현 예정 프론트 코드: `src/api/dashboardApi.js`(진입점) · `src/api/mock/DashboardApi.js`(mock) ·
+구현된 프론트 코드: `src/api/dashboardApi.js`(진입점) · `src/api/mock/DashboardApi.js`(mock) ·
 `src/api/v1/DashboardApi.js`(real).
 
 `src/pages/MainPage.js` 상단의 히어로 인사말 배너와 "현재 상태" 카드에서 쓰는 데이터를 다룬다. 이 두
@@ -14,6 +14,7 @@
 - Base URL: `/api/v1`
 - 현재 세션의 `activeAccount` 기준으로 조회한다.
 - `activeAccount`가 설정되지 않은 경우 `409 ACTIVE_ACCOUNT_REQUIRED`를 반환한다.
+- 응답은 **요청 시 백엔드가 합성**한다. 별도 DB 테이블 없음(필요 시 서버 메모리 TTL 캐시만).
 - `radar`는 `home.md`의 `GET /home/radars` 목록 중 하나를 대표로 보여주는 요약이다. 목록 전체가
   필요하면 `home.md`를 그대로 쓴다.
 - `controlMode`는 아직 `home.md`의 제스처 세트(`daily`/`sleep`/`focus`/`rest`)와 연결돼 있지 않다 —

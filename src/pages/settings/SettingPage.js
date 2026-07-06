@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import './settings.css';
 import settingsApi from '../../api/settingsApi';
+import { sortRoomsByLocalOrder } from '../../utils/roomOrder';
 import { DeviceRegistrationSettings, RoomZoneSettings } from './DeviceSettings';
 import { AccountSettings } from './AccountSettings';
 import { GeneralSettings } from './GeneralSettings';
 import { AiAgentSettings } from './AiAgentSettings';
 import { AboutSettings } from './AboutSettings';
+import { SleepSettings } from './SleepSettings';
 
 const settingCategories = [
   { id: 'general', label: '일반', desc: '기본 UI와 시스템 환경' },
   { id: 'account', label: '계정', desc: '구성원 프로필 관리' },
+  { id: 'sleep', label: '수면', desc: '수면 목표와 자동화' },
   { id: 'devices', label: '장치', desc: '연결된 장치 관리' },
   { id: 'rooms', label: '구역', desc: '구역과 장치 배치' },
   { id: 'ai', label: 'AI 에이전트', desc: '프롬프트와 AI 모델' },
@@ -32,7 +35,7 @@ export function SettingPage({
   const [rooms, setRooms] = useState([]);
 
   useEffect(() => {
-    settingsApi.getRooms().then(setRooms);
+    settingsApi.getRooms().then((list) => setRooms(sortRoomsByLocalOrder(list)));
   }, []);
 
   const categories = showDevSettings ? [...settingCategories, devCategory] : settingCategories;
@@ -71,6 +74,7 @@ export function SettingPage({
           {category === 'devices' && <DeviceRegistrationSettings heading={activeLabel} rooms={rooms} />}
           {category === 'rooms' && <RoomZoneSettings heading={activeLabel} rooms={rooms} setRooms={setRooms} accounts={accounts} />}
           {category === 'ai' && <AiAgentSettings heading={activeLabel} />}
+          {category === 'sleep' && <SleepSettings />}
           {category === 'info' && <AboutSettings heading={activeLabel} />}
           {category === 'dev' && showDevSettings && (
             <section className="settings-panel card">

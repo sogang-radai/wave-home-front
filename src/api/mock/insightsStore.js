@@ -6,9 +6,11 @@ import { postureDailyInsights, postureWeeklyInsights } from '../../data/postureD
 // Every mock must read/write through here so approving an insight in one domain's screen is
 // reflected everywhere else that surfaces the same insight.
 
-function toInsight(item, domain, period, index) {
+let nextInsightId = 1;
+
+function toInsight(item, domain, period) {
   return {
-    id: typeof item.id === 'string' ? item.id : `ins_${domain}_${period}_${item.id ?? index + 1}`,
+    id: item.id ?? nextInsightId++,
     domain,
     period,
     label: item.label,
@@ -19,10 +21,10 @@ function toInsight(item, domain, period, index) {
 }
 
 const insights = [
-  ...sleepDailyInsights.map((item, index) => toInsight(item, 'sleep', 'daily', index)),
-  ...sleepWeeklyInsights.map((item, index) => toInsight(item, 'sleep', 'weekly', index)),
-  ...postureDailyInsights.map((item, index) => toInsight(item, 'posture', 'daily', index)),
-  ...postureWeeklyInsights.map((item, index) => toInsight(item, 'posture', 'weekly', index)),
+  ...sleepDailyInsights.map((item) => toInsight(item, 'sleep', 'daily')),
+  ...sleepWeeklyInsights.map((item) => toInsight(item, 'sleep', 'weekly')),
+  ...postureDailyInsights.map((item) => toInsight(item, 'posture', 'daily')),
+  ...postureWeeklyInsights.map((item) => toInsight(item, 'posture', 'weekly')),
 ];
 
 export function listInsights({ domain, period } = {}) {

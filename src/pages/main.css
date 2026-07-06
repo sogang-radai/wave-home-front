@@ -8,6 +8,36 @@
   gap: 20px;
 }
 
+.calendar-popup-grid button.muted-day {
+  color: var(--line);
+}
+
+.calendar-popup-grid button.week-hover:not(.selected) {
+  background: #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.calendar-popup-grid button.muted-day.week-hover:not(.selected) {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.week-calendar-popup,
+.month-calendar-popup {
+  /* positioned via portal — z-index in calendar.css */
+}
+
+.date-nav-today-btn {
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.date-nav-today-btn:hover {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
 /* ── Hero banner ────────────────────────────────────────────────────────── */
 
 .hero {
@@ -210,6 +240,15 @@
   color: var(--sub);
   font-size: 12px;
   font-weight: 700;
+}
+
+.dashboard-power-meta .dashboard-power-cost {
+  margin-left: auto;
+}
+
+.dashboard-power-insight {
+  width: 100%;
+  font: inherit;
 }
 
 /* ── Todo list ──────────────────────────────────────────────────────────── */

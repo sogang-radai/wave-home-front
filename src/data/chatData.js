@@ -17,7 +17,7 @@ export const CHAT_SUGGESTION_POOL = [
 
 export const initialChatConversations = [
   {
-    id: 'chat-1',
+    id: 1,
     title: '수면 분석 질문',
     messages: [
       { role: 'assistant', text: '안녕하세요! 수면에 대해 궁금한 점이 있으신가요?' },
@@ -26,7 +26,7 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 'chat-2',
+    id: 2,
     title: '자세 교정 루틴',
     messages: [
       { role: 'assistant', text: '자세 교정 루틴에 대해 알아볼까요?' },
@@ -35,7 +35,7 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 'chat-3',
+    id: 3,
     title: '심박수 트렌드',
     messages: [
       { role: 'assistant', text: '오늘 심박수 데이터를 분석해드릴게요.' },

@@ -1,18 +1,23 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   CAT_STYLE, ENG_LABELS, CAL_H, CAL_END_MIN,
-  minToY, yToMin, snapMin, fmtTime, getWeekDates,
+  minToY, yToMin, snapMin, fmtTime, getWeekDatesFromAnchor, addCalendarDays,
 } from '../../data/weeklyPlanData';
 import weeklyPlanApi from '../../api/weeklyPlanApi';
+import { DateNavigatorBar } from '../../components/calendar/DateNavigatorBar';
+import { getToday, isSameDay, normalizeDate } from '../../components/calendar/calendarUtils';
+import '../main.css';
 
 export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight }) {
-  const [weekOffset, setWeekOffset] = useState(0);
-  const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
+  const [weekStartDate, setWeekStartDate] = useState(getToday);
+  const weekDates = useMemo(() => getWeekDatesFromAnchor(weekStartDate), [weekStartDate]);
   const [recommendationGroups, setRecommendationGroups] = useState([]);
+  const [agentReport, setAgentReport] = useState(null);
   const [updatingRecommendationId, setUpdatingRecommendationId] = useState(null);
 
   useEffect(() => {
     weeklyPlanApi.getRecommendations().then(setRecommendationGroups);
+    weeklyPlanApi.getWeeklyAgentReport().then(setAgentReport);
   }, []);
 
   const setRecommendationApproved = (id, approved) => {
@@ -59,6 +64,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   const [moveDrag, setMoveDrag] = useState(null);
   const [popup, setPopup] = useState(null);
   const [nowMin, setNowMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const eventsRef = useRef(null);
   const popupInputRef = useRef(null);
   const moveDragRef = useRef(null);
@@ -69,6 +75,14 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
   }, []);
+
+  // Navigating to a different week resets the selected day: back to "today"
+  // if it's visible in the new week, otherwise the week's first day.
+  useEffect(() => {
+    const idx = weekDates.findIndex((d) => d.isToday);
+    setSelectedDayIdx(idx >= 0 ? idx : 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStartDate]);
 
   useEffect(() => {
     if (popup && popupInputRef.current) popupInputRef.current.focus();
@@ -146,7 +160,10 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     }
     const { y, dayIdx } = getEvtCoords(ev);
     setHoveredCol(dayIdx);
-    setHoveredY(y);
+    // Snap the hover "+" button to the hour grid (rather than following the
+    // raw cursor position) so it lines up with the hour gridlines.
+    const snappedMin = Math.min(CAL_END_MIN - 60, Math.round(yToMin(y) / 60) * 60);
+    setHoveredY(minToY(snappedMin));
     if (drag) setDrag((prev) => ({ ...prev, currentY: y }));
   };
 
@@ -182,47 +199,6 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     setPopup(null);
   };
 
-  const gridLines = Array.from({ length: 49 }, (_, i) => ({
-    y: i * (CAL_H / 48),
-    isHour: i % 2 === 0,
-  }));
-
-  const nightOverlays = useMemo(() => {
-    const MORNING_END = 7 * 60;
-    const MIN_EVE = 18 * 60;
-    const DEFAULT_NIGHT = 23 * 60;
-    const overlays = [];
-    const morningAdded = new Set();
-
-    weekDates.forEach((d, i) => {
-      if (!d.isPast) return;
-      const eveTodos = todos.filter(
-        (t) => t.day === d.label && t.cat === '수면' && (t.startMin ?? 0) >= MIN_EVE
-      );
-      const nightStart = eveTodos.length > 0
-        ? Math.min(...eveTodos.map((t) => t.startMin))
-        : DEFAULT_NIGHT;
-
-      overlays.push({ dayIdx: i, startMin: nightStart, endMin: CAL_END_MIN, edge: 'night', nightStart });
-
-      const j = i + 1;
-      if (j < weekDates.length && !morningAdded.has(j)) {
-        const nextPast = weekDates[j].isPast;
-        const nextTodayPastMorning = weekDates[j].isToday && nowMin >= MORNING_END;
-        if (nextPast || nextTodayPastMorning) {
-          overlays.push({ dayIdx: j, startMin: 0, endMin: MORNING_END, edge: 'morning', nightStart });
-          morningAdded.add(j);
-        }
-      }
-    });
-
-    if (weekDates[0]?.isPast && !morningAdded.has(0)) {
-      overlays.push({ dayIdx: 0, startMin: 0, endMin: MORNING_END, edge: 'morning', nightStart: DEFAULT_NIGHT });
-    }
-
-    return overlays;
-  }, [todos, weekDates, nowMin]);
-
   // Build TIME_SLOTS array from 0..23
   const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
     if (i === 0) return '00:00';
@@ -231,44 +207,51 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   });
 
   return (
-    <div className="page-stack">
+    <div className="page-stack" style={{ paddingBottom: 32 }}>
+      {agentReport && (
+        <section className="hero card">
+          <div>
+            <h2>{agentReport.headline}</h2>
+            <p>{agentReport.body}</p>
+          </div>
+        </section>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
 
         {/* Left: Calendar (3 cols) */}
         <div className="lg:col-span-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 mb-2">주간 헬스 플랜</h1>
-              <div className="flex items-center gap-2 text-slate-500 font-medium">
-                <span>{dateRange}</span>
-                <div className="flex gap-1 ml-2">
-                  <button type="button" onClick={() => setWeekOffset((w) => w - 1)} className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button type="button" onClick={() => setWeekOffset((w) => w + 1)} className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </div>
-                {weekOffset !== 0 && (
-                  <button type="button" onClick={() => setWeekOffset(0)} className="text-xs text-blue-500 hover:text-blue-700 font-medium">오늘</button>
-                )}
-              </div>
-            </div>
-          </div>
+          <DateNavigatorBar
+            mode="week"
+            label={dateRange}
+            rangeStartDate={weekStartDate}
+            onPrev={() => setWeekStartDate((d) => addCalendarDays(d, -7))}
+            onNext={() => setWeekStartDate((d) => addCalendarDays(d, 7))}
+            onSelectWeek={(date) => setWeekStartDate(normalizeDate(date))}
+            showTodayReset={!isSameDay(weekStartDate, getToday())}
+            onTodayReset={() => setWeekStartDate(getToday())}
+            className="mb-8"
+          />
 
-          <div className="relative overflow-x-auto">
-            <div className="min-w-[640px]">
-              <div className="overflow-y-auto" style={{ maxHeight: '720px' }}>
+          <div className="relative">
+            <div>
+              <div>
 
                 {/* Sticky day header */}
-                <div className="sticky top-0 bg-white pb-2" style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
+                <div className="weekly-plan-sticky-header sticky top-0 bg-white pb-2" style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
                   <div className="grid" style={{ gridTemplateColumns: '72px repeat(7, 1fr)' }}>
                     <div />
                     {weekDates.map((d, i) => (
-                      <div key={d.label} className="text-center py-2">
+                      <button
+                        key={d.label}
+                        type="button"
+                        onClick={() => setSelectedDayIdx(i)}
+                        className="text-center py-2 rounded-lg transition-colors"
+                        style={{ background: i === selectedDayIdx ? '#eff6ff' : 'transparent' }}
+                      >
                         <p className="text-xs font-semibold" style={{ color: d.isToday ? '#2563eb' : '#94a3b8' }}>{ENG_LABELS[i]}</p>
                         <p className="text-sm font-bold mt-0.5" style={{ color: d.isToday ? '#2563eb' : '#1e293b' }}>{d.date}</p>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -306,39 +289,6 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                     onDragStart={(ev) => ev.preventDefault()}
                     onMouseLeave={() => { if (!moveDrag) setHoveredCol(-1); }}
                   >
-                    {/* Night overlays */}
-                    {nightOverlays.map(({ dayIdx, startMin, endMin, edge }, idx) => {
-                      const top = minToY(startMin);
-                      const height = minToY(endMin) - top;
-                      const gradient = edge === 'night'
-                        ? 'linear-gradient(to bottom, rgba(8,6,32,0) 0%, rgba(12,10,45,0.82) 14%, rgba(10,8,38,0.88) 100%)'
-                        : 'linear-gradient(to bottom, rgba(10,8,38,0.88) 0%, rgba(12,10,45,0.82) 86%, rgba(8,6,32,0) 100%)';
-                      return (
-                        <div key={`night-${idx}`} style={{
-                          position: 'absolute',
-                          left: `${dayIdx * colW}%`,
-                          width: `${colW}%`,
-                          top,
-                          height,
-                          background: gradient,
-                          pointerEvents: 'none',
-                          zIndex: 3,
-                          overflow: 'hidden',
-                        }}>
-                          {edge === 'night' && height > 30 && (
-                            <div style={{ position: 'absolute', bottom: 6, left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: 600, letterSpacing: '0.02em' }}>
-                              {fmtTime(startMin)} 취침
-                            </div>
-                          )}
-                          {edge === 'morning' && height > 30 && (
-                            <div style={{ position: 'absolute', top: 6, left: 0, right: 0, textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: 600, letterSpacing: '0.02em' }}>
-                              {fmtTime(endMin)} 기상
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
                     {/* Today column highlight */}
                     {weekDates.map((d, i) => d.isToday && (
                       <div key="today-bg" style={{ position: 'absolute', left: `${i * colW}%`, width: `${colW}%`, top: 0, bottom: 0, background: 'rgba(37,99,235,0.03)', pointerEvents: 'none', zIndex: 0 }} />
@@ -351,17 +301,17 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                       </div>
                     ))}
 
-                    {/* Grid lines */}
-                    {gridLines.map(({ y, isHour }) => (
+                    {/* Hour gridlines */}
+                    {Array.from({ length: 23 }, (_, i) => (
                       <div
-                        key={y}
+                        key={`hr-${i}`}
                         style={{
                           position: 'absolute',
+                          top: minToY((i + 1) * 60),
                           left: 0,
                           right: 0,
-                          top: y,
                           height: 1,
-                          background: isHour ? '#e2e8f0' : '#f1f5f9',
+                          background: '#f4f6f8',
                           pointerEvents: 'none',
                           zIndex: 1,
                         }}
@@ -537,25 +487,28 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
 
         {/* Right panel */}
         <div className="lg:col-span-1 lg:border-l border-slate-100 lg:pl-6 flex flex-col gap-6">
-          {/* Today's todos */}
+          {/* Selected day's todos (defaults to today) */}
           {(() => {
-            const todayDate = weekDates.find((d) => d.isToday);
-            if (!todayDate) return null;
-            const todayTodos = todos.filter((t) => t.day === todayDate.label);
-            const doneCount = todayTodos.filter((t) => t.done).length;
-            const remaining = todayTodos.length - doneCount;
+            const selectedDate = weekDates[selectedDayIdx] || weekDates[0];
+            const heading = selectedDate.isToday ? '오늘 할 일' : `${selectedDate.month}월 ${selectedDate.date}일 할 일`;
+            const emptyLabel = selectedDate.isToday ? '오늘' : `${selectedDate.month}월 ${selectedDate.date}일`;
+            const dayTodos = todos.filter((t) => t.day === selectedDate.label);
+            const doneCount = dayTodos.filter((t) => t.done).length;
+            const remaining = dayTodos.length - doneCount;
             return (
-              <div className="bg-slate-50 rounded-2xl p-4">
+              <div className="bg-slate-50 rounded-2xl p-4 min-h-[120px]">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-bold text-slate-800 text-sm">오늘 할 일</h2>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: remaining > 0 ? '#dbeafe' : '#dcfce7', color: remaining > 0 ? '#0294d8' : '#15803d' }}>
-                    {remaining > 0 ? `${remaining}개 남음` : '모두 완료!'}
-                  </span>
+                  <h2 className="font-bold text-slate-800 text-sm">{heading}</h2>
+                  {dayTodos.length > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: remaining > 0 ? '#dbeafe' : '#dcfce7', color: remaining > 0 ? '#0294d8' : '#15803d' }}>
+                      {remaining > 0 ? `${remaining}개 남음` : '모두 완료!'}
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-400 mb-2">{doneCount}/{todayTodos.length}개 완료</p>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {todayTodos.length === 0 && <p className="text-xs text-slate-400 text-center py-2">오늘 일정이 없습니다</p>}
-                  {todayTodos.map((t) => {
+                {dayTodos.length > 0 && <p className="text-xs text-slate-400 mb-2">{doneCount}/{dayTodos.length}개 완료</p>}
+                <div className="space-y-1.5">
+                  {dayTodos.length === 0 && <p className="text-xs text-slate-400 text-center py-4">{emptyLabel} 일정이 없습니다</p>}
+                  {dayTodos.map((t) => {
                     const cs = CAT_STYLE[t.cat] || CAT_STYLE['멘탈'];
                     return (
                       <div
@@ -584,7 +537,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
           {/* AI recommended actions */}
           <div>
             <h2 className="font-bold text-slate-800 text-sm mb-3">AI 맞춤 추천 계획</h2>
-            <div className="overflow-y-auto pr-1" style={{ maxHeight: '500px' }}>
+            <div className="pr-1">
               {(() => {
                 return recommendationGroups.map(({ key, label, items }) => {
                   const visible = items.filter((item) => !dismissed.has(item.id));

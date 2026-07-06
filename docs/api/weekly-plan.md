@@ -1,6 +1,6 @@
 # Weekly Plan API (일정)
 
-구현 예정 프론트 코드: `src/api/weeklyPlanApi.js`(진입점) · `src/api/mock/WeeklyPlanApi.js`(mock) ·
+구현된 프론트 코드: `src/api/weeklyPlanApi.js`(진입점) · `src/api/mock/WeeklyPlanApi.js`(mock) ·
 `src/api/v1/WeeklyPlanApi.js`(real).
 
 ## 공통
@@ -28,18 +28,18 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 type TaskCategory = 'posture' | 'sleep' | 'diet' | 'mental';
 
 type Task = {
-  id: string;
+  id: number;
   title: string;
   done: boolean;
   dayOfWeek: DayOfWeek;
   category: TaskCategory;       // 서버가 title 기반 자동 분류, PATCH에서는 수동 수정 가능
   startMinute?: number;         // 자정 기준 분 단위, 예: 07:00 = 420
   endMinute?: number;
-  sourceInsightId?: string | null;
+  sourceInsightId?: number | null;
 };
 
 type Insight = {
-  id: string;
+  id: number;
   domain: 'sleep' | 'posture' | 'weekly-plan';
   period: 'daily' | 'weekly';
   label: string;
@@ -68,7 +68,7 @@ type RecommendationGroup = {
 ```json
 [
   {
-    "id": "task_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+    "id": 1,
     "title": "기상 후 목 스트레칭 20초",
     "done": false,
     "dayOfWeek": "mon",
@@ -123,7 +123,7 @@ type RecommendationGroup = {
 **Response 201**
 ```json
 {
-  "id": "task_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+  "id": 1,
   "title": "저녁 산책 30분",
   "done": false,
   "dayOfWeek": "wed",
@@ -137,7 +137,7 @@ type RecommendationGroup = {
 **Response 201** — 추천 액션에서 생성
 ```json
 {
-  "id": "task_01J2ZQ9BS7F4K2N8R5X1M0Q3PA",
+  "id": 42,
   "title": "에어컨 예약을 새벽 4시까지 1시간 연장",
   "done": false,
   "dayOfWeek": "mon",
@@ -204,7 +204,7 @@ type RecommendationGroup = {
 **Response 200** — 갱신된 `Task` 전체
 ```json
 {
-  "id": "task_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+  "id": 1,
   "title": "저녁 산책 40분",
   "done": false,
   "dayOfWeek": "wed",
@@ -237,7 +237,7 @@ type RecommendationGroup = {
 
 **Response 200**
 ```json
-{ "id": "task_01J2ZQ8M6R9P4T7X3A5B2C1D0E" }
+{ "id": 1 }
 ```
 
 **Response 404**

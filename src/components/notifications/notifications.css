@@ -9,6 +9,13 @@
   border-radius: 18px;
   background: var(--surface);
   box-shadow: 0 16px 40px var(--shadow);
+  transform-origin: top right;
+  animation: notifications-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes notifications-panel-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @media (max-width: 760px) {

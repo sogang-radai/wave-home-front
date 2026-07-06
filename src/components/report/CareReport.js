@@ -71,6 +71,7 @@ export function CareReport({
   trendColorFn = weeklyHoursColor,
   trendTooltipLabel = '수면',
   showTrendSummary = true,
+  showMetricDetail = true,
   averageScore,
   dateNav,
   extra,
@@ -133,10 +134,9 @@ export function CareReport({
             <div className="weekly-score-average">
               <span>평균 점수</span>
               <strong>{averageScore || score}</strong>
-              <p>7일 점수 기준</p>
             </div>
             {analysis.map(([label, value, detail]) => (
-              <Metric key={label} label={label} value={value} detail={detail} />
+              <Metric key={label} label={label} value={value} detail={showMetricDetail ? detail : undefined} />
             ))}
           </div>
         </Card>

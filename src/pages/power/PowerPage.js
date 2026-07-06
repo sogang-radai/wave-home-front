@@ -154,7 +154,7 @@ function PowerTooltip({ active, payload, label }) {
       {payload.map((p) => (
         <div key={p.dataKey} className="power-tooltip-row" style={{ color: p.color }}>
           <span>{p.name}</span>
-          <strong>{p.value != null ? Number(p.value).toFixed(p.dataKey === 'a' ? 3 : 2) : '—'}{p.unit || ''}</strong>
+          <strong>{p.value != null ? Number(p.value).toFixed(p.dataKey === 'a' ? 3 : p.dataKey === 'v' ? 1 : 1) : '—'}{p.unit || ''}</strong>
         </div>
       ))}
     </div>
@@ -240,7 +240,7 @@ export function PowerPage() {
           const base = prev[p.id] || { w: p.powerW, v: p.voltageV, a: (p.currentMa ?? 0) / 1000 };
           next[p.id] = {
             w: Math.max(0, +(base.w + (Math.random() - 0.5) * p.powerW * 0.08).toFixed(1)),
-            v: p.voltageV ? +(p.voltageV + (Math.random() - 0.5) * 1.2).toFixed(1) : null,
+            v: p.voltageV ? +(235 + ((base.v ?? p.voltageV) - 235) * 0.4 + (Math.random() - 0.5) * 0.08).toFixed(1) : null,
             a: p.currentMa ? Math.max(0, +((p.currentMa / 1000) + (Math.random() - 0.5) * 0.02).toFixed(3)) : null,
           };
         });
@@ -321,7 +321,7 @@ export function PowerPage() {
       {/* ── Stat cards: 전력 | 전압 | 피크 | 누적 ─────────────────────────── */}
       <div className="power-stat-row">
         <StatCard label="전력" value={live.w?.toFixed(1) ?? '—'} unit="W" accent live sub="현재 사용량" />
-        <StatCard label="전압" value={live.v?.toFixed(1) ?? '—'} unit="V" live sub={`${(live.a ?? 0).toFixed(2)} A`} />
+        <StatCard label="전압" value={live.v?.toFixed(1) ?? '—'} unit="V" live sub={`${(live.a ?? 0).toFixed(3)} A`} />
         {isCombo ? (
           <StatCard label="피크" value={peakW.toFixed(1)} unit="W" sub="선택 구간 최대값" />
         ) : (
@@ -409,7 +409,6 @@ export function PowerPage() {
           key={isCombo ? 'combo' : rangeTab}
           data={chartData}
           metricTab={metricTab}
-          isCombo={isCombo}
           peakW={peakW}
           animate={animateChart}
           animToken={chartAnimToken}
@@ -464,7 +463,7 @@ export function PowerPage() {
                   <small>W</small>
                 </div>
                 <div className="power-device-bottom">
-                  <span className="power-device-va">{dLive.v?.toFixed(0) ?? '—'}V · {(dLive.a ?? 0).toFixed(2)}A</span>
+                  <span className="power-device-va">{dLive.v?.toFixed(1) ?? '—'}V · {(dLive.a ?? 0).toFixed(3)}A</span>
                   <span className="power-device-cost">~{hourlyCost.toFixed(1)}원/h</span>
                 </div>
               </button>
@@ -497,26 +496,88 @@ function ChartRevealBox({ animate, animToken, children }) {
 }
 
 const commonAxisProps = { tick: { fontSize: 11, fill: 'var(--sub)' }, axisLine: false, tickLine: false };
-const chartMargin = { top: 12, right: 16, bottom: 0, left: 0 };
+const chartMargin = { top: 16, right: 16, bottom: 4, left: 8 };
+const X_AXIS_ID = 'main';
+
+// Guarantees the Y axis always spans at least `minSpan` units (50V for
+// voltage, 1A for current).
+function minSpanDomain(minSpan) {
+  const half = minSpan / 2;
+  return [
+    (dataMin, dataMax) => {
+      if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) return 0;
+      return Math.min(dataMin, (dataMin + dataMax) / 2 - half);
+    },
+    (dataMin, dataMax) => {
+      if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) return minSpan;
+      return Math.max(dataMax, (dataMin + dataMax) / 2 + half);
+    },
+  ];
+}
+const VOLTAGE_DOMAIN = minSpanDomain(50);
+const CURRENT_DOMAIN = minSpanDomain(1);
+
+// Line-chart grid only — vertical lines align with every sample; labels are
+// thinned separately via PowerXAxis so we never need a second hidden XAxis
+// (that pattern broke V/A area rendering).
+function PowerLineChartGrid() {
+  return (
+    <>
+      <CartesianGrid xAxisId={X_AXIS_ID} stroke="var(--wave-30)" horizontal={false} />
+      <CartesianGrid xAxisId={X_AXIS_ID} stroke="var(--ink-16)" strokeDasharray="3 3" vertical={false} />
+    </>
+  );
+}
+
+function PowerXAxis({ data, tickInterval }) {
+  if (tickInterval <= 0) {
+    return <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={0} {...commonAxisProps} />;
+  }
+  return (
+    <XAxis
+      xAxisId={X_AXIS_ID}
+      dataKey="label"
+      interval={0}
+      axisLine={false}
+      tickLine={false}
+      tick={({ x, y, payload, index }) => {
+        const show = index % (tickInterval + 1) === 0 || index === data.length - 1;
+        if (!show) return null;
+        return (
+          <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill="var(--sub)">
+            {payload.value}
+          </text>
+        );
+      }}
+    />
+  );
+}
 
 // ── Chart body: split single-purpose charts per metric ──────────────────────
-function PowerChart({ data, metricTab, isCombo, peakW, animate, animToken }) {
+function PowerChart({ data, metricTab, peakW, animate, animToken }) {
   // Combo ranges have 60 points — thin the x-axis labels down to ~5 for readability.
-  const tickInterval = isCombo ? Math.max(0, Math.ceil(data.length / 5) - 1) : 0;
+  const tickInterval = data.length > 24 ? Math.max(0, Math.ceil(data.length / 5) - 1) : 0;
   const whUnit = data[0]?.unitKwh ? 'kWh' : 'Wh';
   const tooltipProps = { isAnimationActive: false, wrapperStyle: { transition: 'none' }, cursor: { stroke: 'var(--line)' } };
+  const yAxisWh = { width: 52, ...commonAxisProps, tickFormatter: (v) => `${v} ${whUnit}` };
+  const yAxisW = {
+    width: 52,
+    ...commonAxisProps,
+    tickFormatter: (v) => `${v} W`,
+    domain: [0, (max) => (max > 0 ? Math.ceil(max * 1.12) : 10)],
+  };
 
-  if (metricTab === 'wh' || !isCombo) {
+  // 누적 Wh — 콤보(1분/10분/30분/1시간)와 기간(일/주/월/연) 모두 막대, 그리드 없음
+  if (metricTab === 'wh') {
     return (
       <ChartRevealBox animate={animate} animToken={animToken}>
         <div className="power-chart">
           <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={data} margin={chartMargin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
-              <XAxis dataKey="label" interval={tickInterval} {...commonAxisProps} />
-              <YAxis width={40} unit={whUnit} {...commonAxisProps} />
+              <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={tickInterval} {...commonAxisProps} />
+              <YAxis yAxisId="left" {...yAxisWh} />
               <Tooltip content={<PowerTooltip />} {...tooltipProps} />
-              <Bar dataKey="wh" name="누적 에너지" unit={whUnit} fill="var(--power-blue)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Bar xAxisId={X_AXIS_ID} yAxisId="left" dataKey="wh" name="누적 에너지" unit={whUnit} fill="var(--power-blue)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -530,15 +591,15 @@ function PowerChart({ data, metricTab, isCombo, peakW, animate, animToken }) {
         <div className="power-chart">
           <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={data} margin={chartMargin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
-              <XAxis dataKey="label" interval={tickInterval} {...commonAxisProps} />
-              <YAxis width={44} unit="W" domain={[0, 'auto']} {...commonAxisProps} />
+              <PowerLineChartGrid />
+              <PowerXAxis data={data} tickInterval={tickInterval} />
+              <YAxis yAxisId="left" {...yAxisW} />
               <Tooltip content={<PowerTooltip />} {...tooltipProps} />
-              <Area type="linear" dataKey="value" name="전력" unit="W"
+              <Area xAxisId={X_AXIS_ID} yAxisId="left" type="linear" dataKey="value" name="전력" unit="W"
                 stroke="var(--power-green)" strokeWidth={2} dot={false}
                 fill="var(--power-green)" fillOpacity={0.18} isAnimationActive={false} />
               {peakW > 0 && (
-                <ReferenceLine y={peakW} stroke="var(--power-green)" strokeDasharray="4 3"
+                <ReferenceLine yAxisId="left" y={peakW} stroke="var(--power-green)" strokeDasharray="4 3"
                   label={<PeakLabel value={peakW} />} />
               )}
             </ComposedChart>
@@ -548,23 +609,28 @@ function PowerChart({ data, metricTab, isCombo, peakW, animate, animToken }) {
     );
   }
 
-  // metricTab === 'v' / 'a': voltage and current now live as fully separate
-  // tabs (not a stacked split-view), each with a full-height chart.
+  // metricTab === 'v' / 'a': voltage and current — combo line charts only
   const isVoltage = metricTab === 'v';
   const seriesKey = isVoltage ? 'v' : 'a';
   const seriesName = isVoltage ? '전압' : '전류';
   const seriesUnit = isVoltage ? 'V' : 'A';
   const seriesColor = isVoltage ? 'var(--power-green)' : 'var(--accent-navy)';
+  const yAxisVA = {
+    width: 52,
+    ...commonAxisProps,
+    tickFormatter: (v) => `${Number(v).toFixed(isVoltage ? 1 : 3)} ${seriesUnit}`,
+    domain: isVoltage ? VOLTAGE_DOMAIN : CURRENT_DOMAIN,
+  };
   return (
     <ChartRevealBox animate={animate} animToken={animToken}>
       <div className="power-chart">
         <ResponsiveContainer width="100%" height={240}>
           <ComposedChart data={data} margin={chartMargin}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" vertical={false} />
-            <XAxis dataKey="label" interval={tickInterval} {...commonAxisProps} />
-            <YAxis width={44} unit={seriesUnit} domain={['auto', 'auto']} {...commonAxisProps} />
+            <PowerLineChartGrid />
+            <PowerXAxis data={data} tickInterval={tickInterval} />
+            <YAxis yAxisId="left" {...yAxisVA} />
             <Tooltip content={<PowerTooltip />} {...tooltipProps} />
-            <Area type="linear" dataKey={seriesKey} name={seriesName} unit={seriesUnit}
+            <Area xAxisId={X_AXIS_ID} yAxisId="left" type="linear" dataKey={seriesKey} name={seriesName} unit={seriesUnit}
               stroke={seriesColor} strokeWidth={2} dot={false}
               fill={seriesColor} fillOpacity={0.18} isAnimationActive={false} />
           </ComposedChart>

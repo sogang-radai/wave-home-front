@@ -6,9 +6,11 @@
 }
 
 .insight-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  min-height: 148px;
+  padding: 16px 16px 52px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--wave-10);
@@ -41,25 +43,29 @@
 
 .insight-card p {
   flex: 1;
-  margin: 0 0 14px;
+  margin: 0;
   color: var(--sub);
   font-size: 13px;
   line-height: 1.55;
 }
 
 .insight-card-action {
-  align-self: flex-start;
-  padding: 8px 16px;
-  border: 0;
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 7px 14px;
+  border: 1px solid var(--wave-30);
   border-radius: 999px;
-  background: var(--wave);
+  background: var(--surface);
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .insight-card.applied .insight-card-action {
+  border-color: var(--good-18);
   background: var(--good);
   color: var(--surface);
 }
@@ -204,8 +210,8 @@
   cursor: pointer;
 }
 
-/* CalendarPopup */
-.calendar-popup {
+/* CalendarPopup — portal variant overrides in calendar/calendar.css */
+.calendar-popup:not(.month-calendar-popup) {
   position: absolute;
   top: 42px;
   left: 50%;

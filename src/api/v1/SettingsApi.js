@@ -41,6 +41,14 @@ export class SettingsApi {
     return httpClient.delete(`/rooms/${roomId}`);
   }
 
+  async getRoomMembers(roomId) {
+    return httpClient.get(`/rooms/${roomId}/members`);
+  }
+
+  async updateRoomMembers(roomId, accountIds) {
+    return httpClient.put(`/rooms/${roomId}/members`, { accountIds });
+  }
+
   async getDevices() {
     return httpClient.get('/devices');
   }
@@ -55,6 +63,26 @@ export class SettingsApi {
 
   async deleteDevice(deviceId) {
     return httpClient.delete(`/devices/${deviceId}`);
+  }
+
+  async assignDeviceToRoom(deviceId, roomId) {
+    return httpClient.put(`/devices/${deviceId}/room`, { roomId });
+  }
+
+  async unassignDeviceFromRoom(deviceId) {
+    return httpClient.delete(`/devices/${deviceId}/room`);
+  }
+
+  async getAiModels() {
+    return httpClient.get('/settings/ai-models');
+  }
+
+  async getAiAgentSettings() {
+    return httpClient.get('/settings/ai-agent');
+  }
+
+  async updateAiAgentSettings(payload) {
+    return httpClient.put('/settings/ai-agent', payload);
   }
 
   async getSleepConfig() {

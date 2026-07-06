@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import settingsApi from '../../api/settingsApi';
+import { saveRoomOrder } from '../../utils/roomOrder';
 import {
   SettingsPanel,
   SettingsSection,
@@ -23,15 +24,18 @@ const deviceThumbnails = {
   reolink_e1_pro: thumbReolink,
   tuya_ep2h: thumbTuya,
   tizen_tv: thumbTizen,
-  philips_wiz_e29: thumbWiz,
+  philips_wiz_e29_color: thumbWiz,
+  philips_wiz_e29_white: thumbWiz,
 };
 
 const deviceClassLabels = {
   srs_r4sn: 'mmWave 레이더',
+  wave_station: 'Wave Station',
   reolink_e1_pro: 'IoT 카메라',
   tuya_ep2h: '스마트 플러그',
   tizen_tv: 'Tizen TV',
-  philips_wiz_e29: 'WiZ 조명',
+  philips_wiz_e29_color: 'WiZ 컬러 조명',
+  philips_wiz_e29_white: 'WiZ 화이트 조명',
 };
 
 // Flattens the nested Device structure (interface/settings) into a flat view model.
@@ -444,7 +448,7 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
     loadDevices();
   };
 
-  const handleDrop = async (targetId) => {
+  const handleDrop = (targetId) => {
     if (!dragId || dragId === targetId) {
       setDragId(null);
       return;
@@ -456,8 +460,7 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
     ordered.splice(to, 0, moved);
     setRooms(ordered);
     setDragId(null);
-    // Dummy: sort result is applied to mock in-memory order only.
-    await settingsApi.reorderRooms(ordered.map((room) => room.id));
+    saveRoomOrder(ordered.map((room) => room.id));
   };
 
   const deletingRoom = rooms.find((room) => room.id === deletingRoomId) || null;

@@ -17,8 +17,12 @@ export class SleepApi {
     return httpClient.get('/sleep/today/automation-summary');
   }
 
-  async getDailyReport(date) {
-    return httpClient.get('/sleep/reports/daily', { date });
+  async getDailySessions(date) {
+    return httpClient.get('/sleep/reports/daily/sessions', { date });
+  }
+
+  async getDailyReport(date, { sessionId } = {}) {
+    return httpClient.get('/sleep/reports/daily', { date, sessionId });
   }
 
   async getWeeklyReport(weekStart) {

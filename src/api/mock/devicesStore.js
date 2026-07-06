@@ -5,18 +5,17 @@ import { cloneDeep } from './utils';
 // there is exactly one source of truth, so a rename/delete in settings is immediately
 // reflected wherever devices are derived from (e.g. home.md's GET /home/radars).
 //
-// The seed mirrors bin/device/device_list.json (the format the backend actually serves),
-// minus the wave_station device which is not a manageable appliance here. room_id is not
-// part of device_list.json, so each device is mapped to a room manually below.
+// The seed mirrors bin/device/device_list.json (the format the backend actually serves).
+// room_id is not part of device_list.json, so each device is mapped to a room manually below.
 
-export const ROOM_LIVING = '7c4a9e2f18b356d0';
-export const ROOM_BEDROOM = '3f91c6e52ad047b8';
-export const ROOM_KITCHEN = '2b8d5f1a9e4c7306';
+export const ROOM_LIVING = 1;
+export const ROOM_BEDROOM = 2;
+export const ROOM_KITCHEN = 3;
 
 const roomsSeed = [
-  { id: ROOM_LIVING, name: '거실', description: '거실', primaryAccountId: 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E' },
-  { id: ROOM_BEDROOM, name: '침실', description: '침실', primaryAccountId: 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E' },
-  { id: ROOM_KITCHEN, name: '부엌', description: '부엌', primaryAccountId: null },
+  { id: ROOM_LIVING, name: '거실', description: '거실' },
+  { id: ROOM_BEDROOM, name: '침실', description: '침실' },
+  { id: ROOM_KITCHEN, name: '부엌', description: '부엌' },
 ];
 
 // input: state-collecting devices (radar/camera); output: controllable devices (plug/TV/light).
@@ -47,6 +46,25 @@ const devicesSeed = {
         max_y: 10.0,
         min_z: -2.0,
         max_z: 2.0,
+      },
+    },
+    {
+      id: '5c1e8b6402fda973',
+      room_id: ROOM_BEDROOM,
+      name: 'Wave Station',
+      description: '침실 Wave Station',
+      vendor: 'RADAI',
+      model: 'Wave Station',
+      enabled: true,
+      class: 'wave_station',
+      interface: {
+        host: '192.168.0.60',
+        port: 8765,
+      },
+      settings: {
+        sample_rate: 16000,
+        sample_size: 16,
+        channels: 1,
       },
     },
     {
@@ -161,7 +179,7 @@ const devicesSeed = {
       vendor: 'Philips',
       model: 'WiZ Color E29',
       enabled: true,
-      class: 'philips_wiz_e29',
+      class: 'philips_wiz_e29_color',
       interface: { host: '192.168.0.51', mac: '98:77:D5:D0:B4:42', port: 38899 },
     },
     {
@@ -172,7 +190,7 @@ const devicesSeed = {
       vendor: 'Philips',
       model: 'WiZ White E29',
       enabled: true,
-      class: 'philips_wiz_e29',
+      class: 'philips_wiz_e29_white',
       interface: { host: '192.168.0.82', mac: '98:77:D5:D0:B4:42', port: 38899 },
     },
     {
@@ -183,7 +201,7 @@ const devicesSeed = {
       vendor: 'Philips',
       model: 'WiZ White E29',
       enabled: true,
-      class: 'philips_wiz_e29',
+      class: 'philips_wiz_e29_white',
       interface: { host: '192.168.0.83', mac: '98:77:D5:D0:B4:42', port: 38899 },
     },
   ],
@@ -203,11 +221,6 @@ export function addRoom(room) {
 export function removeRoom(roomId) {
   const index = rooms.findIndex((room) => room.id === roomId);
   if (index !== -1) rooms.splice(index, 1);
-}
-
-// Reorders the rooms array according to the provided orderedIds sequence.
-export function reorderRooms(orderedIds) {
-  rooms.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
 }
 
 export function getDevices() {

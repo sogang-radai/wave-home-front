@@ -3,7 +3,7 @@ import { CareReport } from '../../components/report/CareReport';
 import sleepApi from '../../api/sleepApi';
 
 function toAnalysisTuples(analysis) {
-  return analysis.map((item) => [item.label, item.value, item.description]);
+  return analysis.map((item) => [item.label, item.value]);
 }
 
 export function SleepWeeklyReport() {
@@ -24,6 +24,7 @@ export function SleepWeeklyReport() {
       trendData={report.trend}
       averageScore={`${report.averageScore}점`}
       analysis={toAnalysisTuples(report.analysis)}
+      showMetricDetail={false}
     />
   );
 }

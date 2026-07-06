@@ -1887,8 +1887,14 @@
 
 /* ── Modal footer with left-aligned delete ──────────────────────────────── */
 
-.settings-modal-footer:has(.settings-delete-link) {
+.settings-modal-footer:has(.settings-delete-link),
+.settings-modal-footer:has(.settings-field-error) {
   justify-content: space-between;
+  align-items: center;
+}
+
+.settings-modal-footer .settings-field-error {
+  margin: 0;
 }
 
 .settings-modal-footer-right {

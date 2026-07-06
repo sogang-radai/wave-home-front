@@ -32,7 +32,19 @@ function ChatConvSidebar({ open, onToggle, conversations, activeConvId, onSelect
   );
 }
 
-export function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv, onDeleteConv, onRenameConv, onSendMessage, onShrink, waveTransition }) {
+export function ChatPage({
+  conversations,
+  activeConvId,
+  onSelectConv,
+  onAddConv,
+  onDeleteConv,
+  onRenameConv,
+  onSendMessage,
+  onShrink,
+  waveTransition,
+  initialDraft,
+  onConsumeInitialDraft,
+}) {
   const [convOpen, setConvOpen] = useState(() => {
     try { return localStorage.getItem('chatConvOpen') !== 'false'; } catch { return true; }
   });
@@ -99,6 +111,8 @@ export function ChatPage({ conversations, activeConvId, onSelectConv, onAddConv,
           topbarLeft={topbarLeft}
           topbarRight={topbarRight}
           waveTransition={waveTransition}
+          initialDraft={initialDraft}
+          onConsumeInitialDraft={onConsumeInitialDraft}
         />
       </div>
     </div>

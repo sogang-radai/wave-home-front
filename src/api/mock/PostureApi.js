@@ -86,7 +86,7 @@ function validateAlertSettings(payload) {
   }
 }
 
-const ACTIVE_ACCOUNT_ID = 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E';
+const ACTIVE_ACCOUNT_ID = 1;
 let activeAccountId = ACTIVE_ACCOUNT_ID;
 
 const todaySummarySeed = {

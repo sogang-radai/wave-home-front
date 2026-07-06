@@ -1,15 +1,10 @@
 import { delay, cloneDeep } from './utils';
 import {
-  sleepScoreFactors,
-  sleepStageBreakdown,
-  sleepHypnogramSegments,
-  sleepStageLog,
-  snoringEpisodes,
-  sleepDailyAnalysis,
-  sleepWeeklyTrendData,
-  sleepSettingSummaries,
-  movementTicks,
-} from '../../data/sleepData';
+  getGeneratedDailyReport,
+  getGeneratedDailySessions,
+  listGeneratedNightDates,
+} from './sleepDataGenerator';
+import { sleepWeeklyTrendData, sleepSettingSummaries } from '../../data/sleepData';
 import { listInsights, setInsightApproved } from './insightsStore';
 
 class MockApiError extends Error {
@@ -53,6 +48,14 @@ function isMonday(dateValue) {
   return date.getUTCDay() === 1;
 }
 
+function getMondayOfWeek(dateValue) {
+  const date = parseDateParts(dateValue);
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return formatDate(date);
+}
+
 function validateDateParam(date) {
   if (date !== undefined && !parseDateParts(date)) {
     throw apiError(400, 'INVALID_DATE', 'date는 YYYY-MM-DD 형식이어야 합니다.');
@@ -65,90 +68,15 @@ function validateWeekStartParam(weekStart) {
   }
 }
 
-function stageFromLabel(label) {
-  if (label === '기상' || label === '각성') return 'awake';
-  if (label === 'REM') return 'rem';
-  if (label === '깊은 수면') return 'deep';
-  return 'light';
-}
-
-function durationMinutesFromText(text) {
-  const hours = text.match(/(\d+)시간/)?.[1];
-  const minutes = text.match(/(\d+)분/)?.[1];
-  return (Number(hours || 0) * 60) + Number(minutes || 0);
-}
-
-function toScoreFactor(item, index) {
-  const keys = ['duration', 'deepSleep', 'remSleep', 'awake', 'sleepLatency'];
-  return {
-    key: keys[index] || item.label,
-    label: item.label,
-    value: item.value,
-    tag: item.tag,
-    tone: item.tone,
-  };
-}
-
-function toStageBreakdown(item) {
-  return {
-    stage: item.tone,
-    label: item.label,
-    percent: item.pct,
-    durationMinutes: durationMinutesFromText(item.time),
-    durationText: item.time,
-    tone: item.tone,
-    typicalPercentRange: item.typical,
-  };
-}
-
-function toHypnogramSegment(item) {
-  return {
-    stage: item.stage,
-    durationMinutes: item.durationMinutes ?? item.minutes,
-  };
-}
-
-function toStageLogPoint(item) {
-  const stage = stageFromLabel(item.stage);
-  return {
-    time: item.time,
-    stage,
-    stageLabel: item.stage,
-    breathRate: item.breath,
-    heartRate: item.heart,
-    level: item.level,
-  };
-}
-
-function toSnoringEpisode(item) {
-  return {
-    time: item.time,
-    durationMinutes: item.durationMinutes ?? item.duration,
-  };
-}
-
 function toAnalysisItem(item) {
   if (Array.isArray(item)) {
-    return {
-      label: item[0],
-      value: item[1],
-      description: item[2],
-    };
+    return { label: item[0], value: item[1], description: item[2] };
   }
   return item;
 }
 
-const ACTIVE_ACCOUNT_ID = 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E';
+const ACTIVE_ACCOUNT_ID = 1;
 let activeAccountId = ACTIVE_ACCOUNT_ID;
-
-const todaySummarySeed = {
-  date: '2026-07-02',
-  score: 82,
-  achievedHours: 7.0,
-  goalHours: 7.5,
-  bedTime: '23:42',
-  wakeTime: '06:42',
-};
 
 const todayPlanSeed = {
   bedtime: '23:30',
@@ -165,43 +93,39 @@ const todayPhoneUsageSeed = {
 
 const automationSummarySeed = sleepSettingSummaries.map((item) => ({ title: item.title, text: item.text }));
 
-const dailyReports = {
-  '2026-07-01': {
-    date: '2026-07-01',
-    score: 82,
-    sleepWindow: {
-      start: '2026-07-01T23:11:00+09:00',
-      end: '2026-07-02T06:36:00+09:00',
-    },
-    timeInBedMinutes: 445,
-    actualSleepMinutes: 336,
-    scoreFactors: sleepScoreFactors.map(toScoreFactor),
-    stageBreakdown: sleepStageBreakdown.map(toStageBreakdown),
-    hypnogram: {
-      start: '2026-07-01T23:11:00+09:00',
-      end: '2026-07-02T06:36:00+09:00',
-      segments: sleepHypnogramSegments.map(toHypnogramSegment),
-      movementLevels: movementTicks,
-    },
-    stageLog: sleepStageLog.map(toStageLogPoint),
-    snoringEpisodes: snoringEpisodes.map(toSnoringEpisode),
-    analysis: sleepDailyAnalysis.map(toAnalysisItem),
-  },
-};
+const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const weeklyReports = {
-  '2026-06-29': {
-    weekStart: '2026-06-29',
-    weekEnd: '2026-07-05',
-    score: 81,
+function buildWeeklyReport(weekStart) {
+  const trend = [];
+  let scoreSum = 0;
+  let scoreCount = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const nightDate = addDays(weekStart, i);
+    const report = getGeneratedDailyReport(nightDate, 'main');
+    const dateObj = parseDateParts(nightDate);
+    const dayLabel = DAY_LABELS[dateObj.getUTCDay()];
+    const template = sleepWeeklyTrendData[i] || sleepWeeklyTrendData[0];
+
+    if (report) {
+      const hours = Math.round((report.actualSleepMinutes / 60) * 10) / 10;
+      trend.push({ date: nightDate, day: dayLabel, hours, score: report.score });
+      scoreSum += report.score;
+      scoreCount += 1;
+    } else {
+      trend.push({ date: nightDate, day: dayLabel, hours: template.hours, score: template.score });
+    }
+  }
+
+  const averageScore = scoreCount > 0 ? Math.round(scoreSum / scoreCount) : 81;
+
+  return {
+    weekStart,
+    weekEnd: addDays(weekStart, 6),
+    score: averageScore,
     summary: '평균 수면 시간은 줄었지만, 기상 규칙성과 깊은 수면 비율은 후반으로 갈수록 개선되었습니다.',
-    averageScore: 81,
-    trend: sleepWeeklyTrendData.map((item, index) => ({
-      date: addDays('2026-06-29', index),
-      day: item.day,
-      hours: item.hours,
-      score: item.score,
-    })),
+    averageScore,
+    trend,
     analysis: [
       ['점수 변화', '74→89점', '주 후반 회복세'],
       ['총합 수면 시간', '46.8h', '전주 대비 18% 감소'],
@@ -209,8 +133,8 @@ const weeklyReports = {
       ['온도 민감 구간', '3회', '26℃ 이상에서 뒤척임 증가'],
       ['기상 규칙성', '82%', '전주 대비 +6%'],
     ].map(toAnalysisItem),
-  },
-};
+  };
+}
 
 function requireActiveAccount() {
   if (!activeAccountId) {
@@ -225,11 +149,42 @@ function getInsightCollection(period) {
   return listInsights({ domain: 'sleep', period });
 }
 
+function defaultWeekStart() {
+  const nights = listGeneratedNightDates();
+  if (nights.length === 0) return getMondayOfWeek(formatDate(new Date()));
+  return getMondayOfWeek(nights[nights.length - 1]);
+}
+
 export class SleepApi {
   async getTodaySummary() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(todaySummarySeed);
+    const nights = listGeneratedNightDates();
+    const lastNight = nights[nights.length - 1];
+    const report = getGeneratedDailyReport(lastNight, 'main');
+    if (!report) {
+      return {
+        date: formatDate(new Date()),
+        score: 0,
+        achievedHours: 0,
+        goalHours: 7.5,
+        bedTime: '--:--',
+        wakeTime: '--:--',
+      };
+    }
+
+    const start = new Date(report.sleepWindow.start);
+    const end = new Date(report.sleepWindow.end);
+    const padTime = (d) => `${`${d.getHours()}`.padStart(2, '0')}:${`${d.getMinutes()}`.padStart(2, '0')}`;
+
+    return {
+      date: formatDate(end),
+      score: report.score,
+      achievedHours: Math.round((report.actualSleepMinutes / 60) * 10) / 10,
+      goalHours: 7.5,
+      bedTime: padTime(start),
+      wakeTime: padTime(end),
+    };
   }
 
   async getTodayPlan() {
@@ -250,12 +205,22 @@ export class SleepApi {
     return cloneDeep(automationSummarySeed);
   }
 
-  async getDailyReport(date) {
+  async getDailySessions(date) {
     await delay();
     requireActiveAccount();
     validateDateParam(date);
-    const targetDate = date || '2026-07-01';
-    const report = dailyReports[targetDate];
+    const sessions = getGeneratedDailySessions(date);
+    if (!sessions) {
+      throw apiError(404, 'NOT_FOUND', '해당 날짜의 수면 기록이 없습니다.');
+    }
+    return cloneDeep(sessions);
+  }
+
+  async getDailyReport(date, { sessionId } = {}) {
+    await delay();
+    requireActiveAccount();
+    validateDateParam(date);
+    const report = getGeneratedDailyReport(date, sessionId || 'main');
     if (!report) {
       throw apiError(404, 'NOT_FOUND', '해당 날짜의 수면 기록이 없습니다.');
     }
@@ -266,12 +231,8 @@ export class SleepApi {
     await delay();
     requireActiveAccount();
     validateWeekStartParam(weekStart);
-    const targetWeekStart = weekStart || '2026-06-29';
-    const report = weeklyReports[targetWeekStart];
-    if (!report) {
-      throw apiError(404, 'NOT_FOUND', '해당 주의 수면 기록이 없습니다.');
-    }
-    return cloneDeep(report);
+    const targetWeekStart = weekStart || defaultWeekStart();
+    return cloneDeep(buildWeeklyReport(targetWeekStart));
   }
 
   async getInsights({ period } = {}) {
@@ -288,7 +249,6 @@ export class SleepApi {
     return { id: insight.id, approved: insight.approved };
   }
 
-  // 테스트에서 activeAccount required 경로를 확인할 때만 사용한다.
   __setActiveAccountForTest(accountId) {
     activeAccountId = accountId;
   }

@@ -1,4 +1,4 @@
-import { delay, cloneDeep, makeId } from './utils';
+import { delay, cloneDeep, nextNumericId } from './utils';
 import { insightSuggestions, CHAT_SUGGESTION_POOL, initialChatConversations, getInsightReply } from '../../data/chatData';
 
 class MockApiError extends Error {
@@ -21,7 +21,7 @@ function nowIso(offsetSeconds = 0) {
 
 function createMessage(role, text, offsetSeconds = 0) {
   return {
-    id: makeId('msg'),
+    id: nextNumericId(),
     role,
     text,
     createdAt: nowIso(offsetSeconds),
@@ -31,7 +31,7 @@ function createMessage(role, text, offsetSeconds = 0) {
 function normalizeConversation(conversation, index) {
   const createdAt = conversation.createdAt || new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString();
   const messages = conversation.messages.map((message, messageIndex) => ({
-    id: message.id || makeId('msg'),
+    id: message.id || nextNumericId(),
     role: message.role,
     text: message.text,
     createdAt: message.createdAt || new Date(new Date(createdAt).getTime() + messageIndex * 60 * 1000).toISOString(),
@@ -101,7 +101,7 @@ export class ChatApi {
       updatedAt = assistantMessage.createdAt;
     }
 
-    const conversation = { id: makeId('chat'), title, messages, createdAt, updatedAt };
+    const conversation = { id: nextNumericId(), title, messages, createdAt, updatedAt };
     conversations = [conversation, ...conversations];
     return cloneDeep(conversation);
   }
@@ -163,12 +163,12 @@ export class ChatApi {
     let conv = conversationId ? conversations.find((c) => c.id === conversationId) : null;
     if (!conv) {
       const createdAt = nowIso();
-      conv = { id: makeId('chat'), title: titleFromMessage(trimmed), messages: [], createdAt, updatedAt: createdAt };
+      conv = { id: nextNumericId(), title: titleFromMessage(trimmed), messages: [], createdAt, updatedAt: createdAt };
       conversations = [conv, ...conversations];
     }
 
     const userMsg = createMessage('user', trimmed);
-    const assistantId = makeId('msg');
+    const assistantId = nextNumericId();
     const assistantShell = {
       id: assistantId,
       role: 'assistant',

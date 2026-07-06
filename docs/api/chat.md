@@ -1,7 +1,6 @@
 # Chat API
 
-구현된 프론트 코드: `src/api/chatApi.js`(진입점) · `src/api/mock/ChatApi.js`(mock) ·
-`src/api/v1/ChatApi.js`(real).
+구현된 프론트 코드: `src/api/chatApi.js` · `src/api/mock/ChatApi.js` · `src/api/v1/ChatApi.js`.
 
 WaveAI 대화 페이지(`src/chat/ChatPage.js`), 팝업 챗(`src/chat/ChatPopup.js`), 사이드 인사이트 위젯
 (`src/chat/InsightChat.js`)에서 쓰는 대화/메시지/추천 질문/1회성 인사이트 질의를 다룬다.
@@ -50,14 +49,14 @@ WaveAI 대화 페이지(`src/chat/ChatPage.js`), 팝업 챗(`src/chat/ChatPopup.
 
 ```ts
 type ChatMessage = {
-  id: string;
+  id: number;
   role: 'user' | 'assistant';
   text: string;
   createdAt: string;
 };
 
 type ConversationSummary = {
-  id: string;
+  id: number;
   title: string;
   lastMessagePreview: string | null;
   messageCount: number;
@@ -66,7 +65,7 @@ type ConversationSummary = {
 };
 
 type Conversation = {
-  id: string;
+  id: number;
   title: string;
   messages: ChatMessage[];
   createdAt: string;
@@ -74,13 +73,13 @@ type Conversation = {
 };
 
 type MessageAppendResponse = {
-  conversationId: string;
+  conversationId: number;
   appendedMessages: ChatMessage[];
   conversation: Pick<Conversation, 'id' | 'title' | 'updatedAt'>;
 };
 
 type SuggestionChip = {
-  id: string;
+  id: number;
   icon?: string;
   label: string;
   prompt: string;
@@ -102,7 +101,7 @@ type ChatSuggestions = {
 ```json
 [
   {
-    "id": "chat_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+    "id": 1,
     "title": "수면 분석 질문",
     "lastMessagePreview": "어젯밤 수면 데이터를 바탕으로 도와드릴게요.",
     "messageCount": 8,
@@ -119,11 +118,11 @@ type ChatSuggestions = {
 **Response 200**
 ```json
 {
-  "id": "chat_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+  "id": 1,
   "title": "수면 분석 질문",
   "messages": [
     {
-      "id": "msg_01J2ZQB7E2X8M5K3D9R1V0ABC",
+      "id": 101,
       "role": "assistant",
       "text": "어젯밤 수면 데이터를 바탕으로 도와드릴게요.",
       "createdAt": "2026-07-02T15:20:00+09:00"
@@ -156,17 +155,17 @@ type ChatSuggestions = {
 **Response 201**
 ```json
 {
-  "id": "chat_01J2ZQ91BN4R8E5Y6W3T0P7M2C",
+  "id": 4,
   "title": "어젯밤 왜 잠을 못 잤을까?",
   "messages": [
     {
-      "id": "msg_01J2ZQC8K6T3P9W2M5R0C1Y4D",
+      "id": 102,
       "role": "user",
       "text": "어젯밤 왜 잠을 못 잤을까?",
       "createdAt": "2026-07-02T15:20:00+09:00"
     },
     {
-      "id": "msg_01J2ZQD9N2B6C7D0E4F8G1H3K",
+      "id": 103,
       "role": "assistant",
       "text": "어젯밤은 입면 시간이 길어지고 새벽 온도 상승 구간에서 뒤척임이 늘어난 패턴이 보여요.",
       "createdAt": "2026-07-02T15:20:02+09:00"
@@ -194,7 +193,7 @@ type ChatSuggestions = {
 **Response 200**
 ```json
 {
-  "id": "chat_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+  "id": 1,
   "title": "수면 리포트 질문",
   "lastMessagePreview": "어젯밤 수면 데이터를 바탕으로 도와드릴게요.",
   "messageCount": 8,
@@ -231,23 +230,23 @@ type ChatSuggestions = {
 **Response 200**
 ```json
 {
-  "conversationId": "chat_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+  "conversationId": 1,
   "appendedMessages": [
     {
-      "id": "msg_01J2ZQE4S2D9M8R6K1P0V3X7YB",
+      "id": 104,
       "role": "user",
       "text": "그러면 오늘 밤은 어떻게 하면 좋아?",
       "createdAt": "2026-07-02T15:25:00+09:00"
     },
     {
-      "id": "msg_01J2ZQF8K6T3P9W2M5R0C1Y4D",
+      "id": 105,
       "role": "assistant",
       "text": "오늘 밤은 취침 30분 전부터 조명을 낮추고, 실내 온도를 24도로 유지하는 것이 좋아요.",
       "createdAt": "2026-07-02T15:25:02+09:00"
     }
   ],
   "conversation": {
-    "id": "chat_01J2ZQ8M6R9P4T7X3A5B2C1D0E",
+    "id": 1,
     "title": "수면 분석 질문",
     "updatedAt": "2026-07-02T15:25:02+09:00"
   }
@@ -268,6 +267,55 @@ type ChatSuggestions = {
 ```json
 { "error": { "code": "NOT_FOUND", "message": "대화를 찾을 수 없습니다." } }
 ```
+
+---
+
+## POST `/chat/conversations/{conversationId}/messages/stream`
+
+## POST `/chat/conversations/stream`
+
+`App.js` 메인 채팅 입력이 사용하는 **SSE 스트리밍** 엔드포인트.
+
+- 기존 대화: `POST /chat/conversations/{conversationId}/messages/stream`
+- 새 대화: `conversationId`가 `null`이면 `POST /chat/conversations/stream`
+
+**Headers**
+```
+Accept: text/event-stream
+Content-Type: application/json
+```
+
+**Request Body**
+```json
+{ "text": "어젯밤 수면 점수 알려줘" }
+```
+
+**Response** — `text/event-stream`, 각 이벤트는 한 줄 `data: {json}` + 빈 줄.
+
+### 이벤트 타입
+
+| type | 설명 |
+|------|------|
+| `user_added` | 새 대화 생성 시. `conversation`, `message` 포함 |
+| `assistant_start` | assistant 메시지 껍데기 (`status: "streaming"`) |
+| `tool_start` / `tool_end` | 도구 호출 (선택) |
+| `reasoning_delta` | 추론 텍스트 증분 |
+| `content_delta` | 답변 텍스트 증분 (`text` 누적값) |
+| `message_done` | 스트리밍 완료 |
+
+**예시**
+```
+data: {"type":"content_delta","conversationId":1,"messageId":201,"text":"어젯밤 "}
+
+data: {"type":"message_done","conversationId":1,"messageId":201,"text":"어젯밤 수면 점수는 82점입니다."}
+
+```
+
+프론트 `ChatApi.sendMessageStreaming(conversationId, text, { onEvent, onComplete, onError })`는 위 이벤트를 그대로 `onEvent`로 전달한다. 반환값은 `abort()` 함수.
+
+**Response 400/404/502/504** — 스트림 시작 전 JSON 에러 (일반 에러 형식)
+
+---
 
 ## GET `/chat/suggestions`
 
@@ -327,6 +375,8 @@ PATCH  /api/v1/chat/conversations/{conversationId}
 DELETE /api/v1/chat/conversations/{conversationId}
 
 POST   /api/v1/chat/conversations/{conversationId}/messages
+POST   /api/v1/chat/conversations/{conversationId}/messages/stream
+POST   /api/v1/chat/conversations/stream
 
 GET    /api/v1/chat/suggestions
 POST   /api/v1/chat/insight-queries
@@ -345,6 +395,7 @@ chatApi.renameConversation(conversationId, title)
 chatApi.deleteConversation(conversationId)
 
 chatApi.sendMessage(conversationId, text)
+chatApi.sendMessageStreaming(conversationId, text, { onEvent, onComplete, onError })
 
 chatApi.getSuggestions()
 chatApi.askInsight(text)

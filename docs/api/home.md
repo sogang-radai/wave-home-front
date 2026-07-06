@@ -1,11 +1,11 @@
 # Home Control API (가전 제어)
 
-구현 예정 프론트 코드: `src/api/homeApi.js`(진입점) · `src/api/mock/HomeApi.js`(mock) ·
+구현된 프론트 코드: `src/api/homeApi.js`(진입점) · `src/api/mock/HomeApi.js`(mock) ·
 `src/api/v1/HomeApi.js`(real).
 
 `src/pages/HomeControlPage.js`(제스처 히스토리/제스처 목록/IoT 상태/전력 분석 4개 탭)와
 `src/pages/MainPage.js`의 전력 분석 카드에서 쓰는 제스처 인식, 레이더-제스처 매핑, IoT 기기 제어-제스처
-바인딩, 스마트 플러그 전력 모니터링을 다룬다.
+바인딩을 다룬다. **전력 차트·리포트**는 [power.md](./power.md)를 참고한다.
 
 ## 공통
 
@@ -58,7 +58,7 @@ type GestureSet = {
 type Radar = {
   id: string;         // settings.md GET /devices의 장치 id와 동일
   name: string;
-  roomId: string;      // settings.md GET /rooms의 방 id
+  roomId: number;      // settings.md GET /rooms의 방 id
   connected: boolean;  // 해당 장치의 enabled 값
 };
 
@@ -165,7 +165,7 @@ type SmartPlugDevice = {
 **Response 200**
 ```json
 [
-  { "id": "8d2e5a1c49f7036b", "name": "거실 레이더", "roomId": "7c4a9e2f18b356d0", "connected": true }
+  { "id": "3a7f2c9d10b4e85f", "name": "침실 하방 레이더", "roomId": 2, "connected": true }
 ]
 ```
 

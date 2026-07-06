@@ -1,4 +1,4 @@
-import { httpClient } from './httpClient';
+import { httpClient, streamSse } from './httpClient';
 
 export class ChatApi {
   async getConversations() {
@@ -28,6 +28,23 @@ export class ChatApi {
 
   async sendMessage(conversationId, text) {
     return httpClient.post(`/chat/conversations/${conversationId}/messages`, { text });
+  }
+
+  /**
+   * SSE 스트리밍 메시지 전송. 이벤트 타입은 docs/api/chat.md 참고.
+   * conversationId가 null이면 새 대화를 생성한다.
+   * @returns {() => void} abort
+   */
+  sendMessageStreaming(conversationId, text, { onEvent, onComplete, onError } = {}) {
+    const path = conversationId
+      ? `/chat/conversations/${conversationId}/messages/stream`
+      : '/chat/conversations/stream';
+    return streamSse(path, {
+      body: { text },
+      onEvent,
+      onComplete,
+      onError,
+    });
   }
 
   async getSuggestions() {

@@ -76,18 +76,58 @@ export function pickAICat(title) {
 
 export function getWeekDates(weekOffset = 0) {
   const today = new Date();
-  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const day = today.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
   monday.setDate(today.getDate() + mondayOffset + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  return getWeekDatesFromAnchor(monday);
+}
 
-  return koreanWeekdayLabels.slice(1).concat(koreanWeekdayLabels[0]).map((label, index) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + index);
+export function getWeekDatesFromAnchor(anchorDate) {
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const start = new Date(anchorDate);
+  start.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + index);
+    const label = koreanWeekdayLabels[d.getDay()];
     const dMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const isToday = d.toDateString() === today.toDateString();
-    const isPast = dMidnight < todayMidnight;
-    return { label, date: d.getDate(), month: d.getMonth() + 1, isToday, isPast };
+    return {
+      label,
+      date: d.getDate(),
+      month: d.getMonth() + 1,
+      isToday: d.toDateString() === today.toDateString(),
+      isPast: dMidnight < todayMidnight,
+      fullDate: d,
+    };
   });
+}
+
+export function addCalendarDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+export function getMondayOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + mondayOffset);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export function isSameWeek(a, b) {
+  return getMondayOfWeek(a).getTime() === getMondayOfWeek(b).getTime();
+}
+
+export function getWeekOffsetForDate(targetDate) {
+  const todayMonday = getMondayOfWeek(new Date());
+  const targetMonday = getMondayOfWeek(targetDate);
+  return Math.round((targetMonday - todayMonday) / (7 * 24 * 60 * 60 * 1000));
 }

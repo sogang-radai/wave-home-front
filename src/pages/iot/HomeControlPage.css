@@ -6,83 +6,1962 @@
   gap: 14px;
 }
 
-/* ── Gesture history ────────────────────────────────────────────────────── */
+/* ── Shared small bits ──────────────────────────────────────────────────── */
 
-.gesture-history-list,
-.iot-device-list,
-.control-binding-list {
+.panel-loading,
+.panel-empty {
+  padding: 24px 4px;
+  color: var(--sub);
+  font-size: 13px;
+  text-align: center;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.status-chip.inactive {
+  background: var(--surface-muted);
+  color: var(--sub);
+}
+
+.attr-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 7px;
+  background: var(--wave-10);
+  color: var(--wave);
+  font-size: 10px;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.device-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--neutral-dot);
+}
+
+.device-dot.online {
+  background: var(--good);
+}
+
+.device-dot.offline {
+  background: #f59e0b;
+}
+
+/* Positioned in the top-right corner of the device card (see .iot-device-card) */
+.iot-device-card .device-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.iot-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 8px 24px var(--ink-16);
+  z-index: 60;
+  animation: iot-toast-in 0.18s ease;
+}
+
+@keyframes iot-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Large size modifier for .toggle-switch (base defined in posture.css) */
+.toggle-switch.toggle-switch--lg {
+  width: 58px;
+  height: 32px;
+}
+
+.toggle-switch.toggle-switch--lg i {
+  width: 26px;
+  height: 26px;
+}
+
+.toggle-switch.toggle-switch--lg.on i {
+  transform: translateX(26px);
+}
+
+/* ── IoT control layout ─────────────────────────────────────────────────── */
+
+.iot-control-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.room-filter-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.room-filter-pills button {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.room-filter-pills button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.iot-device-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.iot-device-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 8px var(--wave-10);
+}
+
+.iot-device-card.selected {
+  border-color: var(--wave);
+  background: linear-gradient(135deg, var(--surface), var(--wave-10));
+  box-shadow: 0 0 0 3px var(--wave-15), 0 1px 8px var(--wave-10);
+}
+
+.iot-device-card.offline {
+  opacity: 0.75;
+}
+
+.iot-device-thumb-img {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 12px;
+  background: var(--wave-05);
+}
+
+.iot-device-thumb-placeholder {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--wave-10);
+  color: var(--wave);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.iot-device-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding-right: 74px;
+}
+
+.iot-device-card-room {
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.iot-device-card-name {
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.iot-device-card-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.iot-device-reconnect-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wave-10);
+  color: var(--wave);
+  cursor: pointer;
+}
+
+.iot-device-reconnect-btn:hover {
+  background: var(--wave-15);
+}
+
+.iot-device-reconnect-btn.spinning svg {
+  animation: iot-reconnect-spin 0.8s linear infinite;
+}
+
+@keyframes iot-reconnect-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Device detail panel ────────────────────────────────────────────────── */
+
+.device-detail-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: var(--wave-05);
+}
+
+.device-detail-tabs button {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.device-detail-tabs button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 6px var(--wave-30);
+}
+
+.iot-detail-content {
+  min-height: 560px;
+}
+
+/* ── Shared icon-only buttons (gear / hover-reveal trash) ───────────────── */
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sub);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.icon-btn-delete {
+  opacity: 0;
+}
+
+.icon-btn-delete:hover {
+  background: var(--danger-18);
+  color: var(--danger-strong);
+}
+
+.rule-row:hover .icon-btn-delete,
+.ir-command-row:hover .icon-btn-delete,
+.trigger-rule-row:hover .icon-btn-delete {
+  opacity: 1;
+}
+
+.plug-power-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.plug-power-label {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.plug-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.plug-btn-row button {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.plug-btn-row button:hover {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.plug-power-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--wave-10);
+}
+
+.plug-power-hero span {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.plug-power-hero strong {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.plug-power-hero strong small {
+  margin-left: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sub);
+}
+
+.light-color-section {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-top: 6px;
+}
+
+.light-color-wheel-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.light-color-wheel-col .light-swatch-grid {
+  width: 160px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.light-brightness-temp-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+  min-width: 200px;
+  padding-top: 4px;
+}
+
+.light-rgb-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.light-rgb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.light-rgb-row span {
+  width: 16px;
+  flex-shrink: 0;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.light-rgb-row input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.light-white-temp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.light-temp-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.light-temp-swatch {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.color-wheel {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 68%),
+    conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  touch-action: none;
+  cursor: crosshair;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.color-wheel-center {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+  pointer-events: none;
+}
+
+.color-wheel-knob {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  margin-top: -11px;
+  border-radius: 50%;
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1.5px var(--ink-16), 0 2px 8px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+
+.light-color-side {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.gesture-history-item,
-.iot-device-row,
-.control-binding-row {
+.light-rgb-inputs {
+  display: flex;
+  gap: 10px;
+}
+
+.light-rgb-field {
+  flex: 1;
+}
+
+.light-rgb-field input {
+  width: 100%;
+}
+
+.light-swatch-label {
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.light-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.light-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  box-shadow: 0 1px 4px var(--ink-16);
+}
+
+.light-swatch:hover {
+  box-shadow: 0 0 0 3px var(--wave-15);
+}
+
+.temp-slider--preview::-webkit-slider-thumb {
+  background: var(--temp-preview, var(--surface));
+  border-color: var(--surface);
+  box-shadow: 0 0 0 2px var(--line), 0 1px 5px var(--ink-16);
+}
+
+.temp-slider--preview::-moz-range-thumb {
+  background: var(--temp-preview, var(--surface));
+  border-color: var(--surface);
+}
+
+.plug-panel--split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.plug-panel-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plug-panel-controls .plug-power-row {
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+
+.plug-panel-controls .plug-btn-row {
+  margin-left: 0;
+  flex-wrap: wrap;
+}
+
+.plug-panel-sensors {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plug-panel-sensors .telemetry-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wave-station-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(120px, 0.8fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.wave-station-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.wave-station-telemetry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wave-station-telemetry .telemetry-tile {
+  text-align: center;
+}
+
+.tts-panel-voice {
+  width: 120px;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.temp-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--temp-gradient);
+  outline: none;
+}
+
+.temp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  cursor: pointer;
+  box-shadow: 0 1px 5px var(--ink-16);
+}
+
+.temp-slider::-moz-range-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--temp-gradient);
+}
+
+.temp-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  cursor: pointer;
+}
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.telemetry-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.telemetry-tile span {
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.telemetry-tile strong {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.telemetry-tile strong small {
+  margin-left: 3px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── TV panel (실물 리모컨 레이아웃) ──────────────────────────────────────── */
+
+.tv-remote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.tv-remote-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  padding: 22px 20px 26px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, var(--surface-muted) 0%, var(--surface) 100%);
+  box-shadow: inset 0 1px 0 var(--surface), 0 4px 16px var(--wave-10);
+}
+
+.tv-remote-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
   width: 100%;
-  min-height: 70px;
+}
+
+.tv-remote-row--wide {
+  justify-content: space-between;
+}
+
+.tv-remote-power-label {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tv-remote-btn {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 1px 6px var(--wave-10);
+}
+
+.tv-remote-btn:hover {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.tv-remote-btn--power {
+  border-color: var(--danger);
+  color: var(--danger-strong);
+}
+
+.tv-remote-btn--power:hover {
+  background: var(--danger-18);
+}
+
+.tv-dpad {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: var(--wave-05);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.tv-dpad-btn {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--sub);
+  cursor: pointer;
+}
+
+.tv-dpad-btn:hover {
+  color: var(--wave);
+}
+
+.tv-dpad-btn--up { top: 4px; left: 50%; margin-left: -22px; }
+.tv-dpad-btn--down { bottom: 4px; left: 50%; margin-left: -22px; }
+.tv-dpad-btn--left { left: 4px; top: 50%; margin-top: -22px; }
+.tv-dpad-btn--right { right: 4px; top: 50%; margin-top: -22px; }
+
+.tv-dpad-ok {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 1px 8px var(--wave-15);
+}
+
+.tv-dpad-ok:hover {
+  background: var(--wave-10);
+}
+
+.tv-pill-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tv-pill-btn {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tv-pill-btn:hover {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.tv-remote-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tv-mute-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tv-mute-btn.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.tv-app-diamond {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin-top: 6px;
+}
+
+.tv-app-btn {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: var(--app-color);
+  color: #fff;
+  opacity: 0.88;
+  transform: rotate(45deg);
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--ink-16);
+}
+
+.tv-app-btn:hover,
+.tv-app-btn.active {
+  opacity: 1;
+  box-shadow: 0 0 0 3px var(--wave-15), 0 2px 8px var(--ink-16);
+}
+
+.tv-app-btn span {
+  display: inline-block;
+  transform: rotate(-45deg);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tv-app-btn--0 { top: 0; left: 50%; margin-left: -26px; }
+.tv-app-btn--1 { top: 50%; right: 0; margin-top: -26px; }
+.tv-app-btn--2 { bottom: 0; left: 50%; margin-left: -26px; }
+.tv-app-btn--3 { top: 50%; left: 0; margin-top: -26px; }
+
+/* ── Radar panel ─────────────────────────────────────────────────────────── */
+
+.radar-set-summary {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--wave-05);
+}
+
+.radar-set-summary p {
+  margin: 0 0 10px;
+  color: var(--sub);
+  font-size: 13px;
+}
+
+.radar-set-summary small {
+  display: block;
+  margin-top: 10px;
+  color: var(--sub);
+  font-size: 11.5px;
+}
+
+.radar-class-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.badge.state {
+  background: var(--surface-muted);
+  color: var(--sub);
+}
+
+.badge.trigger {
+  background: var(--wave-15);
+  color: var(--ink);
+}
+
+/* ── Wave station panel: TTS + mic on the left, telemetry stacked on the
+   right (see the grid-based .wave-station-panel rule near the top of this
+   file, which this section extends). ───────────────────────────────────── */
+
+.wave-station-left .tts-panel-textarea {
+  padding: 14px 16px;
+  font-size: 14.5px;
+  min-height: 84px;
+}
+
+.wave-station-left .tts-panel-controls {
+  gap: 10px;
+}
+
+.wave-station-left .tts-panel-voice {
+  flex: 1;
+  min-width: 150px;
+  height: 44px;
+  font-size: 13.5px;
+}
+
+.wave-station-left .tts-panel-send {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+  border-radius: 12px;
+}
+
+.wave-station-left .mic-volume-bar {
+  font-size: 13px;
+}
+
+.wave-station-left .mic-volume-track {
+  height: 14px;
+}
+
+.wave-station-left .mic-volume-pct {
+  font-size: 13px;
+  min-width: 40px;
+}
+
+/* ── Shared TTS composer (camera + wave station) ─────────────────────────── */
+
+.tts-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tts-panel-label {
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tts-panel-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.tts-panel-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.tts-panel-voice {
+  flex: 1.6;
+  min-width: 0;
+}
+
+.tts-panel-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 11px;
+  background: var(--wave);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tts-panel-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tts-panel-toast {
+  color: var(--good);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+/* ── Shared mic volume meter ──────────────────────────────────────────────── */
+
+.mic-volume-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sub);
+}
+
+.mic-volume-track {
+  position: relative;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--wave-10);
+  overflow: hidden;
+}
+
+.mic-volume-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--good);
+  transition: width 0.2s ease;
+}
+
+.mic-volume-pct {
+  min-width: 34px;
+  color: var(--sub);
+  font-size: 11.5px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.mic-mute-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: var(--wave-10);
+  color: var(--wave);
+  cursor: pointer;
+}
+
+.mic-mute-btn.muted {
+  background: var(--surface-muted);
+  color: var(--sub);
+}
+
+/* ── Camera panel ────────────────────────────────────────────────────────── */
+
+.camera-video {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0b1220;
+  aspect-ratio: 16 / 9;
+}
+
+.camera-video-el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-video-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.08), transparent 60%), #0b1220;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.camera-video-error strong {
+  color: rgba(255,255,255,0.9);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.camera-video-error span {
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+}
+
+.camera-capture-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(11, 18, 32, 0.55);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+.camera-capture-btn:hover {
+  background: rgba(11, 18, 32, 0.75);
+}
+
+.camera-bottom-bar {
+  display: flex;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.camera-bottom-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.camera-bottom-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Camera's TTS composer sits in a narrower column, so the speaker combo
+   should stay compact and align to the right alongside the send button
+   (rather than stretching to fill the row like the Wave Station one). */
+.camera-bottom-left .tts-panel-controls {
+  justify-content: flex-end;
+}
+
+.camera-bottom-left .tts-panel-voice {
+  flex: none;
+  width: 104px;
+  min-width: 0;
+}
+
+/* ── PTZ button pad (replaces the old drag joystick) ─────────────────────── */
+
+.ptz-pad-btn {
+  position: relative;
+  width: 176px;
+  height: 176px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.ptz-pad-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ptz-wedge {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  border: 0;
+  background: var(--wave-40);
+  color: var(--excellent-text);
+  cursor: pointer;
+}
+
+.ptz-wedge:hover {
+  background: var(--excellent-text);
+  color: #fff;
+}
+
+/* Each wedge is a truncated fan (annulus sector) rather than a full pie
+   slice — the inner edge stops short of the center (which is where the
+   zoom dial sits), avoiding the "radiation symbol" look of 4 triangles
+   converging at a single point. */
+.ptz-wedge--up {
+  clip-path: polygon(35% 35%, 65% 35%, 80% 0%, 20% 0%);
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 16px;
+  border-radius: 50% 50% 0 0;
+}
+
+.ptz-wedge--right {
+  clip-path: polygon(65% 35%, 65% 65%, 100% 80%, 100% 20%);
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 16px;
+  border-radius: 0 50% 50% 0;
+}
+
+.ptz-wedge--down {
+  clip-path: polygon(65% 65%, 35% 65%, 20% 100%, 80% 100%);
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 16px;
+  border-radius: 0 0 50% 50%;
+}
+
+.ptz-wedge--left {
+  clip-path: polygon(35% 65%, 35% 35%, 0% 20%, 0% 80%);
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 16px;
+  border-radius: 50% 0 0 50%;
+}
+
+.ptz-zoom-dial {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: ns-resize;
+  box-shadow: 0 0 0 4px var(--surface), 0 2px 10px var(--ink-16);
+}
+
+.ptz-zoom-dial-inner {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+}
+
+.ptz-zoom-dial-inner strong {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.snapshot-strip {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.snapshot-thumb {
+  flex-shrink: 0;
+  width: 96px;
+  height: 54px;
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-end;
+  padding: 5px;
+}
+
+.snapshot-thumb span {
+  color: rgba(255,255,255,0.85);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── Rule list / editor ──────────────────────────────────────────────────── */
+
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rule-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rule-list-head span {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--wave-05);
 }
 
-.gesture-history-icon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
+.rule-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rule-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-row-body strong {
+  font-size: 14px;
+}
+
+.rule-row-body span {
+  color: var(--sub);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rule-row-actions {
+  display: flex;
+  gap: 6px;
   flex-shrink: 0;
-  border-radius: 14px;
-  background: var(--wave-15);
+}
+
+.rule-row-actions button {
+  white-space: nowrap;
+}
+
+.rule-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.rule-mode-toggle button {
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rule-mode-toggle button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
   color: var(--ink);
-  font-size: 22px;
+}
+
+.rule-mode-toggle--sm button {
+  height: 32px;
+  font-size: 12px;
+}
+
+.rule-mode-toggle button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.trigger-op-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.trigger-op-picker button {
+  flex: 1;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.trigger-op-picker button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.rule-section {
+  margin-bottom: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.rule-section-title {
+  margin: 0 0 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 
-.gesture-history-item strong,
-.iot-device-row strong,
-.control-binding-row strong {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 15px;
-}
-
-.gesture-history-item span,
-.iot-device-row small,
-.control-binding-row span,
-.selected-device-panel p,
-.section-description {
-  color: var(--sub);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.history-meta {
-  margin-left: auto;
+.rule-inline-fields {
   display: grid;
-  justify-items: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.history-meta time {
+.rule-params-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.rule-day-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.rule-day-picker button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rule-day-picker button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.rule-link-badge {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--wave);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── Trigger wizard (트리거 연결 탭) ──────────────────────────────────────── */
+
+.trigger-wizard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.trigger-wizard-step {
+  position: relative;
+  min-width: 0;
+  height: 268px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.trigger-wizard-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -11px;
+  width: 8px;
+  height: 8px;
+  transform: translateY(-50%);
+  background: var(--sub);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.trigger-wizard-step-num {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.trigger-wizard-step h4 {
+  margin: 0 26px 6px 0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.trigger-wizard-step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trigger-wizard-step--detail .trigger-wizard-step-body {
+  overflow: hidden;
+}
+
+.trigger-wizard-step--action .trigger-wizard-step-body {
+  overflow: visible;
+}
+
+.trigger-wizard-inline {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.trigger-wizard-inline .settings-field {
+  flex: 1;
+}
+
+.trigger-wizard-inline select,
+.trigger-wizard-inline input {
+  width: 100%;
+}
+
+.trigger-wizard-step--save {
+  justify-content: space-between;
+}
+
+.trigger-wizard-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.trigger-rule-list {
+  margin-top: 4px;
+}
+
+.trigger-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+  cursor: pointer;
+}
+
+.trigger-rule-row.dragging {
+  opacity: 0.5;
+}
+
+.trigger-rule-row.selected {
+  border-color: var(--wave);
+  background: linear-gradient(135deg, var(--surface), var(--wave-10));
+  box-shadow: 0 0 0 2px var(--wave-15);
+}
+
+.trigger-rule-drag-handle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--sub);
+  cursor: grab;
+  opacity: 0.75;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.trigger-rule-row:hover .trigger-rule-drag-handle {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.trigger-rule-row .rule-row-actions {
+  margin-left: auto;
+}
+
+.trigger-wizard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.trigger-wizard-header .settings-field {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+}
+
+.trigger-wizard-header-error {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--danger-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trigger-wizard-step-body .settings-field--row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.trigger-wizard-step-body .settings-field--row > span {
+  flex-shrink: 0;
+  min-width: 40px;
+  margin: 0;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trigger-wizard-step-body .settings-field--grow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+}
+
+.trigger-wizard-step-body .settings-field--grow > span {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trigger-wizard-step-body .settings-field--row select,
+.trigger-wizard-step-body .settings-field--row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.trigger-wizard-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.trigger-wizard-inline select,
+.trigger-wizard-inline input[type="number"] {
+  height: 36px;
+}
+
+.trigger-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.trigger-picker-list--grow {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
+.trigger-picker-list--plain {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Scrollbars without arrow buttons */
+.trigger-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wave-30) transparent;
+}
+
+.trigger-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.trigger-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.trigger-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--wave-30);
+}
+
+.trigger-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.trigger-device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.trigger-device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger-device-item:hover {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.trigger-device-item.selected {
+  border-color: var(--wave);
+  background: var(--wave-15);
+}
+
+.trigger-device-thumb {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--wave-05);
+  overflow: hidden;
+}
+
+.trigger-device-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.trigger-device-thumb-fallback {
+  color: var(--wave);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.trigger-device-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trigger-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger-picker-item:hover {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.trigger-picker-item.selected {
+  border-color: var(--wave);
+  background: var(--wave-15);
+}
+
+.radar-class-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.radar-class-group-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.radar-class-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.radar-class-badges .badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.radar-class-badges .badge.state {
+  background: var(--surface-muted);
+  color: var(--sub);
+}
+
+.radar-class-badges .badge.trigger {
+  background: var(--wave-15);
+  color: var(--ink);
+}
+
+/* ── IR commands tab ─────────────────────────────────────────────────────── */
+
+.ir-command-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ir-command-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.ir-command-main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ir-command-main strong {
+  font-size: 14px;
+}
+
+.ir-command-main span {
   color: var(--sub);
   font-size: 12px;
 }
 
-.radar-tag {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--wave);
-  background: var(--wave-10);
-  border-radius: 8px;
-  padding: 2px 7px;
+.ir-command-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ir-command-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ir-command-actions button {
   white-space: nowrap;
 }
 
-/* ── Gesture management ─────────────────────────────────────────────────── */
+.ir-learn-btn {
+  width: 100%;
+  margin: 6px 0 14px;
+}
+
+.ir-learn-banner {
+  margin: 6px 0 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--wave-10);
+  text-align: center;
+}
+
+.ir-learn-banner strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.ir-learn-banner p {
+  margin: 0;
+  color: var(--sub);
+  font-size: 12px;
+}
+
+/* ── Gesture management (shared with gesture sets tab) ──────────────────── */
 
 .gesture-management {
   display: grid;
@@ -125,27 +2004,12 @@
   cursor: pointer;
 }
 
-.gesture-set-activate {
-  width: 100%;
-  margin-top: 14px;
-  border: 0;
-  border-radius: 13px;
-  padding: 10px 12px;
-  background: var(--wave);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
+.gesture-set-select-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.gesture-set-activate:disabled {
-  background: var(--wave-15);
-  color: var(--sub);
-  cursor: default;
-}
-
-.gesture-set-card span,
-.status-chip {
+.gesture-set-card span {
   display: inline-block;
   margin-bottom: 10px;
   padding: 5px 9px;
@@ -177,6 +2041,9 @@
 
 .section-description {
   margin: -4px 0 18px;
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .gesture-card-grid {
@@ -189,33 +2056,35 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface);
+  overflow: hidden;
+  box-shadow: 0 1px 8px var(--wave-10);
 }
 
-.gesture-placeholder {
-  height: 132px;
+.gesture-thumb-wrap {
+  height: 104px;
+  margin: 12px 12px 0;
   display: grid;
   place-items: center;
-  border-radius: 18px 18px 0 0;
-  overflow: hidden;
-  background:
-    linear-gradient(135deg, var(--wave-10), transparent),
-    repeating-linear-gradient(45deg, var(--stripe-a), var(--stripe-a) 12px, var(--stripe-b) 12px, var(--stripe-b) 24px);
-  color: var(--sub);
-  font-size: 13px;
-  font-weight: 800;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--wave-05);
+}
+
+.gesture-thumb-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 .gesture-control-card .gesture-card-body {
   padding: 14px;
 }
 
-.status-chip.inactive {
-  background: var(--surface-muted);
-  color: var(--sub);
-}
-
 .gesture-control-card h3 {
-  margin: 0 0 6px;
+  margin: 8px 0 6px;
   font-size: 17px;
 }
 
@@ -225,403 +2094,150 @@
   font-size: 13px;
 }
 
-/* ── Radar assign ────────────────────────────────────────────────────────── */
+/* ── Event log ───────────────────────────────────────────────────────────── */
 
-.radar-assign-btn {
-  margin-top: 8px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 6px 10px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.radar-assign-btn:hover {
-  background: var(--wave-10);
-  border-color: var(--wave);
-}
-
-.radar-picker {
+.event-filter-chips {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 10px 14px 14px;
+  margin-bottom: 16px;
 }
 
-.radar-pick-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px 14px;
+  border-radius: 999px;
   background: var(--surface);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
-  text-align: left;
 }
 
-.radar-pick-item span {
-  font-size: 13px;
-  font-weight: 900;
+.filter-chip .event-type-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.filter-chip.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
   color: var(--ink);
 }
 
-.radar-pick-item small {
-  font-size: 11px;
-  color: var(--sub);
+.event-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.radar-pick-item.selected {
-  border-color: var(--wave);
-  background: var(--wave-10);
+.event-row {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--wave-05);
+  overflow: hidden;
 }
 
-.radar-pick-item.unassign {
-  border-color: var(--line);
-  background: transparent;
-}
-
-.radar-pick-item.unassign span {
-  color: var(--sub);
-}
-
-/* ── IoT layout ─────────────────────────────────────────────────────────── */
-
-.iot-layout {
-  display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  align-items: start;
-  gap: 20px;
-}
-
-.iot-layout .card.wide {
-  grid-column: auto;
-}
-
-.iot-device-row {
+.event-row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
   border: 0;
+  background: transparent;
   text-align: left;
   cursor: pointer;
 }
 
-.iot-device-row.selected {
-  outline: 2px solid var(--wave);
-  background: var(--surface);
-}
-
-.device-dot {
-  width: 11px;
-  height: 11px;
+.event-type-dot {
+  width: 10px;
+  height: 10px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--neutral-dot);
 }
 
-.device-dot.online {
-  background: var(--good);
-  box-shadow: 0 0 0 5px var(--good-15);
+.event-type-connection { background: var(--warn); }
+.event-type-gesture { background: var(--wave); }
+.event-type-execution { background: var(--good); }
+.event-type-schedule { background: var(--accent-navy); }
+.event-type-ir { background: var(--power-blue, var(--wave)); }
+
+.event-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
-.device-dot.idle {
-  background: var(--warn);
-  box-shadow: 0 0 0 5px var(--warn-15);
+.event-row-body strong {
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.iot-device-row em {
-  margin-left: auto;
-  color: var(--sub);
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 800;
-}
-
-/* ── Selected device panel ──────────────────────────────────────────────── */
-
-.selected-device-panel {
+.event-row-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 16px;
-  padding: 16px;
-  border-radius: 16px;
-  background: var(--wave-05);
+  gap: 8px;
+  color: var(--sub);
+  font-size: 11.5px;
 }
 
-.selected-device-panel > div {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 8px 10px;
-}
-
-.selected-device-panel p {
-  grid-column: 2;
-  margin: 0;
-}
-
-.selected-device-panel button,
-.control-binding-row button,
-.gesture-picker button {
-  border: 0;
-  border-radius: 13px;
-  padding: 10px 13px;
+.event-type-badge {
+  padding: 2px 7px;
+  border-radius: 7px;
   background: var(--wave-15);
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 800;
+  font-style: normal;
 }
 
-.control-binding-row {
-  justify-content: space-between;
-}
-
-.control-binding-item {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--wave-05);
-}
-
-.control-binding-item .control-binding-row {
-  border: 0;
-  background: transparent;
-}
-
-.control-binding-row button {
-  background: var(--surface);
-  border: 1px solid var(--line);
-}
-
-/* ── Gesture picker (IoT binding) ───────────────────────────────────────── */
-
-.gesture-picker {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 0 14px 14px;
-}
-
-.gesture-picker button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  text-align: left;
-}
-
-.gesture-picker button.selected {
-  border-color: var(--wave);
-  background: var(--wave-10);
-}
-
-.gesture-picker button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.gesture-picker span {
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.gesture-picker small {
+.event-row-main time {
+  flex-shrink: 0;
   color: var(--sub);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 11.5px;
 }
 
-.gesture-picker-empty {
-  grid-column: 1 / -1;
-  color: var(--sub);
-  font-size: 13px;
-  text-align: center;
-  padding: 12px 0;
-}
-
-/* ── Power analysis ─────────────────────────────────────────────────────── */
-
-.power-analysis-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.power-agent-summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 16px;
-  border-radius: 16px;
-  background: var(--wave-05);
-}
-
-.power-agent-summary span,
-.power-agent-summary p,
-.power-agent-total span {
-  color: var(--sub);
-  font-size: 12px;
-}
-
-.power-agent-summary strong {
-  display: block;
-  margin: 5px 0;
-  font-size: 18px;
-  line-height: 1.45;
-}
-
-.power-agent-summary p {
+.event-detail-json {
   margin: 0;
-  line-height: 1.55;
-}
-
-.power-agent-total {
-  min-width: 132px;
-  padding: 14px;
-  border-radius: 14px;
+  padding: 12px 14px 14px;
   background: var(--surface);
-  text-align: right;
-}
-
-.power-agent-total strong {
-  margin: 4px 0 0;
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.power-chart-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-
-.power-chart-head strong,
-.power-chart-head span {
-  display: block;
-}
-
-.power-chart-head strong {
-  margin-bottom: 4px;
-  font-size: 15px;
-}
-
-.power-chart-head span {
   color: var(--sub);
-  font-size: 12px;
-}
-
-.power-range-tabs {
-  display: flex;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--wave-05);
-}
-
-.power-range-tabs button {
-  height: 32px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--sub);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.power-range-tabs button.active {
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 1px 6px var(--wave-30);
-}
-
-.power-chart {
-  min-height: 260px;
-  padding: 12px 4px 0;
-  border-radius: 16px;
-  background: var(--wave-05);
-}
-
-.power-device-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.power-device-card {
-  min-height: 170px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 1px 8px var(--wave-10);
-}
-
-.power-device-card.selected {
-  border-color: var(--wave);
-  background: linear-gradient(135deg, var(--surface), var(--wave-10));
-  box-shadow: 0 0 0 3px var(--wave-15), 0 1px 8px var(--wave-10);
-}
-
-.power-device-card > span {
-  color: var(--sub);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.power-device-card > strong {
-  display: block;
-  margin: 6px 0 12px;
-  font-size: 15px;
-}
-
-.power-device-value {
-  margin-bottom: 12px;
-  color: var(--ink);
-  font-size: 34px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.power-device-value small {
-  margin-left: 4px;
-  color: var(--sub);
-  font-size: 14px;
-}
-
-.power-device-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.power-device-meta span {
-  padding: 4px 7px;
-  border-radius: 999px;
-  background: var(--wave-05);
-  color: var(--sub);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 11.5px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
 }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1100px) {
-  .iot-layout {
-    grid-template-columns: 1fr;
+  .iot-device-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .power-device-grid {
+  .rule-inline-fields,
+  .rule-params-grid,
+  .telemetry-grid,
+  .light-swatch-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trigger-wizard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trigger-wizard-step:not(:last-child)::after {
+    display: none;
   }
 }
 
@@ -629,21 +2245,47 @@
   .home-summary-grid,
   .gesture-set-list,
   .gesture-card-grid,
-  .power-device-grid {
+  .iot-device-grid {
     grid-template-columns: 1fr;
   }
 
-  .gesture-picker {
+  .rule-inline-fields,
+  .rule-params-grid,
+  .telemetry-grid,
+  .light-swatch-grid {
     grid-template-columns: 1fr;
   }
 
-  .power-agent-summary,
-  .power-chart-head {
+  .rule-row,
+  .ir-command-row,
+  .trigger-rule-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .power-agent-total {
-    text-align: left;
+  .trigger-wizard {
+    grid-template-columns: 1fr;
+  }
+
+  .trigger-wizard-step {
+    height: auto;
+    min-height: 180px;
+  }
+
+  .trigger-wizard-step:not(:last-child)::after {
+    display: none;
+  }
+
+  .camera-bottom-bar {
+    flex-direction: column;
+  }
+
+  .camera-bottom-right {
+    justify-content: center;
+  }
+
+  .light-color-section {
+    flex-direction: column;
+    align-items: center;
   }
 }

@@ -3,7 +3,6 @@ import {
   getRooms as getRoomsStore,
   addRoom,
   removeRoom,
-  reorderRooms as reorderRoomsStore,
   getDevices as getDevicesStore,
   getAllDevices,
   addDeviceToBucket,
@@ -34,9 +33,8 @@ function makeHexId() {
   return `${Date.now().toString(16)}${random}`.slice(-16);
 }
 
-function makePrefixedId(prefix) {
-  return `${prefix}_${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
-}
+let nextAccountId = 3;
+let nextRoomId = 4;
 
 function requireName(value, message) {
   const name = value?.trim();
@@ -160,8 +158,8 @@ function persistAiAgentSettings(settings) {
 }
 
 const accountsSeed = [
-  { id: 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E', name: '김건강' },
-  { id: 'acc_01J2ZQ8YV6E3N9P5K7M1R4T2WA', name: '박웰빙' },
+  { id: 1, name: '김건강' },
+  { id: 2, name: '박웰빙' },
 ];
 
 const defaultSleepConfig = {
@@ -188,28 +186,28 @@ const defaultGeneralSettings = {
 
 const notificationsSeed = [
   {
-    id: 'noti_01J2ZQA4S2D9M8R6K1P0V3X7YB',
+    id: 1,
     type: 'timer',
     message: '착석 1시간 48분 경과 — 스트레칭을 해보세요',
     createdAt: '2026-07-02T07:10:00+09:00',
     read: false,
   },
   {
-    id: 'noti_01J2ZQAF8K6T3P9W2M5R0C1Y4D',
+    id: 2,
     type: 'sleep',
     message: '오늘 수면 목표까지 30분 부족합니다',
     createdAt: '2026-07-02T07:12:00+09:00',
     read: false,
   },
   {
-    id: 'noti_01J2ZQAS9N2B6C7D0E4F8G1H3K',
+    id: 3,
     type: 'posture',
     message: '거북목 패턴 4회 감지됨',
     createdAt: '2026-07-02T14:35:00+09:00',
     read: true,
   },
   {
-    id: 'noti_01J2ZQB2R5T8Y1U4I7O0P3A6SD',
+    id: 4,
     type: 'temperature',
     message: '수면 중 실내 온도 자동 조절 작동 (25°C)',
     createdAt: '2026-07-01T23:12:00+09:00',
@@ -307,7 +305,7 @@ export class SettingsApi {
 
   async createAccount({ name }) {
     await delay();
-    const account = { id: makePrefixedId('acc'), name: requireName(name, '이름을 입력해주세요.') };
+    const account = { id: nextAccountId++, name: requireName(name, '이름을 입력해주세요.') };
     accounts = [...accounts, account];
     sleepConfigs[account.id] = cloneDeep(defaultSleepConfig);
     generalSettings[account.id] = cloneDeep(defaultGeneralSettings);
@@ -344,19 +342,17 @@ export class SettingsApi {
   async createRoom({ name, description = '' }) {
     await delay();
     const roomName = requireName(name, '방 이름을 입력해주세요.');
-    const room = { id: makeHexId(), name: roomName, description: description.trim() || roomName, primaryAccountId: null };
+    const room = { id: nextRoomId++, name: roomName, description: description.trim() || roomName };
     addRoom(room);
     return cloneDeep(room);
   }
 
-  async updateRoom(roomId, { name, description, primaryAccountId }) {
+  async updateRoom(roomId, { name, description }) {
     await delay();
     const room = getRoomsStore().find((item) => item.id === roomId);
     if (!room) throw apiError(404, 'NOT_FOUND', '방을 찾을 수 없습니다.');
     if (name !== undefined) room.name = requireName(name, '방 이름을 입력해주세요.');
     if (description !== undefined) room.description = description.trim() || room.name;
-    // Dummy: primary account is stored in-memory only.
-    if (primaryAccountId !== undefined) room.primaryAccountId = primaryAccountId;
     return cloneDeep(room);
   }
 
@@ -372,13 +368,6 @@ export class SettingsApi {
     removeRoom(roomId);
     delete roomMembers[roomId];
     return { id: roomId };
-  }
-
-  // Dummy: drag sort result is applied to in-memory order only.
-  async reorderRooms(orderedIds) {
-    await delay();
-    reorderRoomsStore(orderedIds);
-    return cloneDeep(getRoomsStore());
   }
 
   async getRoomMembers(roomId) {

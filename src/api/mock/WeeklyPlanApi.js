@@ -1,6 +1,11 @@
-import { delay, cloneDeep } from './utils';
+import { delay, cloneDeep, nextNumericId } from './utils';
 import { initialTodos, CAT_STYLE, pickAICat } from '../../data/weeklyPlanData';
 import { listInsights, findInsight as findInsightById, setInsightApproved } from './insightsStore';
+import { SleepApi } from './SleepApi';
+import { PostureApi } from './PostureApi';
+
+const sleepApiForReport = new SleepApi();
+const postureApiForReport = new PostureApi();
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -17,7 +22,7 @@ function apiError(status, code, message, extra) {
 }
 
 function makeTaskId() {
-  return `task_${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
+  return nextNumericId();
 }
 
 const DAY_TO_KEY = {
@@ -56,7 +61,7 @@ function validationError(details) {
 
 function toTask(todo) {
   return {
-    id: typeof todo.id === 'string' ? todo.id : `task_seed_${todo.id}`,
+    id: typeof todo.id === 'number' ? todo.id : Number(todo.id),
     title: todo.title,
     done: Boolean(todo.done),
     dayOfWeek: todo.dayOfWeek || DAY_TO_KEY[todo.day],
@@ -223,7 +228,7 @@ function validatePatchPayload(payload) {
   }
 }
 
-const ACTIVE_ACCOUNT_ID = 'acc_01J2ZQ8M6R9P4T7X3A5B2C1D0E';
+const ACTIVE_ACCOUNT_ID = 1;
 let activeAccountId = ACTIVE_ACCOUNT_ID;
 let tasks = initialTodos.map(toTask);
 
@@ -286,6 +291,32 @@ export class WeeklyPlanApi {
     await delay();
     ensureActiveAccount();
     return cloneDeep(getRecommendationGroups());
+  }
+
+  async getWeeklyAgentReport() {
+    await delay();
+    ensureActiveAccount();
+    let sleepText = '';
+    let postureText = '';
+    try {
+      const sleep = await sleepApiForReport.getWeeklyReport();
+      sleepText = sleep.summary;
+    } catch {
+      sleepText = '수면 데이터를 확인할 수 없습니다.';
+    }
+    try {
+      const posture = await postureApiForReport.getWeeklyReport();
+      postureText = posture.summary;
+    } catch {
+      postureText = '자세 데이터를 확인할 수 없습니다.';
+    }
+    const done = tasks.filter((t) => t.done).length;
+    const total = tasks.length;
+    const rate = total ? Math.round((done / total) * 100) : 0;
+    return {
+      headline: '주간 에이전트 리포트',
+      body: `${sleepText} ${postureText} 이번 주 건강 계획은 ${done}/${total}개 완료(${rate}%) 상태입니다. AI가 추천한 루틴을 유지하면 다음 주 회복력이 더 좋아질 것으로 보입니다.`,
+    };
   }
 
   async updateInsight(insightId, { approved }) {

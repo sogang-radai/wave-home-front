@@ -63,9 +63,8 @@ function toViewTodo(task) {
 
 function App() {
   const [page, setPage] = useState('main');
-  const [sleepTab, setSleepTab] = useState('report');
   const [postureTab, setPostureTab] = useState('current');
-  const [homeTab, setHomeTab] = useState('history');
+  const [homeTab, setHomeTab] = useState('control');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
@@ -123,12 +122,21 @@ function App() {
   };
   const [settingCategory, setSettingCategory] = useState('general');
   const [showDevSettings, setShowDevSettings] = useState(false);
-  const goToSleepSettings = () => {
-    setPage('sleep');
-    setSleepTab('current');
-  };
   const goToPowerAnalysis = () => {
     setPage('power');
+  };
+
+  const goToChatWithDraft = (text) => {
+    setActiveChatId(null);
+    setChatMode('page');
+    setPendingChatDraft(text);
+    setPrevPage(page);
+    playBubbleTransitionSound();
+    setPage('chat');
+    setWaveTransition(true);
+    setTimeout(() => {
+      setWaveTransition(false);
+    }, 750);
   };
   const [chatConversations, setChatConversations] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -144,6 +152,7 @@ function App() {
   // One-shot flag: force the popup to open snapped to the top-right corner
   // (used by the header WaveAI button). Consumed once by ChatPopup on mount.
   const [chatForceTopRight, setChatForceTopRight] = useState(false);
+  const [pendingChatDraft, setPendingChatDraft] = useState(null);
 
   const playBubbleTransitionSound = async () => {
     // Read waveAiSound fresh on every call so setting changes apply immediately
@@ -478,12 +487,12 @@ function App() {
               onNavigate={setPage}
               todos={todos}
               onToggleTodo={toggleTodo}
-              onGoToSleepSettings={goToSleepSettings}
               onGoToPowerAnalysis={goToPowerAnalysis}
+              onOpenChatWithDraft={goToChatWithDraft}
             />
           )}
           {page === 'sleep' && (
-            <SleepPage tab={sleepTab} setTab={setSleepTab} onGoToSleepSettings={goToSleepSettings} />
+            <SleepPage />
           )}
           {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
           {page === 'weeklyPlan' && (
@@ -523,6 +532,8 @@ function App() {
               onShrink={handleShrinkChat}
               waveTransition={waveTransition}
               sidebarWidth={sidebarCollapsed ? 76 : 263}
+              initialDraft={pendingChatDraft}
+              onConsumeInitialDraft={() => setPendingChatDraft(null)}
             />
           )}
         </main>

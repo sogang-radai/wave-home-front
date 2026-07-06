@@ -21,6 +21,10 @@ export class WeeklyPlanApi {
     return httpClient.get('/weekly-plan/recommendations');
   }
 
+  async getWeeklyAgentReport() {
+    return httpClient.get('/weekly-plan/agent-report');
+  }
+
   async updateInsight(insightId, { approved }) {
     return httpClient.patch(`/insights/${insightId}`, { approved });
   }

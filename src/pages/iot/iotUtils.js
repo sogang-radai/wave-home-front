@@ -1,0 +1,98 @@
+import thumbSrs from '../../img/device/thumbnail_srs_r4sn.png';
+import thumbReolink from '../../img/device/thumbnail_reolink_e1_pro.png';
+import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
+import thumbTizen from '../../img/device/thumbnail_tizen_tv.png';
+import thumbWiz from '../../img/device/thumbnail_philips_wiz_e29.png';
+
+export const deviceThumbnails = {
+  srs_r4sn: thumbSrs,
+  wave_station: null,
+  reolink_e1_pro: thumbReolink,
+  tuya_ep2h: thumbTuya,
+  tizen_tv: thumbTizen,
+  philips_wiz_e29_color: thumbWiz,
+  philips_wiz_e29_white: thumbWiz,
+};
+
+export const EVENT_TYPE_LABELS = {
+  connection: '연결',
+  gesture: '제스처',
+  execution: '실행',
+  schedule: '예약',
+  ir: 'IR',
+};
+
+export const EVENT_TYPE_FILTERS = [
+  { id: 'all', label: '전체' },
+  { id: 'connection', label: '연결' },
+  { id: 'gesture', label: '제스처' },
+  { id: 'ir', label: 'IR' },
+  { id: 'execution', label: '실행' },
+  { id: 'schedule', label: '예약' },
+];
+
+export const TRIGGER_KIND_LABELS = {
+  gesture: '제스처',
+  device_state: '장치 상태',
+  ir_recv: 'IR 수신',
+};
+
+export function formatRelativeTime(iso) {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMinutes = Math.round(diffMs / 60000);
+  if (diffMinutes < 1) return '방금 전';
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+  if (date.toDateString() === now.toDateString()) {
+    return `오늘 ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 48) return `${diffHours}시간 전`;
+  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric' }).format(date);
+}
+
+export function formatTriggeredBy(triggeredBy, rules) {
+  if (!triggeredBy) return '자동 감지';
+  if (triggeredBy === 'manual') return '수동';
+  const [kind, id] = triggeredBy.split(':');
+  const rule = rules?.find((r) => r.id === id);
+  if (kind === 'rule') return rule ? `룰: ${rule.name}` : `룰: ${id}`;
+  if (kind === 'schedule') return rule ? `예약: ${rule.name}` : `예약: ${id}`;
+  return triggeredBy;
+}
+
+// device.h Action::Attribute — maps to which execMode radio options a rule
+// targeting this action may offer.
+export function execModesFor(action) {
+  const attrs = action?.attributes || [];
+  const modes = ['once'];
+  if (attrs.includes('Toggle')) modes.push('toggle');
+  if (attrs.includes('Repeat')) modes.push('repeat');
+  return modes;
+}
+
+export const EXEC_MODE_LABELS = { once: '한 번', toggle: '토글', repeat: '연속 실행' };
+
+export const SCHEDULE_REPEAT_LABELS = { once: '한 번만', daily: '매일', weekly: '매주' };
+
+export const DAY_OF_WEEK_LABELS = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
+
+export function describeSchedule(schedule) {
+  if (!schedule) return null;
+  if (schedule.repeat === 'once') return `${schedule.delayMinutes}분 뒤 1회`;
+  if (schedule.repeat === 'daily') return `매일 ${schedule.time}`;
+  if (schedule.repeat === 'weekly') {
+    const days = (schedule.daysOfWeek || []).map((d) => DAY_OF_WEEK_LABELS[d] || d).join('·');
+    return `매주 ${days} ${schedule.time}`;
+  }
+  return null;
+}
+
+export function describeTrigger(trigger, { deviceName, gestureClassName, commandName } = {}) {
+  if (!trigger) return null;
+  if (trigger.kind === 'gesture') return `${deviceName || trigger.deviceId} · ${gestureClassName || `클래스 ${trigger.classId}`}`;
+  if (trigger.kind === 'device_state') return `${deviceName || trigger.deviceId} · ${trigger.query} ${trigger.op} ${trigger.value}`;
+  if (trigger.kind === 'ir_recv') return `${deviceName || trigger.deviceId} · IR 수신 (${commandName || trigger.commandId})`;
+  return trigger.kind;
+}

@@ -1,0 +1,145 @@
+/* Block clicks on page content while calendar modal is open */
+body.calendar-modal-open .content {
+  pointer-events: none;
+}
+
+body.calendar-modal-open .sidebar,
+body.calendar-modal-open .topbar {
+  pointer-events: none;
+}
+
+.calendar-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.calendar-popup-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: auto;
+  background: rgba(11, 30, 45, 0.08);
+}
+
+.month-calendar-popup {
+  position: fixed;
+  z-index: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+  width: 280px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 20px 48px rgba(11, 30, 45, 0.18);
+}
+
+.month-calendar-popup.placement-above {
+  animation: calendar-popup-above 0.18s ease;
+}
+
+.month-calendar-popup.placement-below {
+  animation: calendar-popup-below 0.18s ease;
+}
+
+@keyframes calendar-popup-above {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes calendar-popup-below {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.calendar-popup-grid.slide-from-left {
+  animation: calendar-slide-in-left 0.18s ease;
+}
+
+.calendar-popup-grid.slide-from-right {
+  animation: calendar-slide-in-right 0.18s ease;
+}
+
+@keyframes calendar-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes calendar-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.date-nav-display-label {
+  display: inline-block;
+  transition: opacity 0.14s ease;
+}
+
+.date-nav-display-label.is-fading {
+  opacity: 0.45;
+}
+
+/* Active range (week mode — currently displayed 7 days) */
+.month-calendar-popup .calendar-popup-grid button.range-active:not(.is-selected):not(.is-today) {
+  background: var(--wave-10);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.month-calendar-popup .calendar-popup-grid button.muted-day.range-active:not(.is-selected):not(.is-today) {
+  background: var(--wave-05);
+  color: var(--sub);
+  font-weight: 700;
+}
+
+/* Hover highlight */
+.month-calendar-popup .calendar-popup-grid button.is-hover:not(.is-selected):not(.is-today):not(:disabled) {
+  background: #bfdbfe !important;
+  color: #1d4ed8 !important;
+  font-weight: 800;
+}
+
+.month-calendar-popup .calendar-popup-grid button.muted-day.is-hover:not(.is-selected):not(.is-today):not(:disabled) {
+  background: #dbeafe !important;
+  color: #3b82f6 !important;
+}
+
+/* Today / selected */
+.month-calendar-popup .calendar-popup-grid button.is-today,
+.month-calendar-popup .calendar-popup-grid button.is-selected {
+  background: var(--wave);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.month-calendar-popup .calendar-popup-grid button.is-today.is-hover:not(:disabled),
+.month-calendar-popup .calendar-popup-grid button.is-selected.is-hover:not(:disabled) {
+  background: #60a5fa !important;
+  color: #fff !important;
+}

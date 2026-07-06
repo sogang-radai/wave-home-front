@@ -1,6 +1,6 @@
 # Sleep API (수면 관리)
 
-구현 예정 프론트 코드: `src/api/sleepApi.js`(진입점) · `src/api/mock/SleepApi.js`(mock) ·
+구현된 프론트 코드: `src/api/sleepApi.js`(진입점) · `src/api/mock/SleepApi.js`(mock) ·
 `src/api/v1/SleepApi.js`(real). 취침 전 자동화 **설정**(`bedtime`, `acAuto` 등)은 이 도메인이 아니라
 `settings.md`의 "수면 설정" 섹션이다 — 여기는 수면 **트래킹/리포트**만 다룬다.
 

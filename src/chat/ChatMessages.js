@@ -79,6 +79,8 @@ export function ChatMessages({
   topbarRight,
   // bubble transition overlay — scoped to the message area only (page mode)
   waveTransition,
+  initialDraft,
+  onConsumeInitialDraft,
 }) {
   const [draft, setDraft] = useState('');
   const messagesEndRef = useRef(null);
@@ -86,6 +88,15 @@ export function ChatMessages({
   const textareaRef = useAutoResizeTextarea(draft);
 
   const [shownSuggestions, setShownSuggestions] = useState([]);
+
+  useEffect(() => {
+    if (!initialDraft) return;
+    setDraft(initialDraft);
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+    onConsumeInitialDraft?.();
+  }, [initialDraft, onConsumeInitialDraft, textareaRef]);
 
   useEffect(() => {
     chatApi.getSuggestions().then((res) => {

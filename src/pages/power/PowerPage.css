@@ -96,10 +96,6 @@
   font-weight: 500;
 }
 
-.power-stat-card.accent .power-stat-value strong {
-  color: var(--wave);
-}
-
 .power-stat-sub {
   font-size: 11px;
   color: var(--sub);
