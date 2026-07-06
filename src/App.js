@@ -142,7 +142,10 @@ function App() {
   const [activeChatId, setActiveChatId] = useState(null);
 
   useEffect(() => {
-    chatApi.getConversations().then(setChatConversations);
+    chatApi
+      .getConversations()
+      .then((list) => setChatConversations(Array.isArray(list) ? list : []))
+      .catch(() => setChatConversations([]));
   }, []);
   const [waveTransition, setWaveTransition] = useState(false);
   const bubbleAudioCtxRef = useRef(null);
