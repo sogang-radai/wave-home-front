@@ -1,12 +1,27 @@
 import pushApi from '../api/pushApi';
 
+export function isPushSecureContext() {
+  return typeof window !== 'undefined' && window.isSecureContext;
+}
+
 export function isBrowserPushSupported() {
   return (
-    typeof window !== 'undefined'
+    isPushSecureContext()
     && 'serviceWorker' in navigator
     && 'PushManager' in window
     && 'Notification' in window
   );
+}
+
+export function pushUnavailableReason() {
+  if (typeof window === 'undefined') return '브라우저 환경이 아닙니다.';
+  if (!window.isSecureContext) {
+    return '푸시 알림은 HTTPS 또는 localhost(127.0.0.1)에서만 사용할 수 있습니다. LAN IP(예: 192.168.x.x)로 접속 중이면 localhost로 열거나 HTTPS를 설정하세요.';
+  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    return '이 브라우저는 Web Push를 지원하지 않습니다.';
+  }
+  return null;
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -31,14 +46,18 @@ export async function registerPushServiceWorker() {
   return navigator.serviceWorker.register('/push-sw.js');
 }
 
-export async function subscribeBrowserPush() {
+export async function subscribeBrowserPush({ skipPermissionRequest = false } = {}) {
   if (!isBrowserPushSupported()) {
-    throw new Error('이 브라우저는 푸시 알림을 지원하지 않습니다.');
+    throw new Error(pushUnavailableReason() || '이 브라우저는 푸시 알림을 지원하지 않습니다.');
   }
 
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    throw new Error('알림 권한이 거부되었습니다.');
+  if (!skipPermissionRequest) {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      throw new Error('알림 권한이 거부되었습니다.');
+    }
+  } else if (Notification.permission !== 'granted') {
+    throw new Error('알림 권한이 없습니다.');
   }
 
   const registration = await registerPushServiceWorker();

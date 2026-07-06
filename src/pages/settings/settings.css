@@ -2152,6 +2152,12 @@
   }
 }
 
+.settings-general-tabs {
+  margin-bottom: 1.25rem;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .settings-inline-error {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;

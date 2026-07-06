@@ -709,7 +709,7 @@ type PushSubscription = {
 ### GET `/push/vapid-public-key`
 **Response 200**
 ```json
-{ "publicKey": "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U" }
+{ "publicKey": "BKY-kLDZ2RQNzaj6ZAQX48A7Phdw_3VMWTGzly9y7pqDcOA9_YfqxSwtqDdnzq0PBJkjCEue4C0zxe1VBCUdpWY" }
 ```
 
 ### PUT `/push/subscription`
