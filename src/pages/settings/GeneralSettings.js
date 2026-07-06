@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import settingsApi from '../../api/settingsApi';
+import { isBrowserPushSupported, subscribeBrowserPush, unsubscribeBrowserPush } from '../../push/browserPush';
 import { SettingsPanel, SettingsSection, SettingsRow } from './SettingsUI';
 
 const themeOptions = [
@@ -87,6 +88,8 @@ export function GeneralSettings({ heading }) {
   const [ttsSpeakers, setTtsSpeakers] = useState([]);
   // Slider only updates local draft state during drag; commits to API on pointerUp.
   const [speedDraft, setSpeedDraft] = useState(null);
+  const [pushError, setPushError] = useState(null);
+  const pushSupported = isBrowserPushSupported();
 
   useEffect(() => {
     Promise.all([settingsApi.getGeneralSettings(), settingsApi.getTtsSpeakers()])
@@ -101,6 +104,19 @@ export function GeneralSettings({ heading }) {
     setConfig(next);
     const saved = await settingsApi.updateGeneralSettings(next);
     setConfig(saved);
+  };
+
+  const handleBrowserPushToggle = async () => {
+    if (!config) return;
+    const next = !config.browserPushEnabled;
+    setPushError(null);
+    try {
+      if (next) await subscribeBrowserPush();
+      else await unsubscribeBrowserPush();
+      await patchConfig({ browserPushEnabled: next });
+    } catch (err) {
+      setPushError(err.message || '브라우저 푸시 알림 설정에 실패했습니다.');
+    }
   };
 
   if (!config) {
@@ -172,6 +188,29 @@ export function GeneralSettings({ heading }) {
             <strong className="settings-range-value">{displaySpeed.toFixed(1)}x</strong>
           </div>
         </SettingsRow>
+      </SettingsSection>
+
+      <SettingsSection title="알림">
+        <SettingsRow
+          label="브라우저 푸시"
+          desc={pushSupported
+            ? '백그라운드에서도 건강·가전 이벤트를 OS 알림으로 받습니다.'
+            : '이 브라우저는 Web Push를 지원하지 않습니다.'}
+        >
+          <button
+            type="button"
+            className={`toggle-switch toggle-switch--sm ${config.browserPushEnabled ? 'on' : ''}`}
+            disabled={!pushSupported}
+            aria-pressed={config.browserPushEnabled}
+            aria-label="브라우저 푸시 알림"
+            onClick={handleBrowserPushToggle}
+          >
+            <i />
+          </button>
+        </SettingsRow>
+        {pushError && (
+          <p className="settings-inline-error" role="alert">{pushError}</p>
+        )}
       </SettingsSection>
     </SettingsPanel>
   );

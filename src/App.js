@@ -16,6 +16,11 @@ import { WeeklyPlanPage } from './pages/plan/WeeklyPlanPage';
 import { HomeControlPage } from './pages/iot/HomeControlPage';
 import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
+import {
+  listenPushNavigation,
+  resolvePushUrlToPage,
+  syncBrowserPush,
+} from './push/browserPush';
 
 function formatNotificationTime(iso) {
   const date = new Date(iso);
@@ -70,6 +75,29 @@ function App() {
 
   useEffect(() => {
     settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
+  }, []);
+
+  useEffect(() => {
+    settingsApi
+      .getGeneralSettings()
+      .then((cfg) => {
+        if (cfg?.browserPushEnabled) {
+          syncBrowserPush(true).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    return listenPushNavigation((url) => {
+      const nextPage = resolvePushUrlToPage(url);
+      if (nextPage === 'chat') {
+        setChatMode('page');
+        setPage('chat');
+        return;
+      }
+      setPage(nextPage);
+    });
   }, []);
 
   const markAllNotificationsRead = async () => {

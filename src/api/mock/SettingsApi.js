@@ -182,6 +182,7 @@ const defaultGeneralSettings = {
   notificationSound: 'sign-of-the-times',
   ttsSpeakerId: 0,
   ttsPlaybackSpeed: 1.0, // 0.5 ~ 2.0
+  browserPushEnabled: false,
 };
 
 const notificationsSeed = [

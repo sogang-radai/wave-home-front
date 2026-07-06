@@ -620,9 +620,15 @@ type SleepConfig = {
   "theme": "light",
   "language": "ko",
   "notificationSound": "sign-of-the-times",
-  "ttsSpeakerId": 0
+  "ttsSpeakerId": 0,
+  "ttsPlaybackSpeed": 1.0,
+  "browserPushEnabled": false
 }
 ```
+
+`browserPushEnabled`가 `true`이면 프론트가 Web Push 구독을 등록하고 `PUT /push/subscription`으로
+endpoint·키를 서버에 저장한다. 백엔드는 저장된 구독으로 `/api/push/send`(wave-server)에서
+VAPID 서명 후 브라우저 푸시를 발송한다.
 
 ### PUT `/settings/general`
 **Request Body**
@@ -682,6 +688,54 @@ type SleepConfig = {
 
 `src/pages/settings/PersonalSettings.js`는 별도 엔드포인트가 없다. 이름 변경은 위
 `PATCH /accounts/{accountId}`를 그대로 재사용한다.
+
+---
+
+## 브라우저 푸시 (Web Push)
+
+`src/push/browserPush.js` · `public/push-sw.js` · `src/api/pushApi.js`
+
+활성 세션(구성원) 기준으로 Push 구독을 저장한다. wave-server의 `PushNotificationController`
+(`/api/push/send`)가 VAPID 서명 후 구독 endpoint로 발송한다.
+
+```ts
+type PushSubscription = {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  expirationTime: number | null;
+};
+```
+
+### GET `/push/vapid-public-key`
+**Response 200**
+```json
+{ "publicKey": "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U" }
+```
+
+### PUT `/push/subscription`
+**Request Body** — `PushSubscription` (브라우저 `PushSubscription.toJSON()` 결과)
+
+**Response 200**
+```json
+{ "ok": true }
+```
+
+### DELETE `/push/subscription`
+구독 해제. Request Body 없음.
+
+**Response 200**
+```json
+{ "ok": true }
+```
+
+푸시 페이로드 예시 (service worker `push` 이벤트):
+```json
+{
+  "title": "WaveAI 건강 브리핑",
+  "body": "수면 중 심한 코골이가 감지되어 가습기를 가동했습니다.",
+  "url": "/chat"
+}
+```
 
 ---
 
@@ -773,6 +827,9 @@ PUT    /api/v1/settings/sleep
 
 GET    /api/v1/settings/general
 PUT    /api/v1/settings/general
+GET    /api/v1/push/vapid-public-key
+PUT    /api/v1/push/subscription
+DELETE /api/v1/push/subscription
 
 GET    /api/v1/settings/sounds
 GET    /api/v1/settings/tts-speakers
