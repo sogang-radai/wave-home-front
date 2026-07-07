@@ -128,6 +128,9 @@ function toDeviceView(device) {
     room: room ? { id: room.id, name: room.name } : null,
     enabled: device.enabled,
     connected: runtime.connected,
+    connectionStatus: runtime.connected ? 'online' : 'offline',
+    available: true,
+    connectionError: runtime.connected ? undefined : { code: -4, message: '연결 끊김' },
     lastSeenAt: runtime.lastSeenAt,
     stateSummary: stateSummaryFor(device, runtime),
   };
@@ -225,7 +228,7 @@ function toGestureSetSummary(entry) {
   };
 }
 
-export class HomeApi {
+export class IotApi {
   // ── Summary ────────────────────────────────────────────────────────────────
   async getSummary() {
     await delay();
@@ -235,7 +238,14 @@ export class HomeApi {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const todayEventCount = events.filter((e) => new Date(e.occurredAt).getTime() >= dayAgo).length;
     const activeRuleCount = rules.filter((r) => r.enabled).length;
-    return { onlineDeviceCount: onlineCount, totalDeviceCount: devices.length, todayEventCount, activeRuleCount };
+    return {
+      onlineDeviceCount: onlineCount,
+      totalDeviceCount: devices.length,
+      initializingDeviceCount: 0,
+      devicesStarting: false,
+      todayEventCount,
+      activeRuleCount,
+    };
   }
 
   // ── Devices ────────────────────────────────────────────────────────────────
@@ -616,7 +626,7 @@ export class HomeApi {
     );
   }
 
-  // ── Power (unchanged from previous HomeApi) ─────────────────────────────────
+  // ── Power (unchanged from previous IotApi) ─────────────────────────────────
   async getPowerPlugs() {
     await delay();
     requireActiveAccount();

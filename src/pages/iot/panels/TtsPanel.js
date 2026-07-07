@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import settingsApi from '../../../api/settingsApi';
-import homeApi from '../../../api/homeApi';
+import iotApi from '../../../api/iotApi';
 import { SendIcon } from '../icons';
 
 // Shared TTS composer used by both CameraPanel and WaveStationPanel — any
@@ -22,13 +22,24 @@ export function TtsPanel({ deviceId }) {
   const send = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
+    setToast('');
     try {
-      await homeApi.sendTts(deviceId, { text: text.trim(), speakerId });
+      await iotApi.sendTts(deviceId, { text: text.trim(), speakerId });
       setText('');
-      setToast('전송했습니다');
-      setTimeout(() => setToast(''), 1800);
+      setToast('전송했습니다 (재생 중)');
+      setTimeout(() => setToast(''), 2500);
+    } catch (err) {
+      setToast(err?.message || '전송에 실패했습니다');
+      setTimeout(() => setToast(''), 2500);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      send();
     }
   };
 
@@ -38,9 +49,10 @@ export function TtsPanel({ deviceId }) {
       <textarea
         className="tts-panel-textarea"
         rows={3}
-        placeholder="장치에서 재생할 메시지를 입력하세요"
+        placeholder="장치에서 재생할 메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
       />
       <div className="tts-panel-controls">
         <select

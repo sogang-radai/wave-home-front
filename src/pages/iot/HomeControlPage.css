@@ -240,6 +240,32 @@
   to { transform: rotate(360deg); }
 }
 
+.device-connection-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.device-connection-error {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--danger-18);
+  color: var(--text);
+}
+
+.device-connection-error strong {
+  color: var(--danger-strong);
+  font-size: 13px;
+}
+
+.device-connection-error span {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 /* ── Device detail panel ────────────────────────────────────────────────── */
 
 .device-detail-tabs {
@@ -1141,6 +1167,20 @@
   font-size: 12px;
 }
 
+.camera-video-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 18, 32, 0.55);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .camera-capture-btn {
   position: absolute;
   right: 14px;
@@ -1307,6 +1347,8 @@
   display: flex;
   align-items: flex-end;
   padding: 5px;
+  background-size: cover;
+  background-position: center;
 }
 
 .snapshot-thumb span {

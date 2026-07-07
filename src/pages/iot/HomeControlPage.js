@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Tabs } from '../../components/ui/Tabs';
 import { Metric } from '../../components/ui/Metric';
-import homeApi from '../../api/homeApi';
+import iotApi from '../../api/iotApi';
 import { IotControlTab } from './IotControlTab';
 import { TriggerRulesTab } from './TriggerRulesTab';
 import { IrCommandsTab } from './IrCommandsTab';
@@ -13,10 +13,10 @@ export function HomeControlPage({ tab, setTab }) {
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
-    homeApi.getSummary().then(setSummary);
+    iotApi.getSummary().then(setSummary);
     // Refresh summary periodically so rule/device changes made in a tab are
     // reflected in the header metrics without a full page reload.
-    const timer = setInterval(() => homeApi.getSummary().then(setSummary), 5000);
+    const timer = setInterval(() => iotApi.getSummary().then(setSummary), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -35,7 +35,11 @@ export function HomeControlPage({ tab, setTab }) {
       />
 
       <div className="home-summary-grid">
-        <Metric label="온라인 장치" value={summary ? `${summary.onlineDeviceCount}/${summary.totalDeviceCount}` : '—'} detail="연결된 기기" />
+        <Metric
+          label="온라인 장치"
+          value={summary ? `${summary.onlineDeviceCount}/${summary.totalDeviceCount}` : '—'}
+          detail={summary?.devicesStarting ? `초기화 중 (${summary.initializingDeviceCount ?? 0})` : '연결된 기기'}
+        />
         <Metric label="오늘 이벤트" value={summary ? `${summary.todayEventCount}건` : '—'} detail="최근 24시간" />
         <Metric label="활성 룰" value={summary ? `${summary.activeRuleCount}개` : '—'} detail="트리거+예약 합계" />
       </div>

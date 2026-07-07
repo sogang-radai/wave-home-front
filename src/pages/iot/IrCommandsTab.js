@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { SettingsModal, ConfirmDialog, GearIcon, TrashIcon } from '../settings/SettingsUI';
-import homeApi from '../../api/homeApi';
+import iotApi from '../../api/iotApi';
 import { parseTimingsText } from '../../data/irCommandData';
 
 const LEARN_TIMEOUT_MS = 10000;
@@ -31,7 +31,7 @@ function IrCommandModal({ command, onSave, onClose }) {
     countdownTimer.current = setInterval(() => {
       setCountdown((c) => (c > 0 ? c - 1 : 0));
     }, 1000);
-    homeApi.startIrLearn({ timeoutMs: LEARN_TIMEOUT_MS })
+    iotApi.startIrLearn({ timeoutMs: LEARN_TIMEOUT_MS })
       .then(({ timings: learned }) => {
         setForm((f) => ({ ...f, timingsText: learned.join(', ') }));
       })
@@ -102,28 +102,28 @@ export function IrCommandsTab() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState('');
 
-  const load = () => homeApi.getIrCommands().then(setCommands);
+  const load = () => iotApi.getIrCommands().then(setCommands);
 
   useEffect(() => { load(); }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2000); };
 
   const save = async (payload) => {
-    await homeApi.saveIrCommand(payload);
+    await iotApi.saveIrCommand(payload);
     setModalCommand(undefined);
     load();
     showToast('저장했습니다.');
   };
 
   const remove = async () => {
-    await homeApi.deleteIrCommand(confirmDelete.id);
+    await iotApi.deleteIrCommand(confirmDelete.id);
     setConfirmDelete(null);
     load();
     showToast('삭제했습니다.');
   };
 
   const testSend = async (command) => {
-    await homeApi.testSendIr(command.id);
+    await iotApi.testSendIr(command.id);
     showToast(`테스트 전송: ${command.name}`);
   };
 

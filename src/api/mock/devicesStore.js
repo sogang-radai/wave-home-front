@@ -1,9 +1,9 @@
 import { cloneDeep } from './utils';
 
-// Single canonical room/device registry shared by SettingsApi (full CRUD) and HomeApi
+// Single canonical room/device registry shared by SettingsApi (full CRUD) and IotApi
 // (read-only radar view). Mirrors insightsStore.js's role for sleep/posture/weekly-plan —
 // there is exactly one source of truth, so a rename/delete in settings is immediately
-// reflected wherever devices are derived from (e.g. home.md's GET /home/radars).
+// reflected wherever devices are derived from (e.g. iot.md's GET /iot/radars).
 //
 // The seed mirrors bin/device/device_list.json (the format the backend actually serves).
 // room_id is not part of device_list.json, so each device is mapped to a room manually below.
@@ -19,7 +19,7 @@ const roomsSeed = [
 ];
 
 // input: state-collecting devices (radar/camera); output: controllable devices (plug/TV/light).
-// Settings UI merges both into a flat list; HomeApi uses only the radar-derived view.
+// Settings UI merges both into a flat list; IotApi uses only the radar-derived view.
 const devicesSeed = {
   input_devices: [
     {

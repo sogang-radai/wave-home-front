@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { DragHandleIcon, TrashIcon } from '../settings/SettingsUI';
 import { PencilIcon } from './icons';
-import homeApi from '../../api/homeApi';
+import iotApi from '../../api/iotApi';
 import { deviceClassRegistry, getClassInfo, findAction } from '../../api/mock/deviceClassRegistry';
 import { describeTrigger, execModesFor, EXEC_MODE_LABELS, TRIGGER_KIND_LABELS, deviceThumbnails } from './iotUtils';
 import { ParamsEditor } from './RuleEditor';
@@ -136,11 +136,11 @@ export function TriggerRulesTab() {
   const [toast, setToast] = useState('');
   const rootRef = useRef(null);
 
-  const load = () => homeApi.getRules().then((list) => setRules(list.filter((r) => !r.schedule)));
+  const load = () => iotApi.getRules().then((list) => setRules(list.filter((r) => !r.schedule)));
 
   useEffect(() => {
-    homeApi.getDevices().then(setDevices);
-    homeApi.getIrCommands().then(setIrCommands);
+    iotApi.getDevices().then(setDevices);
+    iotApi.getIrCommands().then(setIrCommands);
     load();
   }, []);
 
@@ -157,7 +157,7 @@ export function TriggerRulesTab() {
     if (draft.trigger?.kind !== 'gesture' || !draft.trigger.gestureSetPath) { setGestureClasses([]); return; }
     const setId = draft.trigger.gestureSetPath.split('/')[1];
     if (!setId) { setGestureClasses([]); return; }
-    homeApi.getGestureSetDefinition(setId).then((def) => {
+    iotApi.getGestureSetDefinition(setId).then((def) => {
       setGestureClasses(def.classes.filter((c) => c.kind === 'trigger'));
     }).catch(() => setGestureClasses([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,7 +207,7 @@ export function TriggerRulesTab() {
 
   const setTriggerDevice = async (deviceId) => {
     if (draft.trigger?.kind === 'gesture') {
-      const assignment = deviceId ? await homeApi.getRadarGestureSet(deviceId).catch(() => null) : null;
+      const assignment = deviceId ? await iotApi.getRadarGestureSet(deviceId).catch(() => null) : null;
       const gestureSetPath = assignment?.gestureSetId ? `gestures/${assignment.gestureSetId}/set.json` : '';
       setDraft((d) => ({ ...d, trigger: { ...d.trigger, deviceId, gestureSetPath, classId: null } }));
       return;
@@ -258,10 +258,10 @@ export function TriggerRulesTab() {
     };
     try {
       if (selectedRuleId) {
-        await homeApi.updateRule(selectedRuleId, payload);
+        await iotApi.updateRule(selectedRuleId, payload);
         showToast('트리거를 수정했습니다.');
       } else {
-        await homeApi.createRule(payload);
+        await iotApi.createRule(payload);
         showToast('트리거를 추가했습니다.');
       }
       resetToAddMode();
@@ -272,19 +272,19 @@ export function TriggerRulesTab() {
   };
 
   const toggleRule = async (rule) => {
-    await homeApi.setRuleEnabled(rule.id, !rule.enabled);
+    await iotApi.setRuleEnabled(rule.id, !rule.enabled);
     load();
   };
 
   const deleteRule = async (rule) => {
-    await homeApi.deleteRule(rule.id);
+    await iotApi.deleteRule(rule.id);
     if (selectedRuleId === rule.id) resetToAddMode();
     load();
     showToast('트리거를 삭제했습니다.');
   };
 
   const executeRule = async (rule) => {
-    const result = await homeApi.executeRuleManually(rule.id);
+    const result = await iotApi.executeRuleManually(rule.id);
     showToast(result.skipped ? `쿨다운 중입니다 (${Math.ceil(result.remainingMs / 100) / 10}초 남음)` : '트리거를 실행했습니다.');
   };
 

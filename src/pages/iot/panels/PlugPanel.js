@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import homeApi from '../../../api/homeApi';
+import iotApi from '../../../api/iotApi';
 
 // tuya_ep2h — on/off/toggle (Stateful/Toggle) + voltage/current/power/energy telemetry.
 export function PlugPanel({ device, onChanged }) {
@@ -8,16 +8,16 @@ export function PlugPanel({ device, onChanged }) {
 
   useEffect(() => {
     let cancelled = false;
-    const poll = () => homeApi.queryDevice(device.id, 'status').then((s) => { if (!cancelled) setState(s); });
+    const poll = () => iotApi.queryDevice(device.id, 'status').then((s) => { if (!cancelled) setState(s); });
     poll();
-    const timer = setInterval(poll, 2000);
+    const timer = setInterval(poll, 5000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [device.id]);
 
   const invoke = async (name) => {
     setBusy(true);
     try {
-      const next = await homeApi.invokeDevice(device.id, name, {});
+      const next = await iotApi.invokeDevice(device.id, name, {});
       setState(next);
       onChanged?.();
     } finally {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import homeApi from '../../../api/homeApi';
+import iotApi from '../../../api/iotApi';
 import {
   PowerIcon, InputIcon, ChevronUpIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon,
   BackIcon, PlayIcon, HomeIcon,
@@ -21,11 +21,11 @@ export function TvPanel({ device, onChanged }) {
   const repeatTimer = useRef(null);
 
   useEffect(() => {
-    homeApi.getDeviceState(device.id).then(setState);
+    iotApi.getDeviceState(device.id).then(setState);
   }, [device.id]);
 
   const invoke = async (name, params = {}) => {
-    const next = await homeApi.invokeDevice(device.id, name, params);
+    const next = await iotApi.invokeDevice(device.id, name, params);
     setState(next);
     onChanged?.();
     return next;

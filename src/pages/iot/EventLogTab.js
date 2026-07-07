@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
-import homeApi from '../../api/homeApi';
+import iotApi from '../../api/iotApi';
 import { EVENT_TYPE_FILTERS, EVENT_TYPE_LABELS, formatRelativeTime, formatTriggeredBy } from './iotUtils';
 
 // Shared timeline renderer — used both by the standalone 로그 tab and by a
@@ -47,13 +47,13 @@ export function EventLogTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    homeApi.getRules().then(setRules);
+    iotApi.getRules().then(setRules);
   }, []);
 
   useEffect(() => {
     setLoading(true);
     const types = filter === 'all' ? undefined : [filter];
-    homeApi.getEvents({ types }).then((list) => { setEvents(list); setLoading(false); });
+    iotApi.getEvents({ types }).then((list) => { setEvents(list); setLoading(false); });
   }, [filter]);
 
   return (

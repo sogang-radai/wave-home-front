@@ -33,6 +33,7 @@ const serverLibraries = [
   { name: 'kaldi-native-fbank', version: '1.21.x', license: 'Apache-2.0' },
   { name: 'kaldifst', version: '1.7.x', license: 'Apache-2.0' },
   { name: 'go2rtc', version: '1.9.x', license: 'MIT' },
+  { name: 'libopus', version: '1.5.x', license: 'BSD-3-Clause' },
 ];
 
 const termsOfService = [

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { SettingsModal } from '../settings/SettingsUI';
 import { deviceClassRegistry, getClassInfo, findAction } from '../../api/mock/deviceClassRegistry';
 import { execModesFor, EXEC_MODE_LABELS, SCHEDULE_REPEAT_LABELS, DAY_OF_WEEK_LABELS, TRIGGER_KIND_LABELS } from './iotUtils';
-import homeApi from '../../api/homeApi';
+import iotApi from '../../api/iotApi';
 
 const TRIGGER_KINDS = ['gesture', 'device_state', 'ir_recv'];
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -97,7 +97,7 @@ export function RuleEditor({ open, initialRule, defaults, devices, onSave, onCan
   }, [initialRule, open]);
 
   useEffect(() => {
-    homeApi.getIrCommands().then(setIrCommands);
+    iotApi.getIrCommands().then(setIrCommands);
   }, []);
 
   // Load trigger-kind gesture classes for the currently selected gesture-set path.
@@ -105,7 +105,7 @@ export function RuleEditor({ open, initialRule, defaults, devices, onSave, onCan
     if (rule.trigger?.kind !== 'gesture') { setGestureClasses([]); return; }
     const setId = rule.trigger.gestureSetPath?.split('/')[1];
     if (!setId) { setGestureClasses([]); return; }
-    homeApi.getGestureSetDefinition(setId).then((def) => {
+    iotApi.getGestureSetDefinition(setId).then((def) => {
       setGestureClasses(def.classes.filter((c) => c.kind === 'trigger'));
     }).catch(() => setGestureClasses([]));
   }, [rule.trigger?.kind, rule.trigger?.gestureSetPath]);
@@ -131,7 +131,7 @@ export function RuleEditor({ open, initialRule, defaults, devices, onSave, onCan
 
   const setTriggerDevice = async (deviceId) => {
     if (rule.trigger?.kind === 'gesture') {
-      const assignment = deviceId ? await homeApi.getRadarGestureSet(deviceId).catch(() => null) : null;
+      const assignment = deviceId ? await iotApi.getRadarGestureSet(deviceId).catch(() => null) : null;
       const gestureSetPath = assignment?.gestureSetId ? `gestures/${assignment.gestureSetId}/set.json` : '';
       setRule((r) => ({ ...r, trigger: { ...r.trigger, deviceId, gestureSetPath, classId: null } }));
       return;

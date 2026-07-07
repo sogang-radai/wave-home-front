@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { GearIcon, TrashIcon } from '../settings/SettingsUI';
-import homeApi from '../../api/homeApi';
-import { deviceThumbnails, describeSchedule, describeTrigger, EXEC_MODE_LABELS } from './iotUtils';
+import iotApi from '../../api/iotApi';
+import { deviceThumbnails, describeSchedule, describeTrigger, deviceDotClass, deviceDotTitle, EXEC_MODE_LABELS, isDeviceOffline } from './iotUtils';
 import { ReconnectIcon } from './icons';
 import { RuleEditor } from './RuleEditor';
 import { EventTimeline } from './EventLogTab';
@@ -29,6 +29,33 @@ function detailTabsFor(device) {
     ['schedule', '예약'],
     ['log', '로그'],
   ];
+}
+
+function DeviceConnectionLog({ device, events }) {
+  const connectionEvents = events.filter((e) => e.type === 'connection');
+  const err = device.connectionError;
+
+  return (
+    <div className="device-connection-log">
+      {err && (
+        <div className="device-connection-error">
+          <strong>연결 오류</strong>
+          <span>코드 {err.code}: {err.message}</span>
+        </div>
+      )}
+      {!err && isDeviceOffline(device) && (
+        <div className="device-connection-error">
+          <strong>오프라인</strong>
+          <span>{device.stateSummary || '장치에 연결할 수 없습니다.'}</span>
+        </div>
+      )}
+      {connectionEvents.length === 0 ? (
+        <p className="panel-empty">연결 관련 로그가 없습니다.</p>
+      ) : (
+        <EventTimeline events={connectionEvents} rules={[]} compact />
+      )}
+    </div>
+  );
 }
 
 function DeviceThumb({ deviceClass }) {
@@ -70,6 +97,8 @@ function RuleRow({ rule, devices, onToggle, onEdit, onDelete, onExecute }) {
 export function IotControlTab() {
   const [rooms, setRooms] = useState([]);
   const [devices, setDevices] = useState([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
+  const [devicesError, setDevicesError] = useState('');
   const [roomFilter, setRoomFilter] = useState('all');
   const [selectedDeviceId, setSelectedDeviceId] = useState(null);
   const [detailTab, setDetailTab] = useState('control');
@@ -80,11 +109,25 @@ export function IotControlTab() {
   const [reconnectingId, setReconnectingId] = useState(null);
   const [toast, setToast] = useState('');
 
-  const loadDevices = () => homeApi.getDevices().then(setDevices);
+  const loadDevices = () => iotApi.getDevices()
+    .then((list) => {
+      setDevices(list);
+      setDevicesError('');
+    })
+    .catch((err) => {
+      setDevicesError(err?.message || '장치 목록을 불러오지 못했습니다.');
+    })
+    .finally(() => setDevicesLoading(false));
 
   useEffect(() => {
-    homeApi.getRooms().then(setRooms);
+    iotApi.getRooms().then(setRooms);
     loadDevices();
+    const timer = setInterval(loadDevices, 1000);
+    const loadingCap = setTimeout(() => setDevicesLoading(false), 1500);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(loadingCap);
+    };
   }, []);
 
   const filteredDevices = useMemo(
@@ -111,7 +154,7 @@ export function IotControlTab() {
 
   const refreshDeviceRules = (deviceId) => {
     if (!deviceId) return;
-    homeApi.getRulesForDevice(deviceId).then((list) => {
+    iotApi.getRulesForDevice(deviceId).then((list) => {
       setAllDeviceRules(list);
       setDeviceRules(list.filter((r) => !!r.schedule));
     });
@@ -120,13 +163,18 @@ export function IotControlTab() {
   useEffect(() => {
     if (!selectedDevice) return;
     refreshDeviceRules(selectedDevice.id);
-    homeApi.getEvents({ deviceId: selectedDevice.id }).then(setDeviceEvents);
+    iotApi.getEvents({ deviceId: selectedDevice.id }).then(setDeviceEvents);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDevice?.id, detailTab]);
 
   const selectDevice = (device) => {
     setSelectedDeviceId(device.id);
-    setDetailTab('control');
+    if (isDeviceOffline(device)) {
+      setDetailTab('log');
+      iotApi.getEvents({ deviceId: device.id }).then(setDeviceEvents);
+    } else {
+      setDetailTab('control');
+    }
   };
 
   const showToast = (msg) => {
@@ -138,9 +186,10 @@ export function IotControlTab() {
     event.stopPropagation();
     setReconnectingId(device.id);
     try {
-      await homeApi.reconnectDevice(device.id);
+      await iotApi.reconnectDevice(device.id);
       await loadDevices();
-      showToast(`${device.name} 재연결 완료`);
+      iotApi.getEvents({ deviceId: device.id }).then(setDeviceEvents);
+      showToast(`${device.name} 재연결 시도 완료`);
     } catch (err) {
       showToast(err.message || '재연결에 실패했습니다.');
     } finally {
@@ -149,30 +198,30 @@ export function IotControlTab() {
   };
 
   const saveRule = async (payload, ruleId) => {
-    if (ruleId) await homeApi.updateRule(ruleId, payload);
-    else await homeApi.createRule(payload);
+    if (ruleId) await iotApi.updateRule(ruleId, payload);
+    else await iotApi.createRule(payload);
     setEditorState(null);
     refreshDeviceRules(selectedDevice.id);
     showToast('룰을 저장했습니다.');
   };
 
   const deleteRule = async (rule) => {
-    await homeApi.deleteRule(rule.id);
+    await iotApi.deleteRule(rule.id);
     setEditorState(null);
     refreshDeviceRules(selectedDevice.id);
     showToast('룰을 삭제했습니다.');
   };
 
   const toggleRule = async (rule) => {
-    await homeApi.setRuleEnabled(rule.id, !rule.enabled);
+    await iotApi.setRuleEnabled(rule.id, !rule.enabled);
     refreshDeviceRules(selectedDevice.id);
   };
 
   const executeRule = async (rule) => {
-    const result = await homeApi.executeRuleManually(rule.id);
+    const result = await iotApi.executeRuleManually(rule.id);
     showToast(result.skipped ? `쿨다운 중입니다 (${Math.ceil(result.remainingMs / 100) / 10}초 남음)` : '룰을 실행했습니다.');
     loadDevices();
-    homeApi.getEvents({ deviceId: selectedDevice.id }).then(setDeviceEvents);
+    iotApi.getEvents({ deviceId: selectedDevice.id }).then(setDeviceEvents);
   };
 
   const PanelComponent = selectedDevice ? PANEL_COMPONENTS[selectedDevice.panel] : null;
@@ -189,8 +238,18 @@ export function IotControlTab() {
         ))}
       </div>
 
+      {devicesLoading && devices.length === 0 && (
+        <p className="panel-loading">장치 목록을 불러오는 중…</p>
+      )}
+      {devicesError && devices.length === 0 && (
+        <p className="panel-empty">{devicesError}</p>
+      )}
+
       <div className="iot-device-grid">
-        {filteredDevices.map((device) => (
+        {filteredDevices.map((device) => {
+          const dotClass = deviceDotClass(device);
+          const showReconnect = isDeviceOffline(device);
+          return (
           <button
             key={device.id}
             type="button"
@@ -198,16 +257,16 @@ export function IotControlTab() {
             onClick={() => selectDevice(device)}
           >
             <span
-              className={`device-dot ${device.connected ? 'online' : 'offline'}`}
-              title={device.connected ? '온라인' : '오프라인'}
-              aria-label={device.connected ? '온라인' : '오프라인'}
+              className={`device-dot ${dotClass}`}
+              title={deviceDotTitle(device)}
+              aria-label={deviceDotTitle(device)}
             />
             <DeviceThumb deviceClass={device.class} />
             <div className="iot-device-card-body">
               <span className="iot-device-card-room">{device.room?.name || '미지정'}</span>
               <strong className="iot-device-card-name" title={device.name}>{device.name}</strong>
             </div>
-            {!device.connected && (
+            {showReconnect && (
               <span
                 role="button"
                 tabIndex={0}
@@ -223,7 +282,8 @@ export function IotControlTab() {
               </span>
             )}
           </button>
-        ))}
+          );
+        })}
         {filteredDevices.length === 0 && <p className="panel-empty">이 구역에 등록된 장치가 없습니다.</p>}
       </div>
 
@@ -237,7 +297,9 @@ export function IotControlTab() {
 
           <div className="iot-detail-content">
             {detailTab === 'control' && (
-              !selectedDevice.connected ? (
+              selectedDevice.connectionStatus === 'initializing' ? (
+                <p className="panel-empty">장치를 초기화하는 중입니다…</p>
+              ) : !selectedDevice.connected ? (
                 <p className="panel-empty">장치가 오프라인 상태입니다. 연결 상태를 확인해주세요.</p>
               ) : PanelComponent ? (
                 <PanelComponent device={selectedDevice} onChanged={loadDevices} />
@@ -260,7 +322,11 @@ export function IotControlTab() {
             )}
 
             {detailTab === 'log' && (
-              <EventTimeline events={deviceEvents} rules={allDeviceRules} compact />
+              isDeviceOffline(selectedDevice) ? (
+                <DeviceConnectionLog device={selectedDevice} events={deviceEvents} />
+              ) : (
+                <EventTimeline events={deviceEvents} rules={allDeviceRules} compact />
+              )
             )}
           </div>
         </Card>

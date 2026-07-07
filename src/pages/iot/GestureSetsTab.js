@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
-import homeApi from '../../api/homeApi';
+import iotApi from '../../api/iotApi';
 
 export function GestureSetsTab() {
   const [sets, setSets] = useState([]);
@@ -9,17 +9,17 @@ export function GestureSetsTab() {
   const [rules, setRules] = useState([]);
 
   useEffect(() => {
-    homeApi.getGestureSets().then((list) => {
+    iotApi.getGestureSets().then((list) => {
       setSets(list);
       const firstWithClasses = list.find((s) => s.classCount > 0) || list[0];
       if (firstWithClasses) setSelectedSetId(firstWithClasses.id);
     });
-    homeApi.getRules().then(setRules);
+    iotApi.getRules().then(setRules);
   }, []);
 
   useEffect(() => {
     if (!selectedSetId) return;
-    homeApi.getGestureSetDefinition(selectedSetId).then(setDefinition);
+    iotApi.getGestureSetDefinition(selectedSetId).then(setDefinition);
   }, [selectedSetId]);
 
   const linkedRuleCount = (classId) => rules.filter(

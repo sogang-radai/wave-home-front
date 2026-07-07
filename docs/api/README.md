@@ -16,7 +16,7 @@
 | [weekly-plan.md](./weekly-plan.md) | 주간 계획·루틴 | `weeklyPlanApi.js` |
 | [insights.md](./insights.md) | 인사이트 승인 (공유) | `SleepApi` / `WeeklyPlanApi` |
 | [dashboard.md](./dashboard.md) | 대시보드 메시지·현재 상태 | `dashboardApi.js` |
-| [home.md](./home.md) | 가전 제어·룰·IR·이벤트 | `homeApi.js` |
+| [iot.md](./iot.md) | 가전 제어·룰·IR·이벤트 | `iotApi.js` |
 | [power.md](./power.md) | 전력 모니터링·리포트 | `powerApi.js` |
 | [chat.md](./chat.md) | WaveAI 대화 | `chatApi.js` |
 

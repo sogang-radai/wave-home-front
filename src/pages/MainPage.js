@@ -7,7 +7,7 @@ import { PostureScoreGauge } from './posture/PostureScoreGauge';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
 import postureApi from '../api/postureApi';
 import sleepApi from '../api/sleepApi';
-import homeApi from '../api/homeApi';
+import iotApi from '../api/iotApi';
 import dashboardApi from '../api/dashboardApi';
 import './main.css';
 
@@ -40,11 +40,11 @@ export function MainPage({
   useEffect(() => {
     postureApi.getTodaySummary().then(setPostureSummary);
     sleepApi.getTodaySummary().then(setSleepSummary);
-    homeApi.getPowerPlugs().then((plugs) => setTotalPower(plugs.find((device) => device.id === 'all') || plugs[0]));
+    iotApi.getPowerPlugs().then((plugs) => setTotalPower(plugs.find((device) => device.id === 'all') || plugs[0]));
     dashboardApi.getDailyMessage().then(setDailyMessage);
     dashboardApi.getCurrentState().then(setCurrentState);
-    homeApi.getSummary().then(setHomeSummary);
-    homeApi.getDevices().then(setHomeDevices);
+    iotApi.getSummary().then(setHomeSummary);
+    iotApi.getDevices().then(setHomeDevices);
   }, []);
 
   const powerChartData = useMemo(

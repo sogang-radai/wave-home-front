@@ -10,9 +10,35 @@ export const deviceThumbnails = {
   reolink_e1_pro: thumbReolink,
   tuya_ep2h: thumbTuya,
   tizen_tv: thumbTizen,
+  samsung_g7: thumbTizen,
   philips_wiz_e29_color: thumbWiz,
   philips_wiz_e29_white: thumbWiz,
 };
+
+/** API connectionStatus → CSS dot class (online | idle | offline | missing) */
+export function deviceDotClass(device) {
+  const status = device?.connectionStatus
+    || (device?.connected ? 'online' : 'offline');
+  if (status === 'online') return 'online';
+  if (status === 'initializing') return 'idle';
+  if (status === 'missing') return 'missing';
+  return 'offline';
+}
+
+export function deviceDotTitle(device) {
+  const status = device?.connectionStatus
+    || (device?.connected ? 'online' : 'offline');
+  if (status === 'online') return '온라인';
+  if (status === 'initializing') return '초기화 중';
+  if (status === 'missing') return '장치 없음';
+  return '오프라인';
+}
+
+export function isDeviceOffline(device) {
+  const status = device?.connectionStatus
+    || (device?.connected ? 'online' : 'offline');
+  return status !== 'online' && status !== 'initializing';
+}
 
 export const EVENT_TYPE_LABELS = {
   connection: '연결',

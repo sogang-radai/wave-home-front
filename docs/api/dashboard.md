@@ -5,8 +5,8 @@
 
 `src/pages/MainPage.js` 상단의 히어로 인사말 배너와 "현재 상태" 카드에서 쓰는 데이터를 다룬다. 이 두
 위젯은 수면·자세·가전 데이터를 한 문장/한 카드로 요약해서 보여주는 대시보드 전용 콘텐츠라 특정 도메인
-(`sleep.md`/`posture.md`/`home.md`) 소관으로 넣지 않고 별도 문서로 뗐다. 대시보드의 다른 카드(어젯밤
-수면, 자세 점수, 전력 분석, 오늘 할일)는 각자 `sleep.md`/`posture.md`/`home.md`/`weekly-plan.md`를
+(`sleep.md`/`posture.md`/`iot.md`) 소관으로 넣지 않고 별도 문서로 뗐다. 대시보드의 다른 카드(어젯밤
+수면, 자세 점수, 전력 분석, 오늘 할일)는 각자 `sleep.md`/`posture.md`/`iot.md`/`weekly-plan.md`를
 그대로 쓴다 — 여기서 새로 정의하지 않는다.
 
 ## 공통
@@ -15,11 +15,11 @@
 - 현재 세션의 `activeAccount` 기준으로 조회한다.
 - `activeAccount`가 설정되지 않은 경우 `409 ACTIVE_ACCOUNT_REQUIRED`를 반환한다.
 - 응답은 **요청 시 백엔드가 합성**한다. 별도 DB 테이블 없음(필요 시 서버 메모리 TTL 캐시만).
-- `radar`는 `home.md`의 `GET /home/radars` 목록 중 하나를 대표로 보여주는 요약이다. 목록 전체가
-  필요하면 `home.md`를 그대로 쓴다.
-- `controlMode`는 아직 `home.md`의 제스처 세트(`daily`/`sleep`/`focus`/`rest`)와 연결돼 있지 않다 —
+- `radar`는 `iot.md`의 `GET /iot/radars` 목록 중 하나를 대표로 보여주는 요약이다. 목록 전체가
+  필요하면 `iot.md`를 그대로 쓴다.
+- `controlMode`는 아직 `iot.md`의 제스처 세트(`daily`/`sleep`/`focus`/`rest`)와 연결돼 있지 않다 —
   가전 화면에 "지금 이 모드가 켜져 있다"는 기능 자체가 없어서, 지금은 대시보드 전용 표시값으로 별도
-  관리한다. 나중에 모드 전환 기능이 생기면 `home.md`의 제스처 세트 id를 그대로 재사용하도록 합친다.
+  관리한다. 나중에 모드 전환 기능이 생기면 `iot.md`의 제스처 세트 id를 그대로 재사용하도록 합친다.
 
 **Response 409**
 ```json

@@ -1,7 +1,7 @@
-# Home Control API (가전 제어)
+# IoT Control API (가전 제어)
 
-구현된 프론트 코드: `src/api/homeApi.js`(진입점) · `src/api/mock/HomeApi.js`(mock) ·
-`src/api/v1/HomeApi.js`(real).
+구현된 프론트 코드: `src/api/iotApi.js`(진입점) · `src/api/mock/IotApi.js`(mock) ·
+`src/api/v1/IotApi.js`(real).
 
 `src/pages/HomeControlPage.js`(제스처 히스토리/제스처 목록/IoT 상태/전력 분석 4개 탭)와
 `src/pages/MainPage.js`의 전력 분석 카드에서 쓰는 제스처 인식, 레이더-제스처 매핑, IoT 기기 제어-제스처
@@ -14,7 +14,7 @@
 - `activeAccount`가 설정되지 않은 경우 `409 ACTIVE_ACCOUNT_REQUIRED`를 반환한다.
 - 공통 에러 응답: `{ "error": { "code": "NOT_FOUND", "message": "..." } }`
 - `radars`는 자체 저장소가 없는 파생 리소스다. 레이더 장비 원본(등록/이름변경/삭제/활성화)은
-  `settings.md`의 `GET /devices` 하나에만 있고, `GET /home/radars`는 그중 `class: "srs_r4sn"`인
+  `settings.md`의 `GET /devices` 하나에만 있고, `GET /iot/radars`는 그중 `class: "srs_r4sn"`인
   장치만 골라 제스처 화면이 쓰기 쉬운 형태로 변환해 보여준다. 레이더 등록/이름 변경/삭제는
   `settings.md`의 `/devices`에서만 하고, 여기서는 별도의 쓰기 API를 두지 않는다.
 
@@ -107,7 +107,7 @@ type SmartPlugDevice = {
 
 ---
 
-## GET `/home/gestures/today-summary`
+## GET `/iot/gestures/today-summary`
 
 `HomeControlPage`의 (전력 분석 탭을 제외한) 요약 카드 "오늘 인식" 값.
 
@@ -116,7 +116,7 @@ type SmartPlugDevice = {
 { "recognizedCount": 18 }
 ```
 
-## GET `/home/gestures/history`
+## GET `/iot/gestures/history`
 
 "제스처 히스토리" 탭. 최신순으로 반환한다.
 
@@ -136,10 +136,10 @@ type SmartPlugDevice = {
 ]
 ```
 
-## GET `/home/gesture-sets`
+## GET `/iot/gesture-sets`
 
 "제스처 목록" 탭의 세트 카탈로그(Daily Control/수면 모드/집중 모드/휴식 모드). 각 제스처의 레이더 배정은
-여기 포함하지 않는다 — `GET /home/gesture-radar-assignments`로 따로 조회한다.
+여기 포함하지 않는다 — `GET /iot/gesture-radar-assignments`로 따로 조회한다.
 
 **Response 200**
 ```json
@@ -156,7 +156,7 @@ type SmartPlugDevice = {
 ]
 ```
 
-## GET `/home/radars`
+## GET `/iot/radars`
 
 제스처 배정 화면에서 고를 수 있는 레이더 목록. `settings.md`의 `GET /devices` 중 `class: "srs_r4sn"`인
 장치만 골라 변환한 결과이며, 별도 저장소가 없다 — 레이더를 추가/삭제/비활성화하려면
@@ -169,7 +169,7 @@ type SmartPlugDevice = {
 ]
 ```
 
-## GET `/home/gesture-radar-assignments`
+## GET `/iot/gesture-radar-assignments`
 
 제스처 id → 배정된 레이더 id 목록(레이더 id는 `settings.md`의 장치 id). 배정이 없는 제스처는 응답에
 포함되지 않는다.
@@ -182,7 +182,7 @@ type SmartPlugDevice = {
 }
 ```
 
-## PUT `/home/gesture-radar-assignments/{gestureId}`
+## PUT `/iot/gesture-radar-assignments/{gestureId}`
 
 한 제스처의 레이더 배정을 통째로 교체한다(다중 선택 토글은 프론트에서 현재 배정 목록을 불러와 넣고 뺀
 다음 전체를 다시 보낸다). 빈 배열을 보내면 배정이 없는 상태(응답 map에서 제외)가 된다.
@@ -202,10 +202,10 @@ type SmartPlugDevice = {
 { "error": { "code": "NOT_FOUND", "message": "제스처를 찾을 수 없습니다." } }
 ```
 
-## GET `/home/devices`
+## GET `/iot/devices`
 
 "IoT 상태" 탭의 기기 목록. `controls`는 기기별 제어 항목과 안내 문구만 담고, 실제 바인딩된 제스처는
-`GET /home/device-bindings`로 따로 조회한다.
+`GET /iot/device-bindings`로 따로 조회한다.
 
 **Response 200**
 ```json
@@ -225,7 +225,7 @@ type SmartPlugDevice = {
 ]
 ```
 
-## GET `/home/device-bindings`
+## GET `/iot/device-bindings`
 
 전체 기기의 제어-제스처 바인딩 목록. 바인딩되지 않은 제어는 포함하지 않는다.
 
@@ -236,7 +236,7 @@ type SmartPlugDevice = {
 ]
 ```
 
-## PUT `/home/device-bindings`
+## PUT `/iot/device-bindings`
 
 한 기기의 제어 하나에 제스처를 연결(또는 해제)한다. "설정" 팝오버에서 제스처를 고르면 호출한다.
 
@@ -265,7 +265,7 @@ type SmartPlugDevice = {
 { "error": { "code": "NOT_FOUND", "message": "기기 또는 제스처를 찾을 수 없습니다." } }
 ```
 
-## DELETE `/home/device-bindings/{deviceId}`
+## DELETE `/iot/device-bindings/{deviceId}`
 
 한 기기의 모든 바인딩을 초기화한다("전체 초기화" 버튼).
 
@@ -279,7 +279,7 @@ type SmartPlugDevice = {
 { "error": { "code": "NOT_FOUND", "message": "기기를 찾을 수 없습니다." } }
 ```
 
-## GET `/home/power/plugs`
+## GET `/iot/power/plugs`
 
 "전력 분석" 탭과 대시보드 전력 카드에서 공용으로 쓰는 스마트 플러그 목록(선택한 카드 기준으로 프론트가
 차트를 바꿔 그린다). `id: "all"`은 전체 콘센트 합산 카드다.
@@ -312,44 +312,44 @@ type SmartPlugDevice = {
 ## 전체 엔드포인트 요약
 
 ```http
-GET    /api/v1/home/gestures/today-summary
-GET    /api/v1/home/gestures/history
+GET    /api/v1/iot/gestures/today-summary
+GET    /api/v1/iot/gestures/history
 
-GET    /api/v1/home/gesture-sets
-GET    /api/v1/home/radars
-GET    /api/v1/home/gesture-radar-assignments
-PUT    /api/v1/home/gesture-radar-assignments/{gestureId}
+GET    /api/v1/iot/gesture-sets
+GET    /api/v1/iot/radars
+GET    /api/v1/iot/gesture-radar-assignments
+PUT    /api/v1/iot/gesture-radar-assignments/{gestureId}
 
-GET    /api/v1/home/devices
-GET    /api/v1/home/device-bindings
-PUT    /api/v1/home/device-bindings
-DELETE /api/v1/home/device-bindings/{deviceId}
+GET    /api/v1/iot/devices
+GET    /api/v1/iot/device-bindings
+PUT    /api/v1/iot/device-bindings
+DELETE /api/v1/iot/device-bindings/{deviceId}
 
-GET    /api/v1/home/power/plugs
+GET    /api/v1/iot/power/plugs
 ```
 
 ## 프론트 API 메서드 시그니처 (구현 예정)
 
 ```js
-homeApi.getTodayGestureSummary()
-homeApi.getGestureHistory()
+iotApi.getTodayGestureSummary()
+iotApi.getGestureHistory()
 
-homeApi.getGestureSets()
-homeApi.getRadars()
-homeApi.getGestureRadarAssignments()
-homeApi.updateGestureRadarAssignment(gestureId, radarIds)
+iotApi.getGestureSets()
+iotApi.getRadars()
+iotApi.getGestureRadarAssignments()
+iotApi.updateGestureRadarAssignment(gestureId, radarIds)
 
-homeApi.getDevices()
-homeApi.getDeviceBindings()
-homeApi.setDeviceBinding({ deviceId, controlLabel, gestureId })
-homeApi.clearDeviceBindings(deviceId)
+iotApi.getDevices()
+iotApi.getDeviceBindings()
+iotApi.setDeviceBinding({ deviceId, controlLabel, gestureId })
+iotApi.clearDeviceBindings(deviceId)
 
-homeApi.getPowerPlugs()
+iotApi.getPowerPlugs()
 ```
 
 ## 프론트 연동 지점 (구현 예정)
 
 - `src/pages/HomeControlPage.js` → 위 엔드포인트 전부(탭 4개: 제스처 히스토리/제스처 목록/IoT 상태/전력 분석)
-- `src/pages/MainPage.js` → `/home/power/plugs`(대시보드 전력 분석 카드)
+- `src/pages/MainPage.js` → `/iot/power/plugs`(대시보드 전력 분석 카드)
 - Mock 시드 데이터: `src/data/homeData.js`(레이더 제외), 레이더는 `src/api/mock/devicesStore.js`
   (`settings.md`의 mock과 공유하는 room/device 원본 저장소)에서 파생한다.

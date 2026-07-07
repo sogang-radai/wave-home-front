@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import homeApi from '../../../api/homeApi';
+import iotApi from '../../../api/iotApi';
 import { ColorWheel } from './ColorWheel';
 
 const PRESET_COLORS = [
@@ -43,11 +43,11 @@ export function LightPanel({ device, onChanged }) {
 
   useEffect(() => {
     setState(null);
-    homeApi.getDeviceState(device.id).then(setState);
+    iotApi.getDeviceState(device.id).then(setState);
   }, [device.id]);
 
   const invoke = async (name, params) => {
-    const next = await homeApi.invokeDevice(device.id, name, params);
+    const next = await iotApi.invokeDevice(device.id, name, params);
     setState(next);
     onChanged?.();
     return next;

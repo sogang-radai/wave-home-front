@@ -50,7 +50,7 @@ DB: `docs/db-schema.md`의 `power_energy`, `power_report`.
 ]
 ```
 
-> 하위 호환: `HomeApi.getPowerPlugs()`는 동일 엔드포인트를 호출합니다 (`@deprecated`).
+> 하위 호환: `IotApi.getPowerPlugs()`는 동일 엔드포인트를 호출합니다 (`@deprecated`).
 
 ---
 

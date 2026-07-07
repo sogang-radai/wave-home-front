@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import homeApi from '../../../api/homeApi';
+import iotApi from '../../../api/iotApi';
+import { CameraPlayer } from './CameraPlayer';
+import { retainCameraStream, releaseCameraStream } from './cameraStreamSession';
 import { PtzPad } from './PtzPad';
 import { TtsPanel } from './TtsPanel';
 import { MicVolumeBar } from './MicVolumeBar';
@@ -16,36 +18,58 @@ function loadMuted(deviceId) {
 
 // reolink_e1_pro — PTZ (IPtzController) + stream (IVideoStreamProvider via
 // go2rtc) are separate C++ interfaces from Actionable/Queryable, so this
-// panel talks to dedicated homeApi.*Ptz/*Stream methods instead of the
+// panel talks to dedicated iotApi.*Ptz/*Stream methods instead of the
 // generic invokeDevice/queryDevice used by other classes.
 export function CameraPanel({ device }) {
-  const [streamStatus, setStreamStatus] = useState('idle');
-  const [streamUrl, setStreamUrl] = useState(null);
+  const [streamStatus, setStreamStatus] = useState('connecting');
   const [zoom, setZoom] = useState(0);
   const [micLevel, setMicLevel] = useState(0);
   const [muted, setMuted] = useState(() => loadMuted(device.id));
   const [snapshots, setSnapshots] = useState([]);
-  const canvasSeedRef = useRef(0);
+  const snapshotUrlsRef = useRef([]);
 
   useEffect(() => {
-    homeApi.getStreamInfo(device.id).then((info) => { setStreamStatus(info.status); setStreamUrl(info.url); });
-    // A monitoring device's detail view should default to a live view rather
-    // than sitting idle waiting for a "play" click.
-    homeApi.setStreaming(device.id, true).then((info) => setStreamStatus(info.status));
+    let active = true;
+
+    const start = async () => {
+      try {
+        const info = await retainCameraStream(device.id);
+        if (active) {
+          setStreamStatus(info.status === 'streaming' ? 'streaming' : 'connecting');
+        }
+      } catch {
+        if (active) setStreamStatus('idle');
+      }
+    };
+
+    start();
+
+    return () => {
+      active = false;
+      releaseCameraStream(device.id);
+    };
   }, [device.id]);
 
   useEffect(() => {
     let cancelled = false;
-    const poll = () => homeApi.queryDevice(device.id, 'status').then((s) => { if (!cancelled) setMicLevel(s.micLevel ?? 0); });
+    const poll = () => iotApi.queryDevice(device.id, 'status').then((s) => {
+      if (!cancelled)
+        setMicLevel(s.micLevel ?? 0);
+    });
     poll();
-    const timer = setInterval(poll, 1500);
+    const timer = setInterval(poll, 3000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [device.id]);
 
-  const handleMove = (vector) => homeApi.movePtz(device.id, vector);
-  const handleStop = () => homeApi.stopPtz(device.id);
+  useEffect(() => () => {
+    snapshotUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    snapshotUrlsRef.current = [];
+  }, []);
+
+  const handleMove = (vector) => { iotApi.movePtz(device.id, vector).catch(() => {}); };
+  const handleStop = () => { iotApi.stopPtz(device.id).catch(() => {}); };
   const handleZoomDelta = async (delta) => {
-    const next = await homeApi.zoomPtz(device.id, delta);
+    const next = await iotApi.zoomPtz(device.id, delta);
     setZoom(next.zoom);
   };
 
@@ -58,21 +82,41 @@ export function CameraPanel({ device }) {
   };
 
   const capture = async () => {
-    await homeApi.captureSnapshot(device.id);
-    canvasSeedRef.current += 1;
-    setSnapshots((list) => [{ id: `snap_${Date.now()}`, seed: canvasSeedRef.current, occurredAt: new Date().toISOString() }, ...list].slice(0, 6));
+    const shot = await iotApi.captureSnapshot(device.id);
+    snapshotUrlsRef.current.push(shot.url);
+    setSnapshots((list) => [
+      { id: `snap_${Date.now()}`, url: shot.url, occurredAt: shot.occurredAt },
+      ...list,
+    ].slice(0, 6));
+  };
+
+  const handleStreamError = () => {
+    setStreamStatus('idle');
   };
 
   return (
     <div className="camera-panel">
       <div className="camera-video">
-        {streamStatus === 'streaming' && streamUrl ? (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video className="camera-video-el" src={streamUrl} autoPlay muted={muted} playsInline />
+        {(streamStatus === 'streaming' || streamStatus === 'connecting') ? (
+          <>
+            {streamStatus === 'connecting' && (
+              <div className="camera-video-loading">
+                <span>스트림 연결 중...</span>
+              </div>
+            )}
+            <CameraPlayer
+              deviceId={device.id}
+              muted={muted}
+              className="camera-video-el"
+              onMicLevel={setMicLevel}
+              onReady={() => setStreamStatus('streaming')}
+              onError={handleStreamError}
+            />
+          </>
         ) : (
           <div className="camera-video-error">
             <strong>STREAM_UNAVAILABLE</strong>
-            <span>go2rtc 스트림 연동 대기 중 — 백엔드 연결 시 실시간 영상이 표시됩니다.</span>
+            <span>카메라에 연결할 수 없거나 스트림을 시작하지 못했습니다.</span>
           </div>
         )}
         <button type="button" className="camera-capture-btn" onClick={capture} aria-label="스냅샷 캡처" title="스냅샷 캡처">
@@ -83,7 +127,7 @@ export function CameraPanel({ device }) {
       {snapshots.length > 0 && (
         <div className="snapshot-strip">
           {snapshots.map((snap) => (
-            <div className="snapshot-thumb" key={snap.id} style={{ background: `hsl(${(snap.seed * 47) % 360}, 55%, 30%)` }}>
+            <div className="snapshot-thumb" key={snap.id} style={{ backgroundImage: `url(${snap.url})` }}>
               <span>{new Date(snap.occurredAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
             </div>
           ))}

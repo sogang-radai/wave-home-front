@@ -117,3 +117,14 @@ button {
   box-shadow: 0 0 0 4px var(--warn-15);
 }
 
+.device-dot.offline,
+.device-dot.missing {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px var(--danger-18);
+}
+
+.iot-device-card.unavailable {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+

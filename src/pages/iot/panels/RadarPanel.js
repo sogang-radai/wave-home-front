@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import homeApi from '../../../api/homeApi';
+import iotApi from '../../../api/iotApi';
 
 export function RadarPanel({ device }) {
   const [gestureSets, setGestureSets] = useState([]);
@@ -7,13 +7,13 @@ export function RadarPanel({ device }) {
   const [definition, setDefinition] = useState(null);
 
   useEffect(() => {
-    homeApi.getGestureSets().then(setGestureSets);
-    homeApi.getRadarGestureSet(device.id).then(setAssignment);
+    iotApi.getGestureSets().then(setGestureSets);
+    iotApi.getRadarGestureSet(device.id).then(setAssignment);
   }, [device.id]);
 
   useEffect(() => {
     if (assignment?.gestureSetId) {
-      homeApi.getGestureSetDefinition(assignment.gestureSetId).then(setDefinition);
+      iotApi.getGestureSetDefinition(assignment.gestureSetId).then(setDefinition);
     } else {
       setDefinition(null);
     }
@@ -28,7 +28,7 @@ export function RadarPanel({ device }) {
   }, [definition]);
 
   const assign = async (gestureSetId) => {
-    const saved = await homeApi.setRadarGestureSet(device.id, gestureSetId || null);
+    const saved = await iotApi.setRadarGestureSet(device.id, gestureSetId || null);
     setAssignment(saved);
   };
 

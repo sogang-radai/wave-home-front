@@ -10,7 +10,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import homeApi from '../../api/homeApi';
+import powerApi from '../../api/powerApi';
+import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
+import { USE_MOCK_API } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend, hashSeed, seededRandom } from '../../data/homeData';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
 import './PowerPage.css';
@@ -70,6 +72,12 @@ function LiveDot() {
   return <span className="power-live-dot" title="실시간" />;
 }
 
+const POLL_MS = 5000;
+
+function fmtNum(value, digits = 1) {
+  return value != null && Number.isFinite(value) ? value.toFixed(digits) : '—';
+}
+
 function ChevronDownIcon(props) {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
@@ -78,11 +86,14 @@ function ChevronDownIcon(props) {
   );
 }
 
-// Static (non-pulsing) dot used on source cards — a pulsing dot per-card was
-// too busy once every card shows one; a single static dot communicates
-// "live" without the visual noise.
-function StaticDot() {
-  return <span className="power-dot-static" title="실시간" />;
+// Connection dot — mirrors IoT device list (green/orange/red by connectionStatus).
+function ConnectionDot({ device }) {
+  return (
+    <span
+      className={`device-dot ${deviceDotClass(device)}`}
+      title={deviceDotTitle(device)}
+    />
+  );
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────
@@ -118,7 +129,7 @@ function buildPowerReport(rangeTab, plug, totalWh, comboPeakW) {
   const rand = seededRandom(hashSeed(`${plug.id}:${rangeTab}:report`));
   const vsPrevPct = Math.round((rand() - 0.42) * 44);
   const onRatio = Math.round((0.32 + rand() * 0.55) * 100);
-  const syntheticPeak = plug.powerW * (1.12 + rand() * 0.35);
+  const syntheticPeak = (plug.powerW ?? 0) * (1.12 + rand() * 0.35);
   const peakW = comboPeakW > 0 ? comboPeakW : syntheticPeak;
   const whLabel = totalWh >= 1000 ? `${(totalWh / 1000).toFixed(2)}kWh` : `${totalWh.toFixed(1)}Wh`;
   const trendWord = vsPrevPct >= 0 ? '증가' : '감소';
@@ -177,6 +188,8 @@ function PeakLabel({ viewBox, value }) {
 
 export function PowerPage() {
   const [plugs, setPlugs] = useState([]);
+  const [plugsLoading, setPlugsLoading] = useState(true);
+  const [plugsError, setPlugsError] = useState('');
   const [selectedPlugId, setSelectedPlugId] = useState(() => loadLS(LS_SOURCE, 'all'));
   const [rangeTab, setRangeTab] = useState(() => loadLS(LS_RANGE, 'min1'));
   const [metricTab, setMetricTab] = useState(() => {
@@ -186,6 +199,7 @@ export function PowerPage() {
   });
   const [disabledSources, setDisabledSources] = useState(loadDisabledSources);
   const [liveValues, setLiveValues] = useState({}); // plugId -> { w, v, a }
+  const [comboTrend, setComboTrend] = useState([]);
   const [mounted, setMounted] = useState(false);
   const [chartAnimToken, setChartAnimToken] = useState(0);
   const [animateChart, setAnimateChart] = useState(true);
@@ -202,9 +216,32 @@ export function PowerPage() {
   const comboRef = useRef(null);
 
   useEffect(() => {
-    homeApi.getPowerPlugs().then(setPlugs);
+    const loadPlugs = () => powerApi.getPlugs()
+      .then((list) => {
+        setPlugs(list);
+        setPlugsError('');
+        if (!USE_MOCK_API) {
+          setLiveValues(Object.fromEntries(list.map((p) => ([
+            p.id,
+            {
+              w: p.powerW ?? null,
+              v: p.voltageV ?? null,
+              a: p.currentMa != null ? p.currentMa / 1000 : null,
+            },
+          ]))));
+        }
+      })
+      .catch((err) => {
+        setPlugsError(err?.message || '전력 데이터를 불러오지 못했습니다.');
+      })
+      .finally(() => setPlugsLoading(false));
+    loadPlugs();
     const t = setTimeout(() => setMounted(true), 80);
-    return () => clearTimeout(t);
+    const refresh = USE_MOCK_API ? null : setInterval(loadPlugs, POLL_MS);
+    return () => {
+      clearTimeout(t);
+      if (refresh) clearInterval(refresh);
+    };
   }, []);
 
   // Persist selections
@@ -230,9 +267,9 @@ export function PowerPage() {
     return () => document.removeEventListener('pointerdown', onDocPointerDown);
   }, [comboMenuOpen]);
 
-  // Live V/W/A simulation (1s) — runs for every plug so source cards stay live
+  // Live V/W/A simulation (1s) — mock only; real API refreshes plugs directly.
   useEffect(() => {
-    if (plugs.length === 0) return;
+    if (!USE_MOCK_API || plugs.length === 0) return;
     const tick = () => {
       setLiveValues((prev) => {
         const next = { ...prev };
@@ -273,11 +310,26 @@ export function PowerPage() {
 
   const selectedPlug = plugs.find((p) => p.id === selectedPlugId) || plugs[0] || null;
 
+  useEffect(() => {
+    if (!selectedPlug || !isCombo || USE_MOCK_API) return undefined;
+    const loadTrend = () => {
+      powerApi.getComboTrend({
+        deviceId: selectedPlug.id,
+        range: rangeTab,
+        metric: metricTab,
+      }).then(setComboTrend);
+    };
+    loadTrend();
+    const timer = setInterval(loadTrend, POLL_MS);
+    return () => clearInterval(timer);
+  }, [selectedPlug?.id, rangeTab, metricTab, isCombo]);
+
   // Keep hook order stable across renders (e.g. before `plugs` loads) via a safe fallback.
   const trendPlug = selectedPlug || { id: 'none', powerW: 0, voltageV: 0, currentMa: 0 };
   const rawTrend = useMemoTrend(trendPlug, rangeTab, isCombo);
   const chartData = useMemo(() => {
     if (!isCombo) return rawTrend;
+    if (!USE_MOCK_API) return comboTrend;
     // Attach synthesized V/A series (deterministic per-point jitter) for the V·A view
     const v0 = trendPlug.voltageV ?? 220;
     const a0 = (trendPlug.currentMa ?? 0) / 1000;
@@ -286,7 +338,7 @@ export function PowerPage() {
       v: +(v0 + Math.sin(i / 5) * 1.5).toFixed(1),
       a: +(a0 + Math.sin(i / 5 + 1) * a0 * 0.06).toFixed(3),
     }));
-  }, [rawTrend, isCombo, trendPlug.voltageV, trendPlug.currentMa]);
+  }, [rawTrend, isCombo, trendPlug.voltageV, trendPlug.currentMa, comboTrend]);
 
   const selectPeriodTab = (id) => {
     if (metricTab !== 'wh') return; // period tabs are disabled while W/VA is active
@@ -307,9 +359,27 @@ export function PowerPage() {
     });
   };
 
-  if (!selectedPlug) return <div className="page-stack power-page" />;
+  if (plugsLoading && plugs.length === 0) {
+    return (
+      <div className="page-stack power-page">
+        <p className="panel-loading">전력 데이터를 불러오는 중…</p>
+      </div>
+    );
+  }
 
-  const live = liveValues[selectedPlug.id] || { w: selectedPlug.powerW, v: selectedPlug.voltageV, a: (selectedPlug.currentMa ?? 0) / 1000 };
+  if (!selectedPlug) {
+    return (
+      <div className="page-stack power-page">
+        <p className="panel-empty">{plugsError || '표시할 전력 소스가 없습니다.'}</p>
+      </div>
+    );
+  }
+
+  const live = liveValues[selectedPlug.id] || {
+    w: selectedPlug.powerW ?? null,
+    v: selectedPlug.voltageV ?? null,
+    a: selectedPlug.currentMa != null ? selectedPlug.currentMa / 1000 : null,
+  };
 
   const peakW = isCombo ? Math.max(...chartData.map((d) => d.value ?? 0), 0) : 0;
   const totalWh = chartData.reduce((s, d) => s + (d.wh ?? 0), 0);
@@ -320,8 +390,8 @@ export function PowerPage() {
     <div className={`page-stack power-page${mounted ? ' mounted' : ''}`}>
       {/* ── Stat cards: 전력 | 전압 | 피크 | 누적 ─────────────────────────── */}
       <div className="power-stat-row">
-        <StatCard label="전력" value={live.w?.toFixed(1) ?? '—'} unit="W" accent live sub="현재 사용량" />
-        <StatCard label="전압" value={live.v?.toFixed(1) ?? '—'} unit="V" live sub={`${(live.a ?? 0).toFixed(3)} A`} />
+        <StatCard label="전력" value={fmtNum(live.w, 1)} unit="W" accent live sub="현재 사용량" />
+        <StatCard label="전압" value={fmtNum(live.v, 1)} unit="V" live sub={`${fmtNum(live.a, 3)} A`} />
         {isCombo ? (
           <StatCard label="피크" value={peakW.toFixed(1)} unit="W" sub="선택 구간 최대값" />
         ) : (
@@ -421,8 +491,12 @@ export function PowerPage() {
         {plugs.map((device) => {
           const isSelected = selectedPlugId === device.id;
           const isEnabled = !disabledSources.includes(device.id);
-          const dLive = liveValues[device.id] || { w: device.powerW, v: device.voltageV, a: (device.currentMa ?? 0) / 1000 };
-          const hourlyCost = (dLive.w ?? 0) / 1000 * 250; // mock: ~250원/kWh
+          const dLive = liveValues[device.id] || {
+            w: device.powerW ?? null,
+            v: device.voltageV ?? null,
+            a: device.currentMa != null ? device.currentMa / 1000 : null,
+          };
+          const hourlyCost = dLive.w != null ? (dLive.w / 1000) * 250 : null;
           return (
             <div
               key={device.id}
@@ -441,7 +515,7 @@ export function PowerPage() {
                 >
                   <i />
                 </button>
-                <StaticDot />
+                <ConnectionDot device={device} />
               </div>
               <button
                 type="button"
@@ -459,12 +533,12 @@ export function PowerPage() {
                   </div>
                 </div>
                 <div className="power-device-center">
-                  <strong className="power-device-w-big">{dLive.w?.toFixed(1) ?? '—'}</strong>
+                  <strong className="power-device-w-big">{fmtNum(dLive.w, 1)}</strong>
                   <small>W</small>
                 </div>
                 <div className="power-device-bottom">
-                  <span className="power-device-va">{dLive.v?.toFixed(1) ?? '—'}V · {(dLive.a ?? 0).toFixed(3)}A</span>
-                  <span className="power-device-cost">~{hourlyCost.toFixed(1)}원/h</span>
+                  <span className="power-device-va">{fmtNum(dLive.v, 1)}V · {fmtNum(dLive.a, 3)}A</span>
+                  <span className="power-device-cost">{hourlyCost != null ? `~${hourlyCost.toFixed(1)}원/h` : '—'}</span>
                 </div>
               </button>
             </div>

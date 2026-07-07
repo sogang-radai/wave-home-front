@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { ChevronUpIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from '../icons';
 
 export function PtzPad({ onMove, onStop, onZoomDelta, zoom = 0, disabled }) {
-  const repeatTimer = useRef(null);
   const zoomDialRef = useRef(null);
+  const movingRef = useRef(false);
 
   useEffect(() => {
     const el = zoomDialRef.current;
@@ -19,14 +19,14 @@ export function PtzPad({ onMove, onStop, onZoomDelta, zoom = 0, disabled }) {
   }, [disabled, onZoomDelta]);
 
   const startMove = (vector) => {
-    if (disabled) return;
+    if (disabled || movingRef.current) return;
+    movingRef.current = true;
     onMove?.(vector);
-    repeatTimer.current = setInterval(() => onMove?.(vector), 150);
   };
 
   const stopMove = () => {
-    if (repeatTimer.current) clearInterval(repeatTimer.current);
-    repeatTimer.current = null;
+    if (!movingRef.current) return;
+    movingRef.current = false;
     onStop?.();
   };
 
@@ -40,6 +40,7 @@ export function PtzPad({ onMove, onStop, onZoomDelta, zoom = 0, disabled }) {
         onPointerDown={() => startMove({ pan: 0, tilt: 1 })}
         onPointerUp={stopMove}
         onPointerLeave={stopMove}
+        onPointerCancel={stopMove}
         aria-label="위로"
       >
         <ChevronUpIcon width={16} height={16} />
@@ -50,6 +51,7 @@ export function PtzPad({ onMove, onStop, onZoomDelta, zoom = 0, disabled }) {
         onPointerDown={() => startMove({ pan: 1, tilt: 0 })}
         onPointerUp={stopMove}
         onPointerLeave={stopMove}
+        onPointerCancel={stopMove}
         aria-label="오른쪽"
       >
         <ChevronRightIcon width={16} height={16} />
@@ -60,6 +62,7 @@ export function PtzPad({ onMove, onStop, onZoomDelta, zoom = 0, disabled }) {
         onPointerDown={() => startMove({ pan: 0, tilt: -1 })}
         onPointerUp={stopMove}
         onPointerLeave={stopMove}
+        onPointerCancel={stopMove}
         aria-label="아래로"
       >
         <ChevronDownIcon width={16} height={16} />
@@ -70,6 +73,7 @@ export function PtzPad({ onMove, onStop, onZoomDelta, zoom = 0, disabled }) {
         onPointerDown={() => startMove({ pan: -1, tilt: 0 })}
         onPointerUp={stopMove}
         onPointerLeave={stopMove}
+        onPointerCancel={stopMove}
         aria-label="왼쪽"
       >
         <ChevronLeftIcon width={16} height={16} />
