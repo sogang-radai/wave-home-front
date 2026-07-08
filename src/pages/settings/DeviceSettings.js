@@ -14,6 +14,7 @@ import {
 } from './SettingsUI';
 import thumbSrs from '../../img/device/thumbnail_srs_r4sn.png';
 import thumbReolink from '../../img/device/thumbnail_reolink_e1_pro.png';
+import thumbDroidCam from '../../img/device/thumbnail_droid_cam.png';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
 import thumbTizen from '../../img/device/thumbnail_tizen_tv.png';
 import thumbWiz from '../../img/device/thumbnail_philips_wiz_e29.png';
@@ -22,8 +23,10 @@ import thumbWiz from '../../img/device/thumbnail_philips_wiz_e29.png';
 const deviceThumbnails = {
   srs_r4sn: thumbSrs,
   reolink_e1_pro: thumbReolink,
+  droid_cam: thumbDroidCam,
   tuya_ep2h: thumbTuya,
   tizen_tv: thumbTizen,
+  samsung_g7: thumbTizen,
   philips_wiz_e29_color: thumbWiz,
   philips_wiz_e29_white: thumbWiz,
 };
@@ -32,8 +35,10 @@ const deviceClassLabels = {
   srs_r4sn: 'mmWave 레이더',
   wave_station: 'Wave Station',
   reolink_e1_pro: 'IoT 카메라',
+  droid_cam: '폰 카메라',
   tuya_ep2h: '스마트 플러그',
   tizen_tv: 'Tizen TV',
+  samsung_g7: 'Samsung TV',
   philips_wiz_e29_color: 'WiZ 컬러 조명',
   philips_wiz_e29_white: 'WiZ 화이트 조명',
 };
@@ -175,6 +180,7 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
   const [selectedDevice, setSelectedDevice] = useState(null);
 
   useEffect(() => {
+    // 등록된 전체 장치를 연결 상태와 무관하게 표시한다.
     settingsApi.getDevices().then(({ input_devices, output_devices }) => {
       setDevices([...input_devices, ...output_devices].map(toViewDevice));
     });

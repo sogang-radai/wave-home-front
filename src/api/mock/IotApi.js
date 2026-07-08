@@ -5,6 +5,7 @@ import { ruleSeed } from '../../data/ruleData';
 import { irCommandSeed, validateTimings } from '../../data/irCommandData';
 import { gestureSetRegistry, gestureSetDefinitions } from '../../data/gestureSetData';
 import { smartPlugDevices } from '../../data/homeData';
+import { sortDevicesForControl } from '../../utils/deviceSort';
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -43,6 +44,10 @@ function isoAgo(ms) {
 // status + the class-specific state that Queryable/Actionable would report on
 // a real device — which this module owns.
 
+function isCameraClass(deviceClass) {
+  return deviceClass === 'reolink_e1_pro' || deviceClass === 'droid_cam';
+}
+
 function initialStateFor(deviceClass) {
   switch (deviceClass) {
     case 'tuya_ep2h':
@@ -51,10 +56,13 @@ function initialStateFor(deviceClass) {
       return { on: true, brightness: 70, color: { r: 255, g: 196, b: 120 }, temperature: 4000 };
     case 'philips_wiz_e29_white':
       return { on: true, brightness: 55, temperature: 4200 };
+    case 'samsung_g7':
     case 'tizen_tv':
       return { on: false, volume: 12, channel: 7, muted: false, app: null };
     case 'reolink_e1_pro':
       return { streaming: false, zoom: 0, ptz: { pan: 0, tilt: 0 }, micLevel: 0.08 };
+    case 'droid_cam':
+      return { streaming: false, micLevel: 0.06 };
     case 'srs_r4sn':
       return { gestureSetId: 'desk_set' };
     case 'wave_station':
@@ -95,9 +103,11 @@ function stateSummaryFor(device, runtime) {
       return `${s.on ? '켜짐' : '꺼짐'}${s.on ? ` · 밝기 ${s.brightness}%` : ''}`;
     case 'philips_wiz_e29_white':
       return `${s.on ? '켜짐' : '꺼짐'}${s.on ? ` · ${s.temperature}K` : ''}`;
+    case 'samsung_g7':
     case 'tizen_tv':
       return s.on ? `켜짐 · 볼륨 ${s.volume}${s.muted ? ' (음소거)' : ''}` : '꺼짐';
     case 'reolink_e1_pro':
+    case 'droid_cam':
       return s.streaming ? '스트리밍 중' : '대기 중';
     case 'srs_r4sn':
       return `제스처 셋: ${gestureSetDefinitions[s.gestureSetId]?.name || '미지정'}`;
@@ -258,7 +268,7 @@ export class IotApi {
   async getDevices() {
     await delay();
     requireActiveAccount();
-    return getAllDevices().map(toDeviceView);
+    return sortDevicesForControl(getAllDevices().map(toDeviceView));
   }
 
   async getDeviceCapabilities(deviceId) {
@@ -291,7 +301,7 @@ export class IotApi {
     if (device.class === 'wave_station' && ['mic_level', 'env', 'status'].includes(queryName)) {
       runtime.state.micLevel = clamp(runtime.state.micLevel + (Math.random() - 0.5) * 0.1, 0, 1);
     }
-    if (device.class === 'reolink_e1_pro' && ['mic_level', 'status'].includes(queryName)) {
+    if (isCameraClass(device.class) && ['mic_level', 'status'].includes(queryName)) {
       runtime.state.micLevel = clamp((runtime.state.micLevel ?? 0.08) + (Math.random() - 0.5) * 0.12, 0, 1);
     }
     if (queryName === 'status' || queryName === 'state' || queryName === 'capabilities') {
@@ -372,7 +382,7 @@ export class IotApi {
     await delay();
     requireActiveAccount();
     const { device } = findDeviceOrThrow(deviceId);
-    if (device.class !== 'reolink_e1_pro') throw apiError(400, 'UNSUPPORTED', 'PTZ를 지원하지 않는 장치입니다.');
+    if (!isCameraClass(device.class)) throw apiError(400, 'UNSUPPORTED', 'PTZ를 지원하지 않는 장치입니다.');
     return { pan: true, tilt: true, zoom: true, home: true, presets: [{ id: 1, name: '홈' }, { id: 2, name: '현관' }] };
   }
 
@@ -403,17 +413,30 @@ export class IotApi {
   async getStreamInfo(deviceId) {
     await delay(300);
     requireActiveAccount();
-    const { runtime } = findDeviceOrThrow(deviceId);
-    // go2rtc_service.cpp가 실제 RTSP->WebRTC 브리지를 담당한다 — 연동 전까지는 상태만 모의한다.
-    return { status: runtime.state.streaming ? 'streaming' : 'idle', url: null };
+    const { device, runtime } = findDeviceOrThrow(deviceId);
+    const mode = device.class === 'droid_cam' ? 'mjpeg' : 'mse';
+    return {
+      status: runtime.state.streaming ? 'streaming' : 'idle',
+      mode,
+      url: runtime.state.streaming && mode === 'mjpeg'
+        ? `/api/v1/iot/devices/${deviceId}/stream/mjpeg`
+        : null,
+    };
   }
 
   async setStreaming(deviceId, streaming) {
     await delay(400);
     requireActiveAccount();
-    const { runtime } = findDeviceOrThrow(deviceId);
+    const { device, runtime } = findDeviceOrThrow(deviceId);
     runtime.state.streaming = !!streaming;
-    return { status: runtime.state.streaming ? 'streaming' : 'idle' };
+    const mode = device.class === 'droid_cam' ? 'mjpeg' : 'mse';
+    return {
+      status: runtime.state.streaming ? 'streaming' : 'idle',
+      mode,
+      url: runtime.state.streaming && mode === 'mjpeg'
+        ? `/api/v1/iot/devices/${deviceId}/stream/mjpeg`
+        : null,
+    };
   }
 
   async captureSnapshot(deviceId) {

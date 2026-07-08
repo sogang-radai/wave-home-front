@@ -589,7 +589,7 @@ function minSpanDomain(minSpan) {
   ];
 }
 const VOLTAGE_DOMAIN = minSpanDomain(50);
-const CURRENT_DOMAIN = minSpanDomain(1);
+const CURRENT_DOMAIN = minSpanDomain(0.3);
 
 // Line-chart grid only — vertical lines align with every sample; labels are
 // thinned separately via PowerXAxis so we never need a second hidden XAxis

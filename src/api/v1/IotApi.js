@@ -11,8 +11,8 @@ export class IotApi {
     return httpClient.get('/rooms');
   }
 
-  async getDevices() {
-    return httpClient.get('/iot/devices');
+  async getDevices(options = {}) {
+    return httpClient.get('/iot/devices', undefined, options);
   }
 
   async getDeviceCapabilities(deviceId) {

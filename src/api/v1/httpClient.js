@@ -13,7 +13,7 @@ function getAccessToken() {
   return localStorage.getItem('wavehome_access_token');
 }
 
-async function request(path, { method = 'GET', body, params } = {}) {
+async function request(path, { method = 'GET', body, params, signal } = {}) {
   const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -25,6 +25,7 @@ async function request(path, { method = 'GET', body, params } = {}) {
   const res = await fetch(url, {
     method,
     credentials: 'include',
+    signal,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -46,11 +47,11 @@ async function request(path, { method = 'GET', body, params } = {}) {
 }
 
 export const httpClient = {
-  get: (path, params) => request(path, { method: 'GET', params }),
-  post: (path, body) => request(path, { method: 'POST', body }),
-  patch: (path, body) => request(path, { method: 'PATCH', body }),
-  put: (path, body) => request(path, { method: 'PUT', body }),
-  delete: (path) => request(path, { method: 'DELETE' }),
+  get: (path, params, options = {}) => request(path, { method: 'GET', params, ...options }),
+  post: (path, body, options = {}) => request(path, { method: 'POST', body, ...options }),
+  patch: (path, body, options = {}) => request(path, { method: 'PATCH', body, ...options }),
+  put: (path, body, options = {}) => request(path, { method: 'PUT', body, ...options }),
+  delete: (path, options = {}) => request(path, { method: 'DELETE', ...options }),
 };
 
 function parseSseChunk(chunk, onEvent) {

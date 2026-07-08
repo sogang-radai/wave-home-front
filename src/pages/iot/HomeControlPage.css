@@ -1207,6 +1207,18 @@
   margin-top: 18px;
 }
 
+.camera-bottom-bar--volume-only {
+  justify-content: stretch;
+}
+
+.camera-bottom-bar--volume-only .mic-volume-bar {
+  width: 100%;
+}
+
+.camera-panel--droid .camera-bottom-bar {
+  margin-top: 14px;
+}
+
 .camera-bottom-left {
   flex: 1;
   min-width: 0;

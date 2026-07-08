@@ -13,6 +13,7 @@ import { MainPage } from './pages/MainPage';
 import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/plan/WeeklyPlanPage';
+import { AlarmPage } from './pages/alarm/AlarmPage';
 import { HomeControlPage } from './pages/iot/HomeControlPage';
 import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
@@ -536,6 +537,7 @@ function App() {
               onAddTodoFromInsight={addTodoFromInsight}
             />
           )}
+          {page === 'alarm' && <AlarmPage />}
           {page === 'power' && <PowerPage />}
           {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
           {page === 'setting' && (

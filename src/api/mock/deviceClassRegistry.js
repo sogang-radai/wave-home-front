@@ -41,6 +41,18 @@ export const deviceClassRegistry = {
     ],
   },
 
+  droid_cam: {
+    label: '폰 카메라',
+    panel: 'camera',
+    triggerKinds: [],
+    actions: [],
+    queries: [
+      { name: 'stream', description: 'MJPEG 스트림 URI' },
+      { name: 'mic_level', description: '마이크 입력 레벨(0~1)' },
+    ],
+    ptz: false,
+  },
+
   reolink_e1_pro: {
     label: 'IoT 카메라',
     panel: 'camera',
@@ -71,6 +83,36 @@ export const deviceClassRegistry = {
     ],
     // Queries usable as a device_state trigger's `query` field.
     triggerableQueries: ['power', 'voltage', 'current'],
+  },
+
+  samsung_g7: {
+    label: 'Samsung TV',
+    panel: 'tv',
+    triggerKinds: [],
+    actions: [
+      on, off, toggle,
+      { name: 'volume_up', attributes: ['Repeat'], description: '볼륨 올리기', paramsSchema: {} },
+      { name: 'volume_down', attributes: ['Repeat'], description: '볼륨 내리기', paramsSchema: {} },
+      { name: 'mute', attributes: ['Toggle', 'Stateful'], description: '음소거 토글', paramsSchema: {} },
+      { name: 'channel_up', attributes: ['Repeat'], description: '채널 올리기', paramsSchema: {} },
+      { name: 'channel_down', attributes: ['Repeat'], description: '채널 내리기', paramsSchema: {} },
+      {
+        name: 'open_app',
+        attributes: [],
+        description: '앱 실행',
+        paramsSchema: { type: 'object', properties: { app: { type: 'string', enum: ['youtube', 'netflix', 'samsung_tv_plus', 'prime_video'] } }, required: ['app'] },
+      },
+      { name: 'nav_up', attributes: [], description: '방향 위', paramsSchema: {} },
+      { name: 'nav_down', attributes: [], description: '방향 아래', paramsSchema: {} },
+      { name: 'nav_left', attributes: [], description: '방향 왼쪽', paramsSchema: {} },
+      { name: 'nav_right', attributes: [], description: '방향 오른쪽', paramsSchema: {} },
+      { name: 'select', attributes: [], description: '선택(OK)', paramsSchema: {} },
+      { name: 'back', attributes: [], description: '뒤로가기', paramsSchema: {} },
+      { name: 'play_pause', attributes: [], description: '재생/일시정지', paramsSchema: {} },
+      { name: 'home', attributes: [], description: '홈 화면', paramsSchema: {} },
+      { name: 'input_source', attributes: [], description: '외부 입력 전환', paramsSchema: {} },
+    ],
+    queries: [{ name: 'state', description: '전원/볼륨/채널/실행 앱 상태' }],
   },
 
   tizen_tv: {

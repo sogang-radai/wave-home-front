@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { GearIcon, TrashIcon } from '../settings/SettingsUI';
 import iotApi from '../../api/iotApi';
-import { deviceThumbnails, describeSchedule, describeTrigger, deviceDotClass, deviceDotTitle, EXEC_MODE_LABELS, isDeviceOffline } from './iotUtils';
+import { deviceThumbnails, describeSchedule, describeTrigger, deviceDotClass, deviceDotTitle, EXEC_MODE_LABELS, isDeviceOffline, sortDevicesForControl } from './iotUtils';
 import { ReconnectIcon } from './icons';
 import { RuleEditor } from './RuleEditor';
 import { EventTimeline } from './EventLogTab';
@@ -109,31 +109,58 @@ export function IotControlTab() {
   const [reconnectingId, setReconnectingId] = useState(null);
   const [toast, setToast] = useState('');
 
-  const loadDevices = () => iotApi.getDevices()
-    .then((list) => {
-      setDevices(list);
-      setDevicesError('');
-    })
-    .catch((err) => {
-      setDevicesError(err?.message || '장치 목록을 불러오지 못했습니다.');
-    })
-    .finally(() => setDevicesLoading(false));
+  const devicesPollRef = useRef(null);
+  const devicesAbortRef = useRef(null);
+
+  const loadDevices = () => {
+    if (devicesPollRef.current)
+      return devicesPollRef.current;
+
+    if (devicesAbortRef.current)
+      devicesAbortRef.current.abort();
+
+    const controller = new AbortController();
+    devicesAbortRef.current = controller;
+
+    devicesPollRef.current = iotApi.getDevices({ signal: controller.signal })
+      .then((list) => {
+        setDevices(list);
+        setDevicesError('');
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError')
+          return;
+        setDevicesError(err?.message || '장치 목록을 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        devicesPollRef.current = null;
+        if (devicesAbortRef.current === controller)
+          devicesAbortRef.current = null;
+        setDevicesLoading(false);
+      });
+
+    return devicesPollRef.current;
+  };
 
   useEffect(() => {
     iotApi.getRooms().then(setRooms);
     loadDevices();
-    const timer = setInterval(loadDevices, 1000);
+    const timer = setInterval(loadDevices, 3000);
     const loadingCap = setTimeout(() => setDevicesLoading(false), 1500);
     return () => {
       clearInterval(timer);
       clearTimeout(loadingCap);
+      if (devicesAbortRef.current)
+        devicesAbortRef.current.abort();
     };
   }, []);
 
-  const filteredDevices = useMemo(
-    () => (roomFilter === 'all' ? devices : devices.filter((d) => d.room?.id === roomFilter)),
-    [devices, roomFilter]
-  );
+  const filteredDevices = useMemo(() => {
+    const list = roomFilter === 'all'
+      ? devices
+      : devices.filter((d) => d.room?.id === roomFilter);
+    return sortDevicesForControl(list);
+  }, [devices, roomFilter]);
 
   // Always keep exactly one device selected — the grid never shows an
   // unselected state. Falls back to the first device in the filtered list

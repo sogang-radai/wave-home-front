@@ -1,0 +1,629 @@
+/* ── Banner ──────────────────────────────────────────────────────────────── */
+
+.alarm-banner {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+/* ── Editor header ───────────────────────────────────────────────────────── */
+
+.alarm-editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.alarm-editor-header .settings-field {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+}
+
+.alarm-editor-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.alarm-editor-header-error {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--danger-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── Wizard steps ────────────────────────────────────────────────────────── */
+
+.alarm-wizard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.alarm-wizard-step {
+  position: relative;
+  min-width: 0;
+  height: 390px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--wave-05);
+}
+
+.alarm-wizard-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -11px;
+  width: 8px;
+  height: 8px;
+  transform: translateY(-50%);
+  background: var(--sub);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.alarm-wizard-step-num {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.alarm-wizard-step h4 {
+  margin: 0 26px 6px 0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.alarm-wizard-step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Step 1 (알람 시간): the 레이더 select only appears once "기상 맞춤 알람" is
+   checked, which can push content past the shared fixed card height — let
+   this one step scroll internally rather than resizing every card. */
+.alarm-wizard-step--time .alarm-wizard-step-body {
+  overflow-y: auto;
+}
+
+/* Step 2 (알람 장치): the body itself never scrolls — the device list inside
+   it does (flex: 1; overflow-y: auto), sized to the shared card height. */
+.alarm-wizard-step--device .alarm-wizard-step-body {
+  overflow: hidden;
+}
+
+/* Step 3 (알람 방법): must never need to scroll — panel content is sized to
+   always fit within the shared card height. */
+.alarm-wizard-step--method .alarm-wizard-step-body {
+  overflow: hidden;
+}
+
+/* ── Day picker + checkboxes ─────────────────────────────────────────────── */
+
+.alarm-day-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.alarm-day-picker button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.alarm-day-picker button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.alarm-day-picker button.is-sunday {
+  color: var(--danger);
+}
+
+.alarm-day-picker button.is-sunday.active {
+  border-color: var(--danger);
+  background: rgba(232, 93, 110, 0.12);
+  color: var(--danger);
+}
+
+.alarm-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.alarm-checkbox-row input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--wave);
+}
+
+/* 레이더 콤보가 같은 줄 오른쪽에 붙고, 체크 여부와 무관하게 줄 높이를
+   고정해서 나타나거나 사라져도 카드 레이아웃(높이)이 흔들리지 않게 한다. */
+.alarm-smartwake-row {
+  justify-content: space-between;
+  min-height: 38px;
+  cursor: default;
+}
+
+.alarm-checkbox-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.alarm-radar-select {
+  width: auto;
+  max-width: 112px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+/* ── Info tooltip ────────────────────────────────────────────────────────── */
+
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tooltip-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 900;
+  cursor: help;
+}
+
+.info-tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.info-tooltip:hover .info-tooltip-bubble,
+.info-tooltip:focus-within .info-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── Device picker (step 2) ──────────────────────────────────────────────── */
+
+.alarm-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wave-30) transparent;
+}
+
+.alarm-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.alarm-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alarm-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--wave-30);
+}
+
+.alarm-device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.alarm-device-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.alarm-device-item:hover {
+  border-color: var(--wave);
+  background: var(--wave-10);
+}
+
+.alarm-device-item.selected {
+  border-color: var(--wave);
+  background: var(--wave-15);
+}
+
+.alarm-device-thumb {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--wave-05);
+  overflow: hidden;
+}
+
+.alarm-device-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.alarm-device-thumb-fallback {
+  color: var(--wave);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.alarm-device-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Method panel (step 3) ───────────────────────────────────────────────── */
+
+.alarm-method-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.alarm-method-buttons-row {
+  display: flex;
+  gap: 8px;
+}
+
+.alarm-method-buttons-row button {
+  flex: 1;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.alarm-method-buttons-row button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.alarm-method-buttons-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alarm-method-buttons-col button {
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.alarm-method-buttons-col button.active {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.alarm-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sub);
+}
+
+.alarm-slider-row strong {
+  color: var(--ink);
+}
+
+.alarm-slider-row input[type='range'] {
+  width: 100%;
+}
+
+.alarm-tts-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.alarm-tts-form .settings-field {
+  margin: 0;
+}
+
+.alarm-tts-form .settings-field + .settings-field {
+  margin-top: 0;
+}
+
+.alarm-tts-form .settings-field span {
+  margin-bottom: 3px;
+}
+
+.alarm-tts-form textarea {
+  resize: none;
+  font-family: inherit;
+  line-height: 1.35;
+}
+
+/* ── Time wheel picker ───────────────────────────────────────────────────── */
+
+.time-wheel-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 220px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.time-wheel-highlight {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 44px;
+  transform: translateY(-50%);
+  border-radius: 10px;
+  background: var(--wave-10);
+  border: 1px solid var(--wave-25);
+  pointer-events: none;
+}
+
+.wheel-column {
+  position: relative;
+  width: 56px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wheel-column::-webkit-scrollbar {
+  display: none;
+}
+
+/* AM/PM is not a scrollable wheel: it only ever shows one label, sliding to
+   the other when the hour wheel crosses the 12-hour boundary. */
+.wheel-column--meridiem {
+  width: 52px;
+  height: 44px;
+  overflow: hidden;
+}
+
+.meridiem-track {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.22s ease;
+}
+
+.meridiem-track.is-pm {
+  transform: translateY(-44px);
+}
+
+.meridiem-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--ink);
+  user-select: none;
+}
+
+.wheel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sub);
+  opacity: 0.4;
+  transition: opacity 0.15s ease, font-size 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.wheel-item.active {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink);
+  opacity: 1;
+}
+
+.time-wheel-colon {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--ink);
+  padding-bottom: 2px;
+}
+
+/* ── Alarm card grid ─────────────────────────────────────────────────────── */
+
+.alarm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.alarm-card {
+  position: relative;
+  min-height: 120px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 1px 8px var(--wave-10);
+  cursor: pointer;
+  text-align: left;
+}
+
+.alarm-card.selected {
+  border-color: var(--wave);
+  background: linear-gradient(135deg, var(--surface), var(--wave-10));
+  box-shadow: 0 0 0 3px var(--wave-15), 0 1px 8px var(--wave-10);
+}
+
+.alarm-card.disabled {
+  opacity: 0.55;
+}
+
+.alarm-card-tag {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.alarm-card-time {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.alarm-card-clock {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.alarm-card-meridiem {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--sub);
+}
+
+.alarm-card-name {
+  margin: 6px 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alarm-card-next {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+}
+
+.alarm-card-toggle {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+}
+
+@media (max-width: 1100px) {
+  .alarm-wizard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .alarm-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .alarm-wizard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .alarm-wizard-step:not(:last-child)::after {
+    display: none;
+  }
+
+  .alarm-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
