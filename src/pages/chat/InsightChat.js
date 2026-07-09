@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import chatApi from '../api/chatApi';
+import chatApi from '../../api/chatApi';
 import './chat.css';
 
 export function InsightChat({ open, onClose }) {

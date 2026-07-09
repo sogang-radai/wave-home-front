@@ -3,11 +3,20 @@ import { MonthCalendarPopup } from './MonthCalendarPopup';
 import { formatDayLabel } from './calendarUtils';
 import './calendar.css';
 
-function NavChevron({ direction }) {
+function NavChevron({ direction, double = false }) {
   const points = direction === 'prev' ? '15 18 9 12 15 6' : '9 18 15 12 9 6';
+  if (!double) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+        <polyline points={points} />
+      </svg>
+    );
+  }
+  const second = direction === 'prev' ? '21 18 15 12 21 6' : '3 18 9 12 3 6';
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+    <svg width="18" height="16" viewBox="0 0 28 24" fill="none" stroke="#64748b" strokeWidth="2">
       <polyline points={points} />
+      <polyline points={second} />
     </svg>
   );
 }
@@ -23,6 +32,8 @@ function CalendarIcon() {
   );
 }
 
+const navBtnClass = 'p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed';
+
 export function DateNavigatorBar({
   mode = 'week',
   label,
@@ -31,7 +42,12 @@ export function DateNavigatorBar({
   latestDate,
   onPrev,
   onNext,
+  onPrevDay,
+  onPrevWeek,
+  onNextWeek,
+  onNextDay,
   nextDisabled = false,
+  nextDayDisabled = false,
   showTodayReset = false,
   onTodayReset,
   onSelectDay,
@@ -45,27 +61,42 @@ export function DateNavigatorBar({
     ? formatDayLabel(selectedDate, latestDate)
     : label;
 
+  const useQuadNav = mode === 'week' && onPrevDay && onPrevWeek && onNextWeek && onNextDay;
+
   return (
     <div className={`flex items-center justify-center relative ${className}`.trim()}>
-      <div className="flex items-center gap-2 text-slate-600 font-medium">
-        <button
-          type="button"
-          onClick={onPrev}
-          className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50"
-          aria-label={mode === 'day' ? '이전 날' : '이전 주'}
-        >
-          <NavChevron direction="prev" />
-        </button>
+      <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+        {useQuadNav ? (
+          <>
+            <button type="button" onClick={onPrevDay} className={navBtnClass} aria-label="이전 날">
+              <NavChevron direction="prev" />
+            </button>
+            <button type="button" onClick={onPrevWeek} className={navBtnClass} aria-label="이전 주">
+              <NavChevron direction="prev" double />
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={onPrev}
+            className={navBtnClass}
+            aria-label={mode === 'day' ? '이전 날' : '이전 주'}
+          >
+            <NavChevron direction="prev" />
+          </button>
+        )}
+
         <span
           className={`text-base font-semibold text-slate-800 min-w-[140px] text-center date-nav-display-label${labelFading ? ' is-fading' : ''}`}
         >
           {displayLabel}
         </span>
+
         <div className="relative" ref={anchorRef}>
           <button
             type="button"
             onClick={() => setShowCalendar((value) => !value)}
-            className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50"
+            className={navBtnClass}
             aria-label="달력 열기"
           >
             <CalendarIcon />
@@ -90,15 +121,33 @@ export function DateNavigatorBar({
             />
           )}
         </div>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={nextDisabled}
-          className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label={mode === 'day' ? '다음 날' : '다음 주'}
-        >
-          <NavChevron direction="next" />
-        </button>
+
+        {useQuadNav ? (
+          <>
+            <button type="button" onClick={onNextWeek} className={navBtnClass} aria-label="다음 주">
+              <NavChevron direction="next" double />
+            </button>
+            <button
+              type="button"
+              onClick={onNextDay}
+              disabled={nextDayDisabled}
+              className={navBtnClass}
+              aria-label="다음 날"
+            >
+              <NavChevron direction="next" />
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={nextDisabled}
+            className={navBtnClass}
+            aria-label={mode === 'day' ? '다음 날' : '다음 주'}
+          >
+            <NavChevron direction="next" />
+          </button>
+        )}
       </div>
       {showTodayReset && onTodayReset && (
         <button

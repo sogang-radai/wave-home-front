@@ -1,3 +1,5 @@
+import { getNow } from '../../lib/demoClock';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function normalizeDate(date) {
@@ -65,5 +67,5 @@ export function formatDayLabel(date, latestDate) {
 }
 
 export function getToday() {
-  return normalizeDate(new Date());
+  return normalizeDate(getNow());
 }

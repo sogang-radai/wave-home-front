@@ -1,8 +1,11 @@
-import { USE_MOCK_API } from './config';
+import { createApiClient } from '../lib/apiRouter';
 import { AlarmApi as MockAlarmApi } from './mock/AlarmApi';
 import { AlarmApi as RealAlarmApi } from './v1/AlarmApi';
+import { AlarmApi as DemoAlarmApi } from './demo/AlarmApi';
 
-const AlarmApiImpl = USE_MOCK_API ? MockAlarmApi : RealAlarmApi;
-
-const alarmApi = new AlarmApiImpl();
+const alarmApi = createApiClient({
+  mock: MockAlarmApi,
+  real: RealAlarmApi,
+  demo: DemoAlarmApi,
+});
 export default alarmApi;

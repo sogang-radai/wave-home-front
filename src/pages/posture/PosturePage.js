@@ -6,6 +6,7 @@ import { Metric } from '../../components/ui/Metric';
 import { InfoList } from '../../components/ui/InfoList';
 import { PostureScoreChart } from '../../components/report/PostureScoreChart';
 import { InsightCard } from '../../components/report/InsightCard';
+import '../../components/report/report.css';
 import { PostureDailyReport } from './PostureDailyReport';
 import { PostureWeeklyReport } from './PostureWeeklyReport';
 import postureApi from '../../api/postureApi';

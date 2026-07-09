@@ -606,13 +606,27 @@ export class IotApi {
     requireActiveAccount();
     const command = irCommands.find((c) => c.id === commandId);
     if (!command) throw apiError(404, 'NOT_FOUND', '커맨드를 찾을 수 없습니다.');
-    logEvent({ type: 'ir', occurredAt: new Date().toISOString(), deviceId: null, deviceName: 'IR 목록', message: `테스트 전송: ${command.name}`, triggeredBy: null, detail: { direction: 'sent', commandId } });
-    return { ok: true };
+    const waveStation = getAllDevices().find((d) => d.class === 'wave_station');
+    if (!waveStation) throw apiError(404, 'NOT_FOUND', 'Wave Station 장치를 찾을 수 없습니다.');
+    const state = await this.invokeDevice(waveStation.id, 'send_ir', { commandId: String(commandId) });
+    logEvent({
+      type: 'ir',
+      occurredAt: new Date().toISOString(),
+      deviceId: waveStation.id,
+      deviceName: waveStation.name,
+      message: `IR 전송: ${command.name}`,
+      triggeredBy: 'manual',
+      detail: { direction: 'sent', commandId },
+    });
+    return { ok: true, deviceId: waveStation.id, action: 'send_ir', state };
   }
 
   // 10초 학습 창: 2~4초 뒤 무작위 timings로 resolve, timeoutMs 경과 시 reject.
-  startIrLearn({ timeoutMs = 10000 } = {}) {
+  startIrLearn({ deviceId, timeoutMs = 10000 } = {}) {
     requireActiveAccount();
+    if (!deviceId) throw apiError(400, 'INVALID_BODY', 'Wave Station 장치를 선택해주세요.');
+    const waveStation = getAllDevices().find((d) => d.id === deviceId && d.class === 'wave_station');
+    if (!waveStation) throw apiError(404, 'NOT_FOUND', 'Wave Station 장치를 찾을 수 없습니다.');
     return new Promise((resolve, reject) => {
       const learnDelayMs = 2000 + Math.random() * 2000;
       let settled = false;

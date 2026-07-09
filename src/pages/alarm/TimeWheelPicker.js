@@ -1,43 +1,47 @@
 import {
-  forwardRef, useEffect, useImperativeHandle, useMemo, useRef,
+  forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState,
 } from 'react';
 
 const ITEM_H = 44;
-const VISIBLE = 5; // odd, so there's a single centered row
-const REPEAT = 11; // odd number of repeated bands, gives room to drift before re-centering
-const WHEEL_DAMPING = 0.35; // native wheel deltaY is much larger than one row; scale it down for a natural feel
+const DEFAULT_VISIBLE = 5;
+const REPEAT = 11;
+const WHEEL_LINE_HEIGHT_PX = 16;
+const SETTLE_DEBOUNCE_MS = 100;
+/** Mouse-wheel ticks are ~100–120px; treat as one detent, not N row heights. */
+const COARSE_WHEEL_MIN_PX = 48;
+const COARSE_WHEEL_COOLDOWN_MS = 90;
+const FINE_WHEEL_THRESHOLD_RATIO = 0.42;
 
 const HOURS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: String(i + 1).padStart(2, '0') }));
 const MINUTES = Array.from({ length: 60 }, (_, i) => ({ value: i, label: String(i).padStart(2, '0') }));
 
-/**
- * A single infinite-scroll wheel column. Items are repeated `REPEAT` times so
- * scrolling never visually "runs out"; once the scroll position drifts near
- * an outer band we silently jump it back to the equivalent middle-band
- * position (no animation, imperceptible because the repeated bands are
- * pixel-identical).
- *
- * `onSettle(val, wraps)` fires once whenever the wheel comes to rest on a new
- * row and/or crosses a full-list boundary (`wraps`, e.g. minute 59→0 or
- * hour 12→1). Both pieces of information are delivered together in one call
- * so the parent can apply them as a single atomic state update — splitting
- * them into two separate callbacks invited stale-closure races where one
- * update stomped the other.
- *
- * `bumpBy(steps)` (via ref) nudges the wheel by an exact number of rows using
- * a genuine physical scroll (so it settles and reports through the exact
- * same path as user-driven scrolling) — used to cascade minute overflow into
- * the hour wheel.
- */
-const WheelColumn = forwardRef(function WheelColumn({ items, value, onSettle, className = '' }, ref) {
+function normalizeWheelDeltaY(e, itemHeight) {
+  if (e.deltaMode === 1) return e.deltaY * WHEEL_LINE_HEIGHT_PX;
+  if (e.deltaMode === 2) return e.deltaY * itemHeight;
+  return e.deltaY;
+}
+
+const WheelColumn = forwardRef(function WheelColumn({
+  items, value, onSettle, className = '', itemHeight = ITEM_H, visibleRows = DEFAULT_VISIBLE,
+}, ref) {
   const containerRef = useRef(null);
   const settleTimer = useRef(null);
   const programmatic = useRef(false);
+  const wheelAccumRef = useRef(0);
+  const coarseWheelAtRef = useRef(0);
   const lastEmitted = useRef(value);
-  const scrollIdxRef = useRef(null); // last known physical row index (kept in sync across re-centers)
-  const absIdxRef = useRef(null); // logical, never re-centered — used only for wrap-counting math
+  const scrollIdxRef = useRef(null);
+  const absIdxRef = useRef(null);
+  const valueRef = useRef(value);
+  const onSettleRef = useRef(onSettle);
+  const [scrollValue, setScrollValue] = useState(value);
   const n = items.length;
   const middleStart = Math.floor(REPEAT / 2) * n;
+  const edgeBand = Math.floor(REPEAT / 2) - 1;
+  const padRows = Math.floor(visibleRows / 2);
+
+  valueRef.current = value;
+  onSettleRef.current = onSettle;
 
   const longList = useMemo(() => {
     const arr = [];
@@ -50,140 +54,262 @@ const WheelColumn = forwardRef(function WheelColumn({ items, value, onSettle, cl
     return middleStart + Math.max(i, 0);
   };
 
+  const indexFromScrollTop = (top) => {
+    const rawIdx = Math.round(top / itemHeight);
+    return Math.max(0, Math.min(longList.length - 1, rawIdx));
+  };
+
+  const valueAtIndex = (idx) => items[((idx % n) + n) % n].value;
+
+  const displayIndexFor = (targetIdx) => {
+    const band = Math.floor((targetIdx - middleStart) / n);
+    if (Math.abs(band) < edgeBand) return targetIdx;
+    return middleStart + (((targetIdx % n) + n) % n);
+  };
+
   const scrollToIndex = (idx, behavior) => {
     const el = containerRef.current;
     if (!el) return;
     programmatic.current = true;
-    el.scrollTo({ top: idx * ITEM_H, behavior });
+    el.scrollTo({ top: idx * itemHeight, behavior });
     scrollIdxRef.current = idx;
     absIdxRef.current = idx;
-    window.setTimeout(() => { programmatic.current = false; }, behavior === 'smooth' ? 260 : 30);
+    setScrollValue(valueAtIndex(idx));
+    window.setTimeout(() => { programmatic.current = false; }, behavior === 'smooth' ? 200 : 20);
+  };
+
+  const commitIndex = (targetIdx, behavior = 'auto') => {
+    const val = items[((targetIdx % n) + n) % n].value;
+    const prevPhysical = scrollIdxRef.current ?? targetIdx;
+    const deltaIdx = targetIdx - prevPhysical;
+    const beforeAbs = absIdxRef.current ?? targetIdx;
+    const afterAbs = beforeAbs + deltaIdx;
+    const wraps = Math.floor(afterAbs / n) - Math.floor(beforeAbs / n);
+    const displayIdx = displayIndexFor(targetIdx);
+
+    scrollIdxRef.current = displayIdx;
+    absIdxRef.current = afterAbs;
+    scrollToIndex(displayIdx, behavior);
+
+    if (val !== lastEmitted.current || wraps !== 0) {
+      lastEmitted.current = val;
+      onSettleRef.current(val, wraps);
+    }
+  };
+
+  const moveBySteps = (steps) => {
+    if (!steps) return;
+    const currentIdx = scrollIdxRef.current ?? indexForValue(valueRef.current);
+    commitIndex(currentIdx + steps);
+  };
+
+  const moveOneStep = (direction) => {
+    if (!direction) return;
+    const currentIdx = scrollIdxRef.current ?? indexForValue(valueRef.current);
+    commitIndex(currentIdx + direction, 'auto');
   };
 
   useImperativeHandle(ref, () => ({
     bumpBy(steps) {
-      const el = containerRef.current;
-      if (!el || !steps) return;
-      el.scrollBy({ top: steps * ITEM_H, behavior: 'smooth' });
+      moveBySteps(steps);
     },
   }));
 
-  // Mount: jump to the initial value with no animation.
   useEffect(() => {
-    scrollToIndex(indexForValue(value), 'auto');
+    const idx = indexForValue(value);
+    scrollIdxRef.current = idx;
+    absIdxRef.current = idx;
+    lastEmitted.current = value;
+    setScrollValue(value);
+    scrollToIndex(idx, 'auto');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Genuinely external value change (e.g. switching to a different alarm's
-  // draft). Our own scroll-driven commits are excluded via lastEmitted so we
-  // never yank the wheel back to a fixed reference position mid-scroll.
   useEffect(() => {
     if (value === lastEmitted.current) return;
     lastEmitted.current = value;
-    scrollToIndex(indexForValue(value), 'smooth');
+    setScrollValue(value);
+    scrollToIndex(indexForValue(value), 'auto');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  const handleScroll = () => {
-    if (settleTimer.current) window.clearTimeout(settleTimer.current);
-    settleTimer.current = window.setTimeout(() => {
-      const el = containerRef.current;
-      if (!el) return;
-      const rawIdx = Math.round(el.scrollTop / ITEM_H);
-      const idx = Math.max(0, Math.min(longList.length - 1, rawIdx));
-      const val = items[((idx % n) + n) % n].value;
-
-      const prevPhysical = scrollIdxRef.current ?? idx;
-      const deltaIdx = idx - prevPhysical;
-      scrollIdxRef.current = idx;
-
-      const beforeAbs = absIdxRef.current ?? idx;
-      const afterAbs = beforeAbs + deltaIdx;
-      absIdxRef.current = afterAbs;
-      const wraps = Math.floor(afterAbs / n) - Math.floor(beforeAbs / n);
-
-      // Drifted close to an outer band edge — recenter silently. This only
-      // moves scrollTop to a pixel-identical spot in the middle band, so
-      // it's imperceptible and doesn't affect the logical (abs) position.
-      const band = Math.floor((idx - middleStart) / n);
-      if (Math.abs(band) >= Math.floor(REPEAT / 2) - 1) {
-        const recentered = middleStart + (((idx % n) + n) % n);
-        programmatic.current = true;
-        el.scrollTop = recentered * ITEM_H;
-        scrollIdxRef.current = recentered;
-        window.requestAnimationFrame(() => { programmatic.current = false; });
-      }
-
-      if (val !== value || wraps !== 0) {
-        lastEmitted.current = val;
-        onSettle(val, wraps);
-      }
-    }, 110);
-  };
-
-  // Native wheel deltaY per "notch" is far larger than one row, which made
-  // the list jump several rows per tick with no natural momentum. We scale
-  // it down and apply it directly to scrollTop (not an animated scrollBy),
-  // so movement stays perfectly proportional to the wheel input — exactly
-  // like native scrolling, just calibrated to this wheel's row height. The
-  // browser's own scroll-snap then glides it to rest once motion stops.
-  const handleWheel = (e) => {
-    e.preventDefault();
+  const snapToNearest = () => {
     const el = containerRef.current;
     if (!el) return;
-    el.scrollTop += e.deltaY * WHEEL_DAMPING;
-    // Direct scrollTop mutation doesn't reliably dispatch a native 'scroll'
-    // event on every browser/timing combo, so drive the same settle logic
-    // explicitly to make sure the debounce always (re)schedules.
-    handleScroll();
+    const idx = indexFromScrollTop(el.scrollTop);
+    const snappedVal = valueAtIndex(idx);
+    const displayIdx = displayIndexFor(idx);
+    scrollToIndex(displayIdx, 'auto');
+    if (snappedVal !== lastEmitted.current) {
+      const prevPhysical = scrollIdxRef.current ?? idx;
+      const deltaIdx = displayIdx - prevPhysical;
+      const beforeAbs = absIdxRef.current ?? idx;
+      const afterAbs = beforeAbs + deltaIdx;
+      const wraps = Math.floor(afterAbs / n) - Math.floor(beforeAbs / n);
+      scrollIdxRef.current = displayIdx;
+      absIdxRef.current = afterAbs;
+      lastEmitted.current = snappedVal;
+      setScrollValue(snappedVal);
+      onSettleRef.current(snappedVal, wraps);
+    }
   };
+
+  const handleScroll = () => {
+    if (programmatic.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+    setScrollValue(valueAtIndex(indexFromScrollTop(el.scrollTop)));
+    if (settleTimer.current) window.clearTimeout(settleTimer.current);
+    settleTimer.current = window.setTimeout(snapToNearest, SETTLE_DEBOUNCE_MS);
+  };
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return undefined;
+
+    const fineThreshold = itemHeight * FINE_WHEEL_THRESHOLD_RATIO;
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const delta = normalizeWheelDeltaY(e, itemHeight);
+      if (!delta) return;
+
+      const absDelta = Math.abs(delta);
+      const direction = delta > 0 ? 1 : -1;
+      const now = performance.now();
+
+      // Mouse / coarse wheel: one detent → exactly one row (ignore magnitude).
+      if (absDelta >= COARSE_WHEEL_MIN_PX) {
+        if (now - coarseWheelAtRef.current < COARSE_WHEEL_COOLDOWN_MS) return;
+        coarseWheelAtRef.current = now;
+        wheelAccumRef.current = 0;
+        moveOneStep(direction);
+        return;
+      }
+
+      // Trackpad: accumulate fine deltas, one row per threshold crossed per event.
+      wheelAccumRef.current += delta;
+      if (Math.abs(wheelAccumRef.current) < fineThreshold) return;
+      wheelAccumRef.current -= direction * fineThreshold;
+      moveOneStep(direction);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [itemHeight]);
 
   useEffect(() => () => {
     if (settleTimer.current) window.clearTimeout(settleTimer.current);
   }, []);
 
+  const handleItemClick = (idx) => {
+    const val = items[((idx % n) + n) % n].value;
+    if (val === valueRef.current) return;
+    commitIndex(idx);
+  };
+
+  const colHeight = itemHeight * visibleRows;
+
   return (
     <div
       ref={containerRef}
       className={`wheel-column ${className}`}
-      style={{ height: ITEM_H * VISIBLE }}
+      style={{ height: colHeight }}
       onScroll={handleScroll}
-      onWheel={handleWheel}
     >
-      <div className="wheel-column-pad" style={{ height: ITEM_H * Math.floor(VISIBLE / 2) }} />
+      <div className="wheel-column-pad" style={{ height: itemHeight * padRows }} />
       {longList.map((it, i) => (
-        <div key={i} className={`wheel-item${it.value === value ? ' active' : ''}`} style={{ height: ITEM_H }}>
+        <div
+          key={i}
+          className={`wheel-item${it.value === scrollValue ? ' active' : ''}`}
+          style={{ height: itemHeight }}
+          onClick={() => handleItemClick(i)}
+        >
           {it.label}
         </div>
       ))}
-      <div className="wheel-column-pad" style={{ height: ITEM_H * Math.floor(VISIBLE / 2) }} />
+      <div className="wheel-column-pad" style={{ height: itemHeight * padRows }} />
     </div>
   );
 });
 
-// AM/PM is NOT an independently-scrollable wheel — it only ever shows one
-// label at a time and slides to the other when the hour wheel crosses the
-// 12-hour boundary (driven purely by the `value` prop from the parent).
-function MeridiemFlip({ value }) {
+function MeridiemWheel({ value, onChange, itemHeight = ITEM_H, visibleRows = DEFAULT_VISIBLE }) {
+  const rootRef = useRef(null);
+  const accumRef = useRef(0);
+  const coarseAtRef = useRef(0);
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  const padRows = Math.floor(visibleRows / 2);
+  const fineThreshold = itemHeight * FINE_WHEEL_THRESHOLD_RATIO;
+
+  valueRef.current = value;
+  onChangeRef.current = onChange;
+
+  const toggle = () => {
+    onChangeRef.current(valueRef.current === 'AM' ? 'PM' : 'AM');
+  };
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return undefined;
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const delta = normalizeWheelDeltaY(e, itemHeight);
+      if (!delta) return;
+
+      const absDelta = Math.abs(delta);
+      const now = performance.now();
+
+      if (absDelta >= COARSE_WHEEL_MIN_PX) {
+        if (now - coarseAtRef.current < COARSE_WHEEL_COOLDOWN_MS) return;
+        coarseAtRef.current = now;
+        accumRef.current = 0;
+        toggle();
+        return;
+      }
+
+      accumRef.current += delta;
+      if (Math.abs(accumRef.current) < fineThreshold) return;
+      accumRef.current = 0;
+      toggle();
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [itemHeight, fineThreshold]);
+
   return (
-    <div className="wheel-column wheel-column--meridiem">
-      <div className={`meridiem-track${value === 'PM' ? ' is-pm' : ''}`}>
-        <span className="meridiem-item">AM</span>
-        <span className="meridiem-item">PM</span>
+    <div
+      ref={rootRef}
+      className="wheel-column wheel-column--meridiem"
+      style={{ height: itemHeight * visibleRows }}
+    >
+      <div
+        className={`meridiem-track${value === 'PM' ? ' is-pm' : ''}`}
+        style={{
+          paddingTop: itemHeight * padRows,
+          paddingBottom: itemHeight * padRows,
+          transform: value === 'PM' ? `translateY(-${itemHeight}px)` : undefined,
+        }}
+      >
+        <button type="button" className={`meridiem-item${value === 'AM' ? ' active' : ''}`} style={{ height: itemHeight }} onClick={() => onChange('AM')}>AM</button>
+        <button type="button" className={`meridiem-item${value === 'PM' ? ' active' : ''}`} style={{ height: itemHeight }} onClick={() => onChange('PM')}>PM</button>
       </div>
     </div>
   );
 }
 
-/**
- * 12시간제 시/분/AM-PM 피커.
- * - 시(hour)와 분(minute)은 진짜 무한 스크롤 휠.
- * - 분이 59→0(정방향) 또는 0→59(역방향)로 넘어가면 시(hour)가 함께 넘어간다.
- * - AM/PM은 시(hour)가 12↔1 경계를 넘을 때만(스크롤 거리와 무관하게 홀/짝
- *   교차 횟수로 판정) 서로 뒤바뀌는 단일 표시(슬라이드 전환)이다.
- */
-export function TimeWheelPicker({ hour12, minute, meridiem, onChange }) {
+export function TimeWheelPicker({
+  hour12, minute, meridiem, onChange, compact = false, visibleRows,
+}) {
   const hourRef = useRef(null);
+  const resolvedVisible = visibleRows ?? (compact ? 3 : DEFAULT_VISIBLE);
+  const itemHeight = compact ? 36 : ITEM_H;
 
   const handleHourSettle = (nextHour, wraps) => {
     const flip = (((wraps % 2) + 2) % 2) === 1;
@@ -196,12 +322,49 @@ export function TimeWheelPicker({ hour12, minute, meridiem, onChange }) {
   };
 
   return (
-    <div className="time-wheel-picker">
+    <div className={`time-wheel-picker${compact ? ' time-wheel-picker--compact' : ''}${resolvedVisible === 3 ? ' time-wheel-picker--rows-3' : ''}`}>
       <div className="time-wheel-highlight" aria-hidden="true" />
-      <WheelColumn ref={hourRef} items={HOURS} value={hour12} onSettle={handleHourSettle} className="wheel-column--hour" />
+      <WheelColumn
+        ref={hourRef}
+        items={HOURS}
+        value={hour12}
+        onSettle={handleHourSettle}
+        className="wheel-column--hour"
+        itemHeight={itemHeight}
+        visibleRows={resolvedVisible}
+      />
       <span className="time-wheel-colon">:</span>
-      <WheelColumn items={MINUTES} value={minute} onSettle={handleMinuteSettle} className="wheel-column--minute" />
-      <MeridiemFlip value={meridiem} />
+      <WheelColumn
+        items={MINUTES}
+        value={minute}
+        onSettle={handleMinuteSettle}
+        className="wheel-column--minute"
+        itemHeight={itemHeight}
+        visibleRows={resolvedVisible}
+      />
+      <MeridiemWheel
+        value={meridiem}
+        onChange={(nextMeridiem) => onChange({ hour12, minute, meridiem: nextMeridiem })}
+        itemHeight={itemHeight}
+        visibleRows={resolvedVisible}
+      />
     </div>
   );
+}
+
+export function minutesToPickerState(totalMinutes) {
+  const clamped = Math.max(0, Math.min(23 * 60 + 59, totalMinutes));
+  const h24 = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return {
+    hour12: h24 % 12 || 12,
+    minute: m,
+    meridiem: h24 >= 12 ? 'PM' : 'AM',
+  };
+}
+
+export function pickerStateToMinutes({ hour12, minute, meridiem }) {
+  let h = hour12 % 12;
+  if (meridiem === 'PM') h += 12;
+  return h * 60 + minute;
 }

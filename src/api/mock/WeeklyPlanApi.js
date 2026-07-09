@@ -1,8 +1,11 @@
 import { delay, cloneDeep, nextNumericId } from './utils';
 import { initialTodos, CAT_STYLE, pickAICat } from '../../data/weeklyPlanData';
-import { listInsights, findInsight as findInsightById, setInsightApproved } from './insightsStore';
+import { listInsights, findInsight as findInsightById } from './insightsStore';
+import { InsightsApi } from './InsightsApi';
 import { SleepApi } from './SleepApi';
 import { PostureApi } from './PostureApi';
+
+const insightsApi = new InsightsApi();
 
 const sleepApiForReport = new SleepApi();
 const postureApiForReport = new PostureApi();
@@ -68,6 +71,8 @@ function toTask(todo) {
     category: todo.category || CATEGORY_TO_KEY[todo.cat],
     startMinute: todo.startMinute ?? todo.startMin,
     endMinute: todo.endMinute ?? todo.endMin,
+    scheduleKind: todo.scheduleKind || 'weekly',
+    eventDate: todo.eventDate ?? null,
     sourceInsightId: todo.sourceInsightId ?? null,
   };
 }
@@ -180,9 +185,15 @@ function taskFromPayload(payload) {
   details.push(...validateTimeRange(payload, false));
   if (details.length > 0) validationError(details);
 
-  const category = insight ? (insight.domain === 'posture' ? 'posture' : insight.domain === 'sleep' ? 'sleep' : 'mental') : categorizeTitle(title);
+  const category = payload.category
+    ? (VALID_CATEGORIES.includes(payload.category) ? payload.category : categorizeTitle(title))
+    : insight
+      ? (insight.domain === 'posture' ? 'posture' : insight.domain === 'sleep' ? 'sleep' : 'mental')
+      : categorizeTitle(title);
   const startMinute = payload.startMinute ?? defaultStartMinute(category);
   const endMinute = payload.endMinute ?? startMinute + DEFAULT_DURATION_MINUTES;
+  const scheduleKind = payload.scheduleKind === 'once' ? 'once' : 'weekly';
+  const eventDate = scheduleKind === 'once' ? payload.eventDate ?? null : null;
 
   return {
     id: makeTaskId(),
@@ -192,6 +203,8 @@ function taskFromPayload(payload) {
     category,
     startMinute,
     endMinute,
+    scheduleKind,
+    eventDate,
     sourceInsightId: insight?.id ?? null,
   };
 }
@@ -322,9 +335,13 @@ export class WeeklyPlanApi {
   async updateInsight(insightId, { approved }) {
     await delay();
     ensureActiveAccount();
-    const insight = setInsightApproved(insightId, approved);
-    if (!insight) throw apiError(404, 'NOT_FOUND', '인사이트를 찾을 수 없습니다.');
-    return { id: insight.id, approved: insight.approved };
+    return insightsApi.updateInsight(insightId, { approved });
+  }
+
+  async applyInsight(insightId) {
+    await delay();
+    ensureActiveAccount();
+    return insightsApi.apply(insightId);
   }
 
   // 테스트에서 activeAccount required 경로를 확인할 때만 사용한다.

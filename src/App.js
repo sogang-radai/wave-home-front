@@ -4,9 +4,9 @@ import { pageTitles } from './data/appData';
 import chatApi from './api/chatApi';
 import settingsApi from './api/settingsApi';
 import weeklyPlanApi from './api/weeklyPlanApi';
-import { InsightChat } from './chat/InsightChat';
-import { ChatPopup } from './chat/ChatPopup';
-import { ChatPage } from './chat/ChatPage';
+import { InsightChat } from './pages/chat/InsightChat';
+import { ChatPopup } from './pages/chat/ChatPopup';
+import { ChatPage } from './pages/chat/ChatPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { MainPage } from './pages/MainPage';
@@ -22,10 +22,12 @@ import {
   resolvePushUrlToPage,
   syncBrowserPush,
 } from './push/browserPush';
+import { getNow } from './lib/demoClock';
+import { IS_DEMO_MODE } from './api/config';
 
 function formatNotificationTime(iso) {
   const date = new Date(iso);
-  const now = new Date();
+  const now = getNow();
   if (now - date < 60 * 1000) return '방금 전';
 
   const time = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true }).format(date);
@@ -53,7 +55,14 @@ function toViewNotification(notification) {
 const DAY_TO_KOREAN = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
 const KOREAN_TO_DAY = { 월: 'mon', 화: 'tue', 수: 'wed', 목: 'thu', 금: 'fri', 토: 'sat', 일: 'sun' };
 const CATEGORY_TO_KOREAN = { posture: '자세', sleep: '수면', diet: '식습관', mental: '멘탈' };
-const KOREAN_TO_CATEGORY = { 자세: 'posture', 수면: 'sleep', 식습관: 'diet', 멘탈: 'mental' };
+const KOREAN_TO_CATEGORY = { 자세: 'posture', 수면: 'sleep', 식습관: 'diet', 멘탈: 'mental', 일정: 'mental' };
+
+function formatDateParam(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function toViewTodo(task) {
   return {
@@ -75,7 +84,10 @@ function App() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    settingsApi.getNotifications().then((list) => setNotifications(list.map(toViewNotification)));
+    settingsApi
+      .getNotifications()
+      .then((list) => setNotifications(list.map(toViewNotification)))
+      .catch(() => setNotifications([]));
   }, []);
 
   useEffect(() => {
@@ -103,34 +115,57 @@ function App() {
 
   const markAllNotificationsRead = async () => {
     const updated = await settingsApi.markAllNotificationsRead();
+    if (!updated) return;
     setNotifications(updated.map(toViewNotification));
   };
   const [todos, setTodos] = useState([]);
   useEffect(() => {
-    weeklyPlanApi.getTasks().then((tasks) => setTodos(tasks.map(toViewTodo)));
+    weeklyPlanApi
+      .getTasks()
+      .then((tasks) => setTodos(Array.isArray(tasks) ? tasks.map(toViewTodo) : []))
+      .catch(() => setTodos([]));
   }, []);
 
   const toggleTodo = async (id) => {
     const current = todos.find((item) => item.id === id);
     if (!current) return;
     const updated = await weeklyPlanApi.updateTask(id, { done: !current.done });
+    if (!updated) return;
     setTodos((prev) => prev.map((item) => (item.id === id ? toViewTodo(updated) : item)));
   };
-  const addTodo = async (title, day, startMin, endMin) => {
-    // weekly-plan.md: 직접 만든 task의 category는 보내지 않는다 — 서버가 title을 보고 자동 분류한다.
-    const payload = {
-      title,
-      dayOfWeek: KOREAN_TO_DAY[day],
-      ...(startMin !== undefined ? { startMinute: startMin, endMinute: endMin } : {}),
-    };
-    const created = await weeklyPlanApi.createTask(payload);
-    setTodos((prev) => [...prev, toViewTodo(created)]);
+  const addTodo = async (title, day, startMin, endMin, options = {}) => {
+    const {
+      category,
+      repeatWeekly = true,
+      eventDate,
+      eventDates,
+      days,
+    } = options;
+    const targetDays = days?.length ? days : [day];
+    const createdTasks = [];
+    for (const targetDay of targetDays) {
+      const payload = {
+        title,
+        dayOfWeek: KOREAN_TO_DAY[targetDay],
+        scheduleKind: repeatWeekly ? 'weekly' : 'once',
+        ...(repeatWeekly ? {} : { eventDate: eventDates?.[targetDay] || eventDate || formatDateParam(getNow()) }),
+        ...(category ? { category: KOREAN_TO_CATEGORY[category] } : {}),
+        ...(startMin !== undefined ? { startMinute: startMin, endMinute: endMin } : {}),
+      };
+      // eslint-disable-next-line no-await-in-loop
+      const created = await weeklyPlanApi.createTask(payload);
+      if (!created) return createdTasks;
+      createdTasks.push(created);
+    }
+    setTodos((prev) => [...prev, ...createdTasks.map(toViewTodo)]);
+    return createdTasks;
   };
   const addTodoFromInsight = async (insightId, day) => {
     const created = await weeklyPlanApi.createTask({
       sourceInsightId: insightId,
       dayOfWeek: KOREAN_TO_DAY[day],
     });
+    if (!created) return null;
     setTodos((prev) => [...prev, toViewTodo(created)]);
     return created;
   };
@@ -143,6 +178,7 @@ function App() {
     if (changes.startMin !== undefined) payload.startMinute = changes.startMin;
     if (changes.endMin !== undefined) payload.endMinute = changes.endMin;
     const updated = await weeklyPlanApi.updateTask(id, payload);
+    if (!updated) return;
     setTodos((prev) => prev.map((item) => (item.id === id ? toViewTodo(updated) : item)));
   };
   const deleteTodo = async (id) => {
@@ -231,9 +267,33 @@ function App() {
     });
   };
 
+  const mergeChatConversation = (conversation) => {
+    setChatConversations((prev) => {
+      const exists = prev.some((item) => item.id === conversation.id);
+      return exists
+        ? prev.map((item) => (item.id === conversation.id ? { ...item, ...conversation } : item))
+        : [conversation, ...prev];
+    });
+  };
+
+  const selectChatConversation = async (id) => {
+    setActiveChatId(id);
+    try {
+      const conversation = await chatApi.getConversation(id);
+      mergeChatConversation(conversation);
+    } catch {
+      // Keep the id selected; detail load may fail transiently on refresh.
+    }
+  };
+
   const handleNavigateToChat = () => {
     if (chatMode === 'popup' || chatMode === 'mini') {
-      playBubbleTransitionSound();
+      // Keep current selection; only play the welcome transition when opening a new chat.
+      if (!activeChatId) {
+        playBubbleTransitionSound();
+        setWaveTransition(true);
+        setTimeout(() => setWaveTransition(false), 750);
+      }
       setChatMode('page');
       setPage('chat');
       return;
@@ -244,19 +304,14 @@ function App() {
       return;
     }
     setPrevPage(page);
-    playBubbleTransitionSound();
     setPage('chat');
-
-    // Restore most recent conversation if one exists; otherwise show welcome
-    const mostRecent = chatConversations[0];
-    if (mostRecent && !activeChatId) {
-      setActiveChatId(mostRecent.id);
+    // Never auto-select a conversation. Welcome (no selection) gets the bubble effect;
+    // returning to an already-selected conversation does not.
+    if (!activeChatId) {
+      playBubbleTransitionSound();
+      setWaveTransition(true);
+      setTimeout(() => setWaveTransition(false), 750);
     }
-
-    setWaveTransition(true);
-    setTimeout(() => {
-      setWaveTransition(false);
-    }, 750);
   };
 
   const handleShrinkChat = () => {
@@ -284,21 +339,6 @@ function App() {
     setActiveChatId(null);
     setChatForceTopRight(true);
     setChatMode('mini');
-  };
-
-  const mergeChatConversation = (conversation) => {
-    setChatConversations((prev) => {
-      const exists = prev.some((item) => item.id === conversation.id);
-      return exists
-        ? prev.map((item) => (item.id === conversation.id ? { ...item, ...conversation } : item))
-        : [conversation, ...prev];
-    });
-  };
-
-  const selectChatConversation = async (id) => {
-    setActiveChatId(id);
-    const conversation = await chatApi.getConversation(id);
-    mergeChatConversation(conversation);
   };
 
   // "새 대화" only clears the active selection (welcome screen) — it doesn't
@@ -378,6 +418,19 @@ function App() {
                 : c
             )
           );
+        } else if (evt.type === 'assistant_status') {
+          setChatConversations((prev) =>
+            prev.map((c) =>
+              c.id === evt.conversationId
+                ? {
+                    ...c,
+                    messages: (c.messages || []).map((m) =>
+                      m.id === evt.messageId ? { ...m, activityPhase: evt.phase } : m
+                    ),
+                  }
+                : c
+            )
+          );
         } else if (evt.type === 'reasoning_delta') {
           setChatConversations((prev) =>
             prev.map((c) =>
@@ -385,7 +438,7 @@ function App() {
                 ? {
                     ...c,
                     messages: (c.messages || []).map((m) =>
-                      m.id === evt.messageId ? { ...m, reasoning: evt.reasoning } : m
+                      m.id === evt.messageId ? { ...m, reasoning: evt.reasoning, showReasoning: true } : m
                     ),
                   }
                 : c
@@ -411,7 +464,9 @@ function App() {
                 ? {
                     ...c,
                     messages: (c.messages || []).map((m) =>
-                      m.id === evt.messageId ? { ...m, status: 'done', text: evt.text } : m
+                      m.id === evt.messageId
+                        ? { ...m, status: 'done', text: evt.text, activityPhase: undefined }
+                        : m
                     ),
                     lastMessagePreview: evt.text,
                   }
@@ -453,8 +508,8 @@ function App() {
         month: 'long',
         day: 'numeric',
         weekday: 'long',
-      }).format(new Date()),
-    []
+      }).format(getNow()),
+    [],
   );
 
   if (!account) {
@@ -463,6 +518,11 @@ function App() {
 
   return (
     <div className="app-shell">
+      {IS_DEMO_MODE && (
+        <div className="demo-mode-banner" role="status">
+          시연 모드 — 날짜는 고정되며 변경 사항은 저장되지 않습니다.
+        </div>
+      )}
       <InsightChat open={false} onClose={() => {}} />
       {(chatMode === 'popup' || chatMode === 'mini') && (
         <ChatPopup

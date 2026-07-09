@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import alarmApi from '../../api/alarmApi';
 import iotApi from '../../api/iotApi';
+import { getNow } from '../../lib/demoClock';
 import { AlarmEditor } from './AlarmEditor';
 import { AlarmCard } from './AlarmCard';
 import { isAlarmEligibleDevice, computeNextFireDate, formatCountdownLabel, sortAlarmsByTime } from './alarmUtils';
@@ -12,7 +13,7 @@ export function AlarmPage() {
   const [devices, setDevices] = useState([]);
   const [selectedAlarmId, setSelectedAlarmId] = useState(null);
   const [toast, setToast] = useState('');
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => getNow());
   const rootRef = useRef(null);
 
   const load = () => alarmApi.getAlarms().then((list) => setAlarms(sortAlarmsByTime(list)));
@@ -24,7 +25,7 @@ export function AlarmPage() {
 
   // Recompute the "next alarm in ..." banner periodically.
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30000);
+    const id = setInterval(() => setNow(getNow()), 30000);
     return () => clearInterval(id);
   }, []);
 
@@ -51,10 +52,12 @@ export function AlarmPage() {
 
   const saveAlarm = async (payload, id) => {
     if (id) {
-      await alarmApi.updateAlarm(id, payload);
+      const result = await alarmApi.updateAlarm(id, payload);
+      if (!result) return;
       showToast('알람을 수정했습니다.');
     } else {
-      await alarmApi.createAlarm(payload);
+      const result = await alarmApi.createAlarm(payload);
+      if (!result) return;
       showToast('알람을 추가했습니다.');
     }
     setSelectedAlarmId(null);
@@ -62,7 +65,8 @@ export function AlarmPage() {
   };
 
   const toggleEnabled = async (alarm) => {
-    await alarmApi.updateAlarm(alarm.id, { enabled: !alarm.enabled });
+    const result = await alarmApi.updateAlarm(alarm.id, { enabled: !alarm.enabled });
+    if (!result) return;
     load();
   };
 

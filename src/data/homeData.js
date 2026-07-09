@@ -1,3 +1,5 @@
+import { withInsightIds } from '../components/report/InsightCard';
+
 // ── Power page mock trend generators ────────────────────────────────────────
 // Deterministic (seeded) pseudo-random generators so charts stay stable across
 // re-renders for the same plug/range, without needing to store huge static arrays.
@@ -268,3 +270,12 @@ export const smartPlugDevices = [
     },
   },
 ];
+
+// insight (surface='power') mock seed — mirrors sleepData.js/postureData.js's
+// withInsightIds([label, title, text]) shape; registered in insightsStore.js.
+export const powerInsights = withInsightIds([
+  ['대기전력 절감', '거실 TV 플러그 대기 예약 22:00~06:00 추가', '심야 시간대 대기전력이 꾸준히 감지돼요. 사용하지 않는 시간대에 자동으로 전원을 끄면 월 사용량을 줄일 수 있어요.'],
+  ['피크 시간대 회피', '저녁 6시~8시 세탁기·건조기 사용을 오후로 분산', '누진 구간이 올라가는 저녁 피크 시간대에 사용량이 몰려 있어요. 사용 시간을 분산하면 예상 요금을 낮출 수 있어요.'],
+  ['누진 구간 경고', '이번 달 누적 사용량이 2단계 진입 임계치에 근접', '현재 페이스라면 이번 달 누진 2단계 구간에 진입할 가능성이 높아요. 대기전력이 큰 콘센트부터 점검해보세요.'],
+  ['자동화 제안', '책상 멀티탭 자정 이후 자동 차단 규칙 추가', '자정 이후에도 미세하게 전력이 소비되고 있어요. 자동 차단 규칙을 추가하면 불필요한 소비를 막을 수 있어요.'],
+]);

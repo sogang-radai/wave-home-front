@@ -4,10 +4,26 @@
  * welcome screen animation, and textarea input with auto-resize + Ctrl+Enter.
  */
 import { useState, useRef, useEffect, useCallback } from 'react';
-import chatApi from '../api/chatApi';
-import settingsApi from '../api/settingsApi';
+import chatApi from '../../api/chatApi';
+import settingsApi from '../../api/settingsApi';
 import { MarkdownMessage } from './MarkdownMessage';
-import { WaveTransitionOverlay } from '../WaveTransitionOverlay';
+import { WaveTransitionOverlay } from '../../WaveTransitionOverlay';
+
+const SUGGESTION_ICONS = {
+  moon: '🌙',
+  posture: '🧘',
+  heart: '❤️',
+  home: '🏠',
+  plan: '📋',
+  sleep: '💤',
+  temp: '🌡️',
+  energy: '⚡',
+};
+
+function suggestionIcon(icon) {
+  if (!icon) return '✦';
+  return SUGGESTION_ICONS[icon] || icon;
+}
 
 export function useAutoResizeTextarea(value) {
   const ref = useRef(null);
@@ -23,45 +39,77 @@ export function useAutoResizeTextarea(value) {
   return ref;
 }
 
+function activityLabel(msg) {
+  if (msg.status !== 'streaming') return null;
+  if (msg.text) return null;
+  const tools = msg.toolEvents || [];
+  if (tools.some((te) => te.status === 'running')) return null;
+  if (tools.length > 0) return '답변 작성 중…';
+  if (msg.activityPhase === 'writing') return '답변 작성 중…';
+  return '생각 중…';
+}
+
 function MessageBubble({ msg, isLast }) {
+  const activity = activityLabel(msg);
+  const showThinking = msg.reasoning && (msg.status === 'streaming' || msg.showReasoning);
+
   return (
     <div className={`chat-bubble-row ${msg.role}${isLast ? ' is-new' : ''}`}>
       {msg.role === 'assistant' && (
         <div className="chat-bubble-avatar">✦</div>
       )}
       <div className={`chat-bubble ${msg.role}${msg.status === 'streaming' ? ' streaming' : ''}`}>
-        {/* Tool event pills — only show while running */}
-        {msg.toolEvents?.some((te) => te.status === 'running') && (
-          <div className="chat-tool-pills">
-            {msg.toolEvents
-              .filter((te) => te.status === 'running')
-              .map((te, ti) => (
-                <span key={ti} className="chat-tool-pill">
-                  <span className="chat-tool-spinner" />
-                  {te.label || te.name}
-                </span>
-              ))}
+        {activity && (
+          <div className="chat-activity-line">
+            <span className="chat-activity-spinner" aria-hidden="true" />
+            {activity}
           </div>
         )}
-        {/* Thinking / reasoning toggle */}
-        {msg.reasoning && (
-          <details className="chat-thinking">
-            <summary className="chat-thinking-summary">생각 과정 보기</summary>
+
+        {msg.toolEvents?.length > 0 && (
+          <div className="chat-tool-pills">
+            {msg.toolEvents.map((te, ti) => (
+              <span
+                key={`${te.name}-${ti}`}
+                className={`chat-tool-pill${te.status === 'done' ? ' done' : ''}`}
+                title={te.resultSummary || undefined}
+              >
+                {te.status === 'running' ? (
+                  <span className="chat-tool-spinner" aria-hidden="true" />
+                ) : (
+                  <span className="chat-tool-check" aria-hidden="true">✓</span>
+                )}
+                <span>{te.label || te.name}</span>
+                {te.resultSummary ? (
+                  <span className="chat-tool-result">{te.resultSummary}</span>
+                ) : null}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {showThinking && (
+          <details className="chat-thinking" open={msg.status === 'streaming'}>
+            <summary className="chat-thinking-summary">생각 과정</summary>
             <div className="chat-thinking-body">{msg.reasoning}</div>
           </details>
         )}
+
         {msg.role === 'assistant' ? (
-          <>
+          msg.status === 'streaming' ? (
+            <div className="chat-streaming-text">
+              {msg.text}
+              <span className="chat-cursor-blink" aria-hidden="true" />
+            </div>
+          ) : (
             <MarkdownMessage text={msg.text} />
-            {msg.status === 'streaming' && !msg.text && (
-              <span className="chat-streaming-dots-anim" aria-hidden="true" />
-            )}
-          </>
+          )
         ) : (
           msg.text
         )}
-        {msg.status === 'streaming' && msg.text && (
-          <span className="chat-cursor-blink" aria-hidden="true" />
+
+        {msg.status === 'streaming' && !msg.text && !activity && !msg.toolEvents?.length && (
+          <span className="chat-streaming-dots-anim" aria-hidden="true" />
         )}
       </div>
     </div>
@@ -99,17 +147,20 @@ export function ChatMessages({
   }, [initialDraft, onConsumeInitialDraft, textareaRef]);
 
   useEffect(() => {
-    chatApi.getSuggestions().then((res) => {
-      setShownSuggestions([...res.suggestionPool].sort(() => Math.random() - 0.5).slice(0, compact ? 3 : 4));
-    });
+    chatApi.getSuggestions()
+      .then((res) => {
+        const pool = Array.isArray(res?.suggestionPool) ? res.suggestionPool : [];
+        setShownSuggestions([...pool].sort(() => Math.random() - 0.5).slice(0, compact ? 3 : 4));
+      })
+      .catch(() => setShownSuggestions([]));
     settingsApi.getAiAgentSettings().then((s) => {
       ctrlEnterRef.current = s.ctrlEnterSend ?? false;
-    });
+    }).catch(() => {});
   }, [compact]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length]);
+  }, [messages.length, messages[messages.length - 1]?.text, messages[messages.length - 1]?.toolEvents?.length]);
 
   const handleSend = useCallback((text) => {
     const t = (text !== undefined ? text : draft).trim();
@@ -164,7 +215,7 @@ export function ChatMessages({
       {/* Message area — bubble overlay is scoped here only, excluding the
           conversation list and the input box below. */}
       <div className="chat-messages-wrap">
-        {waveTransition && <WaveTransitionOverlay active={waveTransition} />}
+        {isNewChat && waveTransition && <WaveTransitionOverlay active={waveTransition} />}
         <div className={msgAreaClass} style={{ userSelect: 'text' }}>
           {isNewChat ? (
             <div className={`chat-welcome${chatEntered ? ' chat-welcome--entered' : ''}`}>
@@ -182,7 +233,7 @@ export function ChatMessages({
                     style={{ '--card-idx': idx }}
                     onClick={() => handleSend(s.prompt)}
                   >
-                    <span className={compact ? 'chat-popup-suggestion-icon' : 'chat-suggestion-icon'}>{s.icon}</span>
+                    <span className={compact ? 'chat-popup-suggestion-icon' : 'chat-suggestion-icon'}>{suggestionIcon(s.icon)}</span>
                     {!compact && <strong>{s.label}</strong>}
                     <span>{s.prompt}</span>
                   </button>

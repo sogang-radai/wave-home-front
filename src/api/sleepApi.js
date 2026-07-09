@@ -1,8 +1,11 @@
-import { USE_MOCK_API } from './config';
+import { createApiClient } from '../lib/apiRouter';
 import { SleepApi as MockSleepApi } from './mock/SleepApi';
 import { SleepApi as RealSleepApi } from './v1/SleepApi';
+import { SleepApi as DemoSleepApi } from './demo/SleepApi';
 
-const SleepApiImpl = USE_MOCK_API ? MockSleepApi : RealSleepApi;
-
-const sleepApi = new SleepApiImpl();
+const sleepApi = createApiClient({
+  mock: MockSleepApi,
+  real: RealSleepApi,
+  demo: DemoSleepApi,
+});
 export default sleepApi;

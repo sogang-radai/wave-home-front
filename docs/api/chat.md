@@ -2,8 +2,8 @@
 
 구현된 프론트 코드: `src/api/chatApi.js` · `src/api/mock/ChatApi.js` · `src/api/v1/ChatApi.js`.
 
-WaveAI 대화 페이지(`src/chat/ChatPage.js`), 팝업 챗(`src/chat/ChatPopup.js`), 사이드 인사이트 위젯
-(`src/chat/InsightChat.js`)에서 쓰는 대화/메시지/추천 질문/1회성 인사이트 질의를 다룬다.
+WaveAI 대화 페이지(`src/pages/chat/ChatPage.js`), 팝업 챗(`src/pages/chat/ChatPopup.js`), 사이드 인사이트 위젯
+(`src/pages/chat/InsightChat.js`)에서 쓰는 대화/메시지/추천 질문/1회성 인사이트 질의를 다룬다.
 
 ## 공통
 
@@ -406,6 +406,6 @@ chatApi.askInsight(text)
 - `src/App.js` — `chatConversations`/`activeChatId` 상태를 `getConversations`/`getConversation`/
   `createConversation`/`startConversation`/`renameConversation`/`deleteConversation`/`sendMessage`로 관리한다
   (`ChatPage`, `ChatPopup`에 props로 전달).
-- `src/chat/ChatPage.js`, `src/chat/ChatPopup.js` — 웰컴 화면 추천 질문을 `getSuggestions()`로 로드한다.
-- `src/chat/InsightChat.js` — 추천 칩은 `getSuggestions()`, 질문 전송은 `askInsight()`를 사용한다.
+- `src/pages/chat/ChatPage.js`, `src/pages/chat/ChatPopup.js` — 웰컴 화면 추천 질문을 `getSuggestions()`로 로드한다.
+- `src/pages/chat/InsightChat.js` — 추천 칩은 `getSuggestions()`, 질문 전송은 `askInsight()`를 사용한다.
 - Mock 시드 데이터: `src/data/chatData.js` (mock 클래스의 응답 재료로 사용).

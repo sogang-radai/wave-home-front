@@ -1,3 +1,5 @@
+import { getNow } from '../lib/demoClock';
+
 export const koreanWeekdayLabels = ['일', '월', '화', '수', '목', '금', '토'];
 
 export const initialTodos = [
@@ -39,6 +41,22 @@ export const initialTodos = [
   { id: 29, title: '주간 회고 작성',               done: false, day: '일', cat: '멘탈',  startMin: 19*60,      endMin: 19*60+30 },
 ];
 
+export const PLAN_WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+
+export const PLAN_CAT_STYLE = {
+  '수면': { bg: '#ede9fe', text: '#4c1d95', shadow: 'rgba(167,139,250,0.15)' },
+  '일정': { bg: '#dbeafe', text: '#1d4ed8', shadow: 'rgba(59,130,246,0.15)' },
+  '자세': { bg: '#fce7f3', text: '#9d174d', shadow: 'rgba(244,114,182,0.15)' },
+  '멘탈': { bg: '#d1fae5', text: '#064e3b', shadow: 'rgba(52,211,153,0.15)' },
+};
+
+export const PLAN_CATEGORY_TO_API = {
+  수면: 'sleep',
+  일정: 'mental',
+  자세: 'posture',
+  멘탈: 'mental',
+};
+
 export const CAT_STYLE = {
   '자세': { bg: '#fce7f3', text: '#9d174d', shadow: 'rgba(244,114,182,0.15)', defaultMin: 9 * 60 + 15 },
   '수면': { bg: '#ede9fe', text: '#4c1d95', shadow: 'rgba(167,139,250,0.15)', defaultMin: 10 * 60 + 30 },
@@ -75,7 +93,7 @@ export function pickAICat(title) {
 }
 
 export function getWeekDates(weekOffset = 0) {
-  const today = new Date();
+  const today = getNow();
   const day = today.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
@@ -85,7 +103,7 @@ export function getWeekDates(weekOffset = 0) {
 }
 
 export function getWeekDatesFromAnchor(anchorDate) {
-  const today = new Date();
+  const today = getNow();
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const start = new Date(anchorDate);
   start.setHours(0, 0, 0, 0);
@@ -127,7 +145,7 @@ export function isSameWeek(a, b) {
 }
 
 export function getWeekOffsetForDate(targetDate) {
-  const todayMonday = getMondayOfWeek(new Date());
+  const todayMonday = getMondayOfWeek(getNow());
   const targetMonday = getMondayOfWeek(targetDate);
   return Math.round((targetMonday - todayMonday) / (7 * 24 * 60 * 60 * 1000));
 }

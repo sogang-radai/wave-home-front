@@ -3,15 +3,16 @@ import { MicIcon, SpeakerMuteIcon, SpeakerOnIcon } from '../icons';
 // Live incoming mic level meter. `onToggleMute` is optional — pass it only
 // for devices with two-way audio playback (camera); wave_station has no
 // speaker to mute, so it renders the bar without the button.
-export function MicVolumeBar({ level, muted, onToggleMute }) {
-  const pct = Math.round((level ?? 0) * 100);
+export function MicVolumeBar({ level, muted, onToggleMute, unavailable }) {
+  const showDash = unavailable || level == null;
+  const pct = showDash ? 0 : Math.round((level ?? 0) * 100);
   return (
     <div className="mic-volume-bar">
       <MicIcon width={16} height={16} />
       <div className="mic-volume-track">
-        <div className="mic-volume-fill" style={{ width: `${pct}%` }} />
+        <div className="mic-volume-fill" style={{ width: showDash ? '0%' : `${pct}%` }} />
       </div>
-      <span className="mic-volume-pct">{pct}%</span>
+      <span className="mic-volume-pct">{showDash ? '—' : `${pct}%`}</span>
       {onToggleMute && (
         <button
           type="button"

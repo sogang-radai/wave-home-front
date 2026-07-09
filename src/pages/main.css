@@ -554,3 +554,89 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Weekly plan — add popup */
+.plan-add-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.plan-add-title-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.plan-add-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plan-add-title-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.plan-add-title-input:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.plan-add-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  border: none;
+  border-radius: 14px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.plan-add-submit:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.plan-add-submit:not(:disabled):hover {
+  background: #1d4ed8;
+}
+
+.plan-add-repeat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.plan-add-repeat input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2563eb;
+  cursor: pointer;
+}

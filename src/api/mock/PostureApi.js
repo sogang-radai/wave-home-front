@@ -1,6 +1,8 @@
 import { delay, cloneDeep } from './utils';
 import { postureBars, postureLog, postureWeeklyTrendData } from '../../data/postureData';
-import { listInsights } from './insightsStore';
+import { InsightsApi } from './InsightsApi';
+
+const insightsApi = new InsightsApi();
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -206,13 +208,13 @@ export class PostureApi {
   async getDailyInsights() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(listInsights({ domain: 'posture', period: 'daily' }));
+    return insightsApi.listForSurface('posture_report', { period: 'daily' });
   }
 
   async getWeeklyInsights() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(listInsights({ domain: 'posture', period: 'weekly' }));
+    return insightsApi.listForSurface('posture_report', { period: 'weekly' });
   }
 
   async getAlertSettings() {
@@ -227,6 +229,18 @@ export class PostureApi {
     validateAlertSettings(payload);
     alertSettings = cloneDeep(payload);
     return cloneDeep(alertSettings);
+  }
+
+  async updateInsight(insightId, { approved }) {
+    await delay();
+    requireActiveAccount();
+    return insightsApi.updateInsight(insightId, { approved });
+  }
+
+  async applyInsight(insightId) {
+    await delay();
+    requireActiveAccount();
+    return insightsApi.apply(insightId);
   }
 
   // 테스트에서 activeAccount required 경로를 확인할 때만 사용한다.

@@ -1,4 +1,7 @@
 import { httpClient } from './httpClient';
+import { InsightsApi } from './InsightsApi';
+
+const insightsApi = new InsightsApi();
 
 export class PostureApi {
   async getTodaySummary() {
@@ -17,12 +20,12 @@ export class PostureApi {
     return httpClient.get('/posture/reports/weekly', { weekStart });
   }
 
-  async getDailyInsights() {
-    return httpClient.get('/posture/insights/daily');
+  async getDailyInsights({ date } = {}) {
+    return insightsApi.listForSurface('posture_report', { period: 'daily', date });
   }
 
-  async getWeeklyInsights() {
-    return httpClient.get('/posture/insights/weekly');
+  async getWeeklyInsights({ date } = {}) {
+    return insightsApi.listForSurface('posture_report', { period: 'weekly', date });
   }
 
   async getAlertSettings() {
@@ -31,5 +34,13 @@ export class PostureApi {
 
   async updateAlertSettings(payload) {
     return httpClient.put('/posture/settings/alerts', payload);
+  }
+
+  async updateInsight(insightId, { approved }) {
+    return insightsApi.updateInsight(insightId, { approved });
+  }
+
+  async applyInsight(insightId) {
+    return insightsApi.apply(insightId);
   }
 }

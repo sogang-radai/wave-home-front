@@ -1,4 +1,4 @@
-import { httpClient, ApiError } from './httpClient';
+import { httpClient, ApiError, streamSseGet } from './httpClient';
 import { API_BASE_URL } from '../config';
 
 // IoT 제어·룰·이벤트 API. DeviceManager 브리지는 summary/devices/query/actions/events 를 제공한다.
@@ -147,11 +147,24 @@ export class IotApi {
   }
 
   async testSendIr(commandId) {
-    return httpClient.post(`/iot/ir-commands/${commandId}/send`, {});
+    const devices = await this.getDevices();
+    const waveStation = devices.find((d) => d.class === 'wave_station');
+    if (!waveStation) {
+      throw new Error('Wave Station 장치를 찾을 수 없습니다.');
+    }
+    return httpClient.post(`/iot/devices/${waveStation.id}/actions/send_ir`, {
+      params: { commandId: String(commandId) },
+      execMode: 'once',
+    });
   }
 
-  async startIrLearn({ timeoutMs = 10000 } = {}) {
-    return httpClient.post('/iot/ir-commands/learn', { timeoutMs });
+  async startIrLearn({ deviceId, timeoutMs = 10000 } = {}) {
+    if (!deviceId) throw new ApiError(400, 'INVALID_BODY', 'Wave Station 장치를 선택해주세요.');
+    return httpClient.post('/iot/ir-commands/learn', { deviceId, timeoutMs });
+  }
+
+  subscribeWaveStationTelemetry(deviceId, handlers = {}) {
+    return streamSseGet(`/iot/devices/${deviceId}/telemetry/stream`, handlers);
   }
 
   async getEvents(params = {}) {

@@ -1,8 +1,11 @@
-import { USE_MOCK_API } from './config';
+import { createApiClient } from '../lib/apiRouter';
 import { WeeklyPlanApi as MockWeeklyPlanApi } from './mock/WeeklyPlanApi';
 import { WeeklyPlanApi as RealWeeklyPlanApi } from './v1/WeeklyPlanApi';
+import { WeeklyPlanApi as DemoWeeklyPlanApi } from './demo/WeeklyPlanApi';
 
-const WeeklyPlanApiImpl = USE_MOCK_API ? MockWeeklyPlanApi : RealWeeklyPlanApi;
-
-const weeklyPlanApi = new WeeklyPlanApiImpl();
+const weeklyPlanApi = createApiClient({
+  mock: MockWeeklyPlanApi,
+  real: RealWeeklyPlanApi,
+  demo: DemoWeeklyPlanApi,
+});
 export default weeklyPlanApi;

@@ -50,12 +50,20 @@ export function ChatPage({
   });
   const [chatEntered, setChatEntered] = useState(false);
 
+  // Card enter animation only on the welcome screen (no conversation selected).
+  // Selecting a conversation must never run this — clearing selection (새 대화) re-runs it.
   useEffect(() => {
+    if (activeConvId) {
+      setChatEntered(false);
+      return undefined;
+    }
+    setChatEntered(false);
     const delay = waveTransition ? 620 : 80;
     const t = setTimeout(() => setChatEntered(true), delay);
     return () => clearTimeout(t);
+    // Intentionally omit waveTransition: only re-trigger when selection clears.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeConvId]);
 
   const toggleConvOpen = () => setConvOpen((o) => {
     const next = !o;
@@ -65,6 +73,8 @@ export function ChatPage({
 
   const activeConversation = conversations.find((c) => c.id === activeConvId) || null;
   const messages = activeConversation?.messages || [];
+  // Summaries from the list API omit messages — still treat a selected id as "open conversation".
+  const isNewChat = !activeConvId;
 
   const topbarLeft = !convOpen ? (
     <button className="chat-conv-toggle-btn" onClick={toggleConvOpen} title="대화 목록 열기">
@@ -104,7 +114,7 @@ export function ChatPage({
         />
         <ChatMessages
           messages={messages}
-          isNewChat={!activeConvId || messages.length === 0}
+          isNewChat={isNewChat}
           chatEntered={chatEntered}
           onSend={onSendMessage}
           compact={false}

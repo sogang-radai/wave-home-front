@@ -5,6 +5,7 @@ import { Metric } from '../components/ui/Metric';
 import { Donut } from '../components/ui/Donut';
 import { PostureScoreGauge } from './posture/PostureScoreGauge';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
+import { getNow } from '../lib/demoClock';
 import postureApi from '../api/postureApi';
 import sleepApi from '../api/sleepApi';
 import iotApi from '../api/iotApi';
@@ -25,7 +26,7 @@ export function MainPage({
   onGoToPowerAnalysis,
   onOpenChatWithDraft,
 }) {
-  const todayLabel = koreanWeekdayLabels[new Date().getDay()];
+  const todayLabel = koreanWeekdayLabels[getNow().getDay()];
   const todayTodos = todos.filter((t) => t.day === todayLabel);
   const remaining = todayTodos.filter((todo) => !todo.done).length;
 

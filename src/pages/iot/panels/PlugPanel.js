@@ -4,11 +4,26 @@ import iotApi from '../../../api/iotApi';
 // tuya_ep2h — on/off/toggle (Stateful/Toggle) + voltage/current/power/energy telemetry.
 export function PlugPanel({ device, onChanged }) {
   const [state, setState] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    const poll = () => iotApi.queryDevice(device.id, 'status').then((s) => { if (!cancelled) setState(s); });
+    const poll = async () => {
+      try {
+        const s = await iotApi.queryDevice(device.id, 'status');
+        if (!cancelled) {
+          setState(s);
+          setLoadError('');
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err.message || '상태를 불러오지 못했습니다.');
+        }
+      }
+    };
+    setState(null);
+    setLoadError('');
     poll();
     const timer = setInterval(poll, 5000);
     return () => { cancelled = true; clearInterval(timer); };
@@ -25,7 +40,13 @@ export function PlugPanel({ device, onChanged }) {
     }
   };
 
-  if (!state) return <p className="panel-loading">불러오는 중…</p>;
+  if (!state) {
+    return (
+      <p className="panel-loading">
+        {loadError || '불러오는 중…'}
+      </p>
+    );
+  }
 
   return (
     <div className="plug-panel plug-panel--split">

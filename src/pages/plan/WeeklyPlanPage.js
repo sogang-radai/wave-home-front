@@ -1,12 +1,36 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  CAT_STYLE, ENG_LABELS, CAL_H, CAL_END_MIN,
+  CAT_STYLE, CAL_H, CAL_END_MIN,
   minToY, yToMin, snapMin, fmtTime, getWeekDatesFromAnchor, addCalendarDays,
+  PLAN_WEEKDAYS, PLAN_CAT_STYLE,
 } from '../../data/weeklyPlanData';
 import weeklyPlanApi from '../../api/weeklyPlanApi';
 import { DateNavigatorBar } from '../../components/calendar/DateNavigatorBar';
 import { getToday, isSameDay, normalizeDate } from '../../components/calendar/calendarUtils';
+import { getNow } from '../../lib/demoClock';
+import { TimeWheelPicker, minutesToPickerState, pickerStateToMinutes } from '../alarm/TimeWheelPicker';
+import '../alarm/alarm.css';
 import '../main.css';
+
+function formatDateParam(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildPopupState({ dayLabel, startMin, endMin }) {
+  return {
+    title: '',
+    startMin,
+    endMin,
+    startPicker: minutesToPickerState(startMin),
+    endPicker: minutesToPickerState(endMin),
+    selectedDays: [dayLabel],
+    repeatWeekly: false,
+    category: '일정',
+  };
+}
 
 export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight }) {
   const [weekStartDate, setWeekStartDate] = useState(getToday);
@@ -63,7 +87,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   const [drag, setDrag] = useState(null);
   const [moveDrag, setMoveDrag] = useState(null);
   const [popup, setPopup] = useState(null);
-  const [nowMin, setNowMin] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
+  const [nowMin, setNowMin] = useState(() => { const n = getNow(); return n.getHours() * 60 + n.getMinutes(); });
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const eventsRef = useRef(null);
   const popupInputRef = useRef(null);
@@ -71,7 +95,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   moveDragRef.current = moveDrag;
 
   useEffect(() => {
-    const tick = () => { const n = new Date(); setNowMin(n.getHours() * 60 + n.getMinutes()); };
+    const tick = () => { const n = getNow(); setNowMin(n.getHours() * 60 + n.getMinutes()); };
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
   }, []);
@@ -99,7 +123,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
       const rawEnd = dy > 10 ? yToMin(Math.max(drag.startY, y)) : yToMin(drag.startY) + 60;
       const endMin = snapMin(Math.min(rawEnd, CAL_END_MIN));
       setDrag(null);
-      setPopup({ dayIdx: drag.dayIdx, dayLabel: weekDates[drag.dayIdx].label, startMin, endMin: Math.max(endMin, startMin + 30), title: '' });
+      setPopup(buildPopupState({ dayLabel: weekDates[drag.dayIdx].label, startMin, endMin: Math.max(endMin, startMin + 30) }));
     };
     document.addEventListener('mouseup', onUp);
     return () => document.removeEventListener('mouseup', onUp);
@@ -194,9 +218,31 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   };
 
   const submitPopup = () => {
-    if (!popup?.title.trim()) return;
-    onAddTodo(popup.title.trim(), popup.dayLabel, popup.startMin, popup.endMin);
+    if (!popup?.title.trim() || popup.selectedDays.length === 0) return;
+    const eventDates = Object.fromEntries(
+      popup.selectedDays.map((label) => {
+        const match = weekDates.find((d) => d.label === label);
+        return [label, match ? formatDateParam(match.fullDate) : formatDateParam(getNow())];
+      }),
+    );
+    onAddTodo(popup.title.trim(), popup.selectedDays[0], popup.startMin, popup.endMin, {
+      days: popup.selectedDays,
+      repeatWeekly: popup.repeatWeekly,
+      category: popup.category,
+      eventDates,
+    });
     setPopup(null);
+  };
+
+  const togglePopupDay = (label) => {
+    setPopup((prev) => {
+      if (!prev) return prev;
+      const has = prev.selectedDays.includes(label);
+      const nextDays = has
+        ? (prev.selectedDays.length > 1 ? prev.selectedDays.filter((d) => d !== label) : prev.selectedDays)
+        : [...prev.selectedDays, label];
+      return { ...prev, selectedDays: nextDays };
+    });
   };
 
   // Build TIME_SLOTS array from 0..23
@@ -225,8 +271,10 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
             mode="week"
             label={dateRange}
             rangeStartDate={weekStartDate}
-            onPrev={() => setWeekStartDate((d) => addCalendarDays(d, -7))}
-            onNext={() => setWeekStartDate((d) => addCalendarDays(d, 7))}
+            onPrevDay={() => setWeekStartDate((d) => addCalendarDays(d, -1))}
+            onPrevWeek={() => setWeekStartDate((d) => addCalendarDays(d, -7))}
+            onNextWeek={() => setWeekStartDate((d) => addCalendarDays(d, 7))}
+            onNextDay={() => setWeekStartDate((d) => addCalendarDays(d, 1))}
             onSelectWeek={(date) => setWeekStartDate(normalizeDate(date))}
             showTodayReset={!isSameDay(weekStartDate, getToday())}
             onTodayReset={() => setWeekStartDate(getToday())}
@@ -241,18 +289,20 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 <div className="weekly-plan-sticky-header sticky top-0 bg-white pb-2" style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
                   <div className="grid" style={{ gridTemplateColumns: '72px repeat(7, 1fr)' }}>
                     <div />
-                    {weekDates.map((d, i) => (
+                    {weekDates.map((d, i) => {
+                      const isSunday = d.label === '일';
+                      return (
                       <button
-                        key={d.label}
+                        key={`${d.label}-${d.date}`}
                         type="button"
                         onClick={() => setSelectedDayIdx(i)}
                         className="text-center py-2 rounded-lg transition-colors"
                         style={{ background: i === selectedDayIdx ? '#eff6ff' : 'transparent' }}
                       >
-                        <p className="text-xs font-semibold" style={{ color: d.isToday ? '#2563eb' : '#94a3b8' }}>{ENG_LABELS[i]}</p>
-                        <p className="text-sm font-bold mt-0.5" style={{ color: d.isToday ? '#2563eb' : '#1e293b' }}>{d.date}</p>
+                        <p className="text-xs font-semibold" style={{ color: d.isToday ? '#2563eb' : isSunday ? '#dc2626' : '#64748b' }}>{d.label}</p>
+                        <p className="text-sm font-bold mt-0.5" style={{ color: d.isToday ? '#2563eb' : isSunday ? '#dc2626' : '#1e293b' }}>{d.date}</p>
                       </button>
-                    ))}
+                    );})}
                   </div>
                 </div>
 
@@ -361,7 +411,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                         onClick={(ev) => {
                           ev.stopPropagation();
                           const startMin = snapMin(yToMin(hoveredY));
-                          setPopup({ dayIdx: hoveredCol, dayLabel: weekDates[hoveredCol].label, startMin, endMin: snapMin(startMin + 60), title: '' });
+                          setPopup(buildPopupState({ dayLabel: weekDates[hoveredCol].label, startMin, endMin: snapMin(startMin + 60) }));
                         }}
                         style={{
                           position: 'absolute',
@@ -743,7 +793,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
         >
           <div
             className="bg-white rounded-2xl shadow-2xl p-6 mx-4"
-            style={{ width: '100%', maxWidth: '440px' }}
+            style={{ width: '100%', maxWidth: '520px' }}
             onClick={(ev) => ev.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -753,88 +803,126 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
               </button>
             </div>
 
-            <div className="mb-3 relative">
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">제목</label>
-              <input
-                ref={popupInputRef}
-                type="text"
-                value={popup.title}
-                onChange={(ev) => setPopup((prev) => ({ ...prev, title: ev.target.value }))}
-                onKeyDown={(ev) => { if (ev.key === 'Enter') submitPopup(); if (ev.key === 'Escape') setPopup(null); }}
-                placeholder="어떤 계획을 세울까요?"
-                className="w-full px-4 py-3 pr-12 text-sm rounded-xl bg-slate-50 border focus:outline-none"
-                style={{ borderColor: '#e2e8f0' }}
-                onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
-                onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
-              />
-              <button
-                type="button"
-                onClick={submitPopup}
-                className="absolute right-3 bottom-2.5 w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-                style={{ background: popup.title.trim() ? '#2563eb' : '#e2e8f0' }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
+            <div className="plan-add-title-wrap mb-4">
+              <label className="plan-add-label" htmlFor="plan-add-title">제목</label>
+              <div className="plan-add-title-row">
+                <input
+                  id="plan-add-title"
+                  ref={popupInputRef}
+                  type="text"
+                  value={popup.title}
+                  onChange={(ev) => setPopup((prev) => ({ ...prev, title: ev.target.value }))}
+                  onKeyDown={(ev) => { if (ev.key === 'Enter') submitPopup(); if (ev.key === 'Escape') setPopup(null); }}
+                  placeholder="어떤 계획을 세울까요?"
+                  className="plan-add-title-input"
+                />
+                <button
+                  type="button"
+                  onClick={submitPopup}
+                  disabled={!popup.title.trim()}
+                  className="plan-add-submit"
+                  aria-label="계획 추가"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
             </div>
 
-            <div className="mb-3">
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1.5">요일</label>
-              <div className="flex gap-1.5 flex-wrap">
-                {weekDates.map((d) => (
+            <div className="mb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-1">시작</p>
+                  <TimeWheelPicker
+                    compact
+                    hour12={popup.startPicker.hour12}
+                    minute={popup.startPicker.minute}
+                    meridiem={popup.startPicker.meridiem}
+                    onChange={(next) => {
+                      const startMin = pickerStateToMinutes(next);
+                      setPopup((prev) => ({
+                        ...prev,
+                        startPicker: next,
+                        startMin,
+                        endMin: Math.max(prev.endMin, startMin + 30),
+                        endPicker: minutesToPickerState(Math.max(prev.endMin, startMin + 30)),
+                      }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-1">종료</p>
+                  <TimeWheelPicker
+                    compact
+                    hour12={popup.endPicker.hour12}
+                    minute={popup.endPicker.minute}
+                    meridiem={popup.endPicker.meridiem}
+                    onChange={(next) => {
+                      const endMin = Math.max(pickerStateToMinutes(next), popup.startMin + 30);
+                      setPopup((prev) => ({
+                        ...prev,
+                        endPicker: minutesToPickerState(endMin),
+                        endMin,
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="plan-add-label">요일</label>
+              <div className="flex items-center gap-4">
+                <div className="flex gap-1.5 flex-1 min-w-0">
+                  {PLAN_WEEKDAYS.map((label) => {
+                    const selected = popup.selectedDays.includes(label);
+                    const isSunday = label === '일';
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => togglePopupDay(label)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                        style={{
+                          background: selected ? '#2563eb' : '#f1f5f9',
+                          color: selected ? 'white' : (isSunday ? '#dc2626' : '#64748b'),
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <label className="plan-add-repeat shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={popup.repeatWeekly}
+                    onChange={(ev) => setPopup((prev) => ({ ...prev, repeatWeekly: ev.target.checked }))}
+                  />
+                  매 주 반복
+                </label>
+              </div>
+            </div>
+
+            <div className="mb-2">
+              <label className="block text-[11px] font-semibold text-slate-500 mb-2">카테고리</label>
+              <div className="flex gap-2 flex-wrap">
+                {Object.entries(PLAN_CAT_STYLE).map(([cat, cs]) => (
                   <button
-                    key={d.label}
+                    key={cat}
                     type="button"
-                    onClick={() => setPopup((prev) => ({ ...prev, dayLabel: d.label }))}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    onClick={() => setPopup((prev) => ({ ...prev, category: cat }))}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
                     style={{
-                      background: popup.dayLabel === d.label ? '#2563eb' : '#f1f5f9',
-                      color: popup.dayLabel === d.label ? 'white' : '#64748b',
+                      background: popup.category === cat ? cs.bg : '#f8fafc',
+                      color: popup.category === cat ? cs.text : '#94a3b8',
+                      border: `1.5px solid ${popup.category === cat ? cs.bg : '#f1f5f9'}`,
                     }}
                   >
-                    {d.label} ({d.date})
+                    {cat}
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="flex gap-3 mb-4">
-              <div className="flex-1">
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">시작 시간</label>
-                <input
-                  type="time"
-                  value={fmtTime(Math.min(popup.startMin, 23 * 60 + 59))}
-                  onChange={(ev) => {
-                    if (!ev.target.value) return;
-                    const [h, m] = ev.target.value.split(':').map(Number);
-                    const newStart = h * 60 + m;
-                    setPopup((prev) => ({ ...prev, startMin: newStart, endMin: Math.max(prev.endMin, newStart + 30) }));
-                  }}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
-                  style={{ borderColor: '#e2e8f0' }}
-                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
-                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">종료 시간</label>
-                <input
-                  type="time"
-                  value={fmtTime(Math.min(popup.endMin, 23 * 60 + 59))}
-                  onChange={(ev) => {
-                    if (!ev.target.value) return;
-                    const [h, m] = ev.target.value.split(':').map(Number);
-                    const newEnd = h * 60 + m;
-                    setPopup((prev) => ({ ...prev, endMin: Math.max(newEnd, prev.startMin + 30) }));
-                  }}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
-                  style={{ borderColor: '#e2e8f0' }}
-                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
-                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
-                />
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-400">AI가 카테고리를 자동으로 분류합니다</p>
           </div>
         </div>
       )}

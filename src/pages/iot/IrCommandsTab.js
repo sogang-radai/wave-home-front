@@ -6,14 +6,26 @@ import { parseTimingsText } from '../../data/irCommandData';
 
 const LEARN_TIMEOUT_MS = 10000;
 
-function emptyForm() {
-  return { id: null, name: '', description: '', timingsText: '' };
+function emptyForm(waveStations) {
+  return {
+    id: null,
+    name: '',
+    description: '',
+    deviceId: waveStations[0]?.id || '',
+    timingsText: '',
+  };
 }
 
-function IrCommandModal({ command, onSave, onClose }) {
+function IrCommandModal({ command, waveStations, onSave, onClose }) {
   const [form, setForm] = useState(() => (command
-    ? { id: command.id, name: command.name, description: command.description || '', timingsText: command.timings.join(', ') }
-    : emptyForm()));
+    ? {
+      id: command.id,
+      name: command.name,
+      description: command.description || '',
+      deviceId: waveStations[0]?.id || '',
+      timingsText: command.timings.join(', '),
+    }
+    : emptyForm(waveStations)));
   const [error, setError] = useState('');
   const [learning, setLearning] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -22,18 +34,22 @@ function IrCommandModal({ command, onSave, onClose }) {
   useEffect(() => () => clearInterval(countdownTimer.current), []);
 
   const { timings, error: parseError } = parseTimingsText(form.timingsText);
-  const canSave = !!form.name.trim() && !parseError;
+  const canSave = !!form.name.trim() && !parseError && !!form.deviceId;
 
   const startLearn = () => {
+    if (!form.deviceId) {
+      setError('Wave Station 장치를 선택해주세요.');
+      return;
+    }
     setLearning(true);
     setError('');
     setCountdown(LEARN_TIMEOUT_MS / 1000);
     countdownTimer.current = setInterval(() => {
       setCountdown((c) => (c > 0 ? c - 1 : 0));
     }, 1000);
-    iotApi.startIrLearn({ timeoutMs: LEARN_TIMEOUT_MS })
+    iotApi.startIrLearn({ deviceId: form.deviceId, timeoutMs: LEARN_TIMEOUT_MS })
       .then(({ timings: learned }) => {
-        setForm((f) => ({ ...f, timingsText: learned.join(', ') }));
+        setForm((f) => ({ ...f, timingsText: learned.join(', '), source: 'learned' }));
       })
       .catch((err) => setError(err.message || '학습에 실패했습니다.'))
       .finally(() => {
@@ -45,7 +61,13 @@ function IrCommandModal({ command, onSave, onClose }) {
   const submit = async () => {
     if (parseError) { setError(parseError); return; }
     try {
-      await onSave({ id: form.id, name: form.name, description: form.description, timings, source: form.id ? undefined : 'manual' });
+      await onSave({
+        id: form.id,
+        name: form.name,
+        description: form.description,
+        timings,
+        source: form.id ? undefined : 'manual',
+      });
     } catch (err) {
       setError(err.message || '저장에 실패했습니다.');
     }
@@ -73,7 +95,20 @@ function IrCommandModal({ command, onSave, onClose }) {
         <span>설명</span>
         <input type="text" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
       </label>
-
+      <label className="settings-field">
+        <span>장치</span>
+        <select
+          className="settings-select"
+          value={form.deviceId}
+          onChange={(e) => setForm((f) => ({ ...f, deviceId: e.target.value }))}
+          disabled={learning || waveStations.length === 0}
+        >
+          {waveStations.length === 0 && <option value="">Wave Station 없음</option>}
+          {waveStations.map((station) => (
+            <option key={station.id} value={station.id}>{station.name}</option>
+          ))}
+        </select>
+      </label>
       <label className="settings-field">
         <span>타이밍</span>
         <textarea
@@ -90,7 +125,7 @@ function IrCommandModal({ command, onSave, onClose }) {
           <p>{countdown}초 남음 — 신호를 기다리는 중…</p>
         </div>
       ) : (
-        <button type="button" className="settings-btn-ghost ir-learn-btn" onClick={startLearn}>학습</button>
+        <button type="button" className="settings-btn-ghost ir-learn-btn" onClick={startLearn} disabled={!form.deviceId}>학습</button>
       )}
     </SettingsModal>
   );
@@ -98,13 +133,19 @@ function IrCommandModal({ command, onSave, onClose }) {
 
 export function IrCommandsTab() {
   const [commands, setCommands] = useState([]);
+  const [waveStations, setWaveStations] = useState([]);
   const [modalCommand, setModalCommand] = useState(undefined); // undefined = closed, null = new, object = edit
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState('');
 
   const load = () => iotApi.getIrCommands().then(setCommands);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    iotApi.getDevices().then((devices) => {
+      setWaveStations(devices.filter((d) => d.class === 'wave_station'));
+    });
+  }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2000); };
 
@@ -159,7 +200,12 @@ export function IrCommandsTab() {
       </div>
 
       {modalCommand !== undefined && (
-        <IrCommandModal command={modalCommand} onSave={save} onClose={() => setModalCommand(undefined)} />
+        <IrCommandModal
+          command={modalCommand}
+          waveStations={waveStations}
+          onSave={save}
+          onClose={() => setModalCommand(undefined)}
+        />
       )}
       {confirmDelete && (
         <ConfirmDialog title="IR 커맨드 삭제" message={`'${confirmDelete.name}' 커맨드를 삭제할까요?`} onConfirm={remove} onCancel={() => setConfirmDelete(null)} />

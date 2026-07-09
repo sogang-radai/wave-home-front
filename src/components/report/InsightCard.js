@@ -5,13 +5,17 @@ export function withInsightIds(items) {
 
 export function InsightCard({ id, label, title, text, approved, onToggle }) {
   return (
-    <div className={`insight-card ${approved ? 'applied' : ''}`}>
-      <span className="insight-card-label">{label}</span>
-      <strong>{title}</strong>
-      <p>{text}</p>
-      <button type="button" className="insight-card-action" onClick={() => onToggle(id)}>
-        {approved ? '✓ 적용됨' : '실행'}
-      </button>
-    </div>
+    <article className={`insight-card${approved ? ' applied' : ''}`}>
+      <header className="insight-card-head">
+        <span className="insight-card-label">{label}</span>
+      </header>
+      <h4 className="insight-card-title">{title}</h4>
+      <p className="insight-card-text">{text}</p>
+      <footer className="insight-card-footer">
+        <button type="button" className="insight-card-action" onClick={() => onToggle(id)}>
+          {approved ? '✓ 적용됨' : '실행'}
+        </button>
+      </footer>
+    </article>
   );
 }

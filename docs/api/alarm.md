@@ -7,6 +7,7 @@
 
 - Base URL: `/api/v1`
 - 알람은 현재 세션의 `activeAccount` 기준으로 조회/생성/수정/삭제한다.
+- 에이전트용 internal API: [`docs/agent-api/alarms-api.md`](../../../docs/agent-api/alarms-api.md) (`/internal/v1/alarms`, `userId` 명시).
 - 공통 에러 응답: `{ "error": { "code": "NOT_FOUND", "message": "..." } }`
 - 알람 장치 실행(조명/콘센트/TTS)과 "기상 맞춤 알람"의 수면단계 판단은 이 문서의 범위가 아니다.
   이 API는 사용자 설정값의 CRUD만 다룬다.

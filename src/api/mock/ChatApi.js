@@ -71,6 +71,11 @@ function requireText(text) {
 // 메모리에만 보관되는 mock 상태. 새로고침하면 초기 데이터로 리셋된다.
 let conversations = cloneDeep(initialChatConversations).map(normalizeConversation);
 
+/** 테스트·데모 빌드에서 대화 목록 시드를 교체한다. */
+export function resetChatConversations(seed = []) {
+  conversations = cloneDeep(seed).map((conversation, index) => normalizeConversation(conversation, index));
+}
+
 export class ChatApi {
   async getConversations() {
     await delay();

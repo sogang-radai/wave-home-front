@@ -1,36 +1,46 @@
 import { sleepDailyInsights, sleepWeeklyInsights } from '../../data/sleepData';
 import { postureDailyInsights, postureWeeklyInsights } from '../../data/postureData';
+import { powerInsights } from '../../data/homeData';
 
-// Single canonical insight registry shared by SleepApi/PostureApi/WeeklyPlanApi mocks, mirroring
-// the "PATCH /insights/{insightId} 하나로 통일" contract shared across sleep.md/posture.md/weekly-plan.md.
-// Every mock must read/write through here so approving an insight in one domain's screen is
-// reflected everywhere else that surfaces the same insight.
+// Canonical insight registry for mock APIs. Mirrors `insight` table (`surface`, `kind`, PATCH /insights/{id}).
 
 let nextInsightId = 1;
 
-function toInsight(item, domain, period) {
+function toInsight(item, surface, period) {
+  // `power` has no daily/weekly period concept (unlike sleep/posture reports),
+  // so it always gets 'tip' — the schema's catch-all kind for period-less cards.
+  const kind = surface === 'power' ? 'tip' : period === 'weekly' ? 'goal' : 'action';
+  const domain = surface === 'sleep_report' ? 'sleep' : surface === 'posture_report' ? 'posture' : surface === 'power' ? 'power' : null;
   return {
     id: item.id ?? nextInsightId++,
+    surface,
     domain,
     period,
+    kind,
     label: item.label,
     title: item.title,
     text: item.text,
+    actionable: false,
     approved: Boolean(item.approved),
   };
 }
 
 const insights = [
-  ...sleepDailyInsights.map((item) => toInsight(item, 'sleep', 'daily')),
-  ...sleepWeeklyInsights.map((item) => toInsight(item, 'sleep', 'weekly')),
-  ...postureDailyInsights.map((item) => toInsight(item, 'posture', 'daily')),
-  ...postureWeeklyInsights.map((item) => toInsight(item, 'posture', 'weekly')),
+  ...sleepDailyInsights.map((item) => toInsight(item, 'sleep_report', 'daily')),
+  ...sleepWeeklyInsights.map((item) => toInsight(item, 'sleep_report', 'weekly')),
+  ...postureDailyInsights.map((item) => toInsight(item, 'posture_report', 'daily')),
+  ...postureWeeklyInsights.map((item) => toInsight(item, 'posture_report', 'weekly')),
+  ...powerInsights.map((item) => toInsight(item, 'power', undefined)),
 ];
 
-export function listInsights({ domain, period } = {}) {
-  return insights.filter(
-    (item) => (domain ? item.domain === domain : true) && (period ? item.period === period : true)
-  );
+export function listInsights({ surface, period, domain, kind } = {}) {
+  return insights.filter((item) => {
+    if (surface && item.surface !== surface) return false;
+    if (domain && item.domain !== domain) return false;
+    if (period && item.period !== period) return false;
+    if (kind && item.kind !== kind) return false;
+    return true;
+  });
 }
 
 export function findInsight(insightId) {

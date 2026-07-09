@@ -372,7 +372,7 @@ export function TriggerRulesTab() {
                           className={`trigger-picker-item${draft.trigger.classId === c.classId ? ' selected' : ''}`}
                           onClick={() => setDraft((d) => ({ ...d, trigger: { ...d.trigger, classId: c.classId } }))}
                         >
-                          {c.name}
+                          <span className="trigger-picker-item-label">{c.name}</span>
                         </button>
                       ))}
                       {gestureClasses.length === 0 && <p className="panel-empty">트리거 클래스가 없습니다.</p>}
@@ -393,7 +393,7 @@ export function TriggerRulesTab() {
                           className={`trigger-picker-item${draft.trigger.query === q ? ' selected' : ''}`}
                           onClick={() => setDraft((d) => ({ ...d, trigger: { ...d.trigger, query: q } }))}
                         >
-                          {q}
+                          <span className="trigger-picker-item-label">{q}</span>
                         </button>
                       ))}
                     </div>
@@ -431,7 +431,7 @@ export function TriggerRulesTab() {
                         className={`trigger-picker-item${draft.trigger.commandId === c.id ? ' selected' : ''}`}
                         onClick={() => setDraft((d) => ({ ...d, trigger: { ...d.trigger, commandId: c.id } }))}
                       >
-                        {c.name}
+                        <span className="trigger-picker-item-label">{c.name}</span>
                       </button>
                     ))}
                   </div>
@@ -456,7 +456,7 @@ export function TriggerRulesTab() {
                 {!actionDevice ? (
                   <p className="panel-empty">실행할 장치를 먼저 선택하세요.</p>
                 ) : (
-                  <div className="trigger-picker-list trigger-picker-list--plain">
+                  <div className="trigger-picker-list trigger-picker-list--plain trigger-scroll">
                     {(deviceClassRegistry[actionDevice.class]?.actions || []).map((a) => (
                       <button
                         key={a.name}
@@ -464,7 +464,7 @@ export function TriggerRulesTab() {
                         className={`trigger-picker-item${draft.action.name === a.name ? ' selected' : ''}`}
                         onClick={() => setActionName(a.name)}
                       >
-                        {a.description || a.name}
+                        <span className="trigger-picker-item-label">{a.description || a.name}</span>
                       </button>
                     ))}
                   </div>

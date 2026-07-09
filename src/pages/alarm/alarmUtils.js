@@ -4,6 +4,12 @@ export { DAY_OF_WEEK_LABELS };
 
 export const DAYS_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
+const JS_DAY_TO_KEY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+export function todayDayKey(now = new Date()) {
+  return JS_DAY_TO_KEY[now.getDay()];
+}
+
 // device.class → 알람 방법 그룹. 이 매핑에 없는 class는 알람 장치로 선택할 수 없다.
 export const ALARM_METHOD_GROUP = {
   philips_wiz_e29_color: 'light',
@@ -114,6 +120,7 @@ export function sortAlarmsByTime(alarms) {
 
 export function validateAlarmDraft(draft) {
   if (!draft.name.trim()) return '알람 이름을 입력하세요.';
+  if (draft.repeatWeekly && draft.daysOfWeek.length === 0) return '반복할 요일을 선택하세요.';
   if (!draft.deviceId) return '알람 장치를 선택하세요.';
   if (draft.smartWake && !draft.radarDeviceId) return '기상 맞춤 알람에 사용할 레이더를 선택하세요.';
   const method = draft.method;

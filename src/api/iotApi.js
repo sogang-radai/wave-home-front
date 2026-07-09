@@ -1,8 +1,11 @@
-import { USE_MOCK_API } from './config';
+import { createApiClient } from '../lib/apiRouter';
 import { IotApi as MockIotApi } from './mock/IotApi';
 import { IotApi as RealIotApi } from './v1/IotApi';
+import { IotApi as DemoIotApi } from './demo/IotApi';
 
-const IotApiImpl = USE_MOCK_API ? MockIotApi : RealIotApi;
-
-const iotApi = new IotApiImpl();
+const iotApi = createApiClient({
+  mock: MockIotApi,
+  real: RealIotApi,
+  demo: DemoIotApi,
+});
 export default iotApi;

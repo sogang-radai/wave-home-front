@@ -1,5 +1,8 @@
 import { delay, cloneDeep } from './utils';
 import { smartPlugDevices, generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
+import { InsightsApi } from './InsightsApi';
+
+const insightsApi = new InsightsApi();
 
 class MockApiError extends Error {
   constructor(status, code, message) {
@@ -78,6 +81,20 @@ export class PowerApi {
       },
       text: `${plug.name}의 ${period} 전력 사용 패턴을 분석했습니다. 피크 전력은 ${(plug.power_w * 1.2).toFixed(0)}W였습니다.`,
     };
+  }
+
+  // insight (surface='power') — same thin-wrapper pattern as SleepApi/PostureApi,
+  // so the real v1 PowerApi below reuses the exact same GET/PATCH /insights contract.
+  async getInsights() {
+    await delay();
+    requireActiveAccount();
+    return insightsApi.listForSurface('power', {});
+  }
+
+  async updateInsight(insightId, { approved }) {
+    await delay();
+    requireActiveAccount();
+    return insightsApi.updateInsight(insightId, { approved });
   }
 
   __setActiveAccountForTest(accountId) {

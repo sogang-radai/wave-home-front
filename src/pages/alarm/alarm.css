@@ -108,6 +108,29 @@
    this one step scroll internally rather than resizing every card. */
 .alarm-wizard-step--time .alarm-wizard-step-body {
   overflow-y: auto;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(68, 89, 109, 0.35) transparent;
+}
+
+.alarm-wizard-step--time .alarm-wizard-step-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.alarm-wizard-step--time .alarm-wizard-step-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alarm-wizard-step--time .alarm-wizard-step-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(68, 89, 109, 0.35);
+}
+
+.alarm-wizard-step--time .alarm-wizard-step-body::-webkit-scrollbar-button,
+.alarm-wizard-step--time .alarm-wizard-step-body::-webkit-scrollbar-button:single-button {
+  display: none;
+  width: 0;
+  height: 0;
+  -webkit-appearance: none;
 }
 
 /* Step 2 (알람 장치): the body itself never scrolls — the device list inside
@@ -124,9 +147,17 @@
 
 /* ── Day picker + checkboxes ─────────────────────────────────────────────── */
 
+.alarm-day-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .alarm-day-picker {
   display: flex;
   gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .alarm-day-picker button {
@@ -155,6 +186,33 @@
   border-color: var(--danger);
   background: rgba(232, 93, 110, 0.12);
   color: var(--danger);
+}
+
+.alarm-day-picker button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.alarm-repeat-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.alarm-repeat-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--wave);
+  cursor: pointer;
 }
 
 .alarm-checkbox-row {
@@ -190,7 +248,7 @@
 
 .alarm-radar-select {
   width: auto;
-  max-width: 112px;
+  max-width: 168px;
   height: 32px;
   padding: 0 8px;
   font-size: 12px;
@@ -246,12 +304,12 @@
 /* ── Device picker (step 2) ──────────────────────────────────────────────── */
 
 .alarm-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--wave-30) transparent;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(68, 89, 109, 0.35) transparent;
 }
 
 .alarm-scroll::-webkit-scrollbar {
-  width: 5px;
+  width: 10px;
 }
 
 .alarm-scroll::-webkit-scrollbar-track {
@@ -260,7 +318,15 @@
 
 .alarm-scroll::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: var(--wave-30);
+  background: rgba(68, 89, 109, 0.35);
+}
+
+.alarm-scroll::-webkit-scrollbar-button,
+.alarm-scroll::-webkit-scrollbar-button:single-button {
+  display: none;
+  width: 0;
+  height: 0;
+  -webkit-appearance: none;
 }
 
 .alarm-device-list {
@@ -452,11 +518,66 @@
   pointer-events: none;
 }
 
+.time-wheel-picker--compact {
+  height: 108px;
+  gap: 2px;
+  border-radius: 12px;
+}
+
+.time-wheel-picker--compact.time-wheel-picker--rows-3 {
+  height: 108px;
+}
+
+.time-wheel-picker--compact .time-wheel-highlight {
+  height: 36px;
+  border-radius: 8px;
+}
+
+.time-wheel-picker--compact .wheel-column {
+  width: 48px;
+}
+
+.time-wheel-picker--compact .wheel-column--meridiem {
+  width: 44px;
+}
+
+.time-wheel-picker--compact .wheel-item {
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+.time-wheel-picker--compact .wheel-item.active {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.time-wheel-picker--compact .meridiem-item {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+.time-wheel-picker--compact .meridiem-item.active {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.time-wheel-picker--compact .time-wheel-colon {
+  font-size: 20px;
+}
+
 .wheel-column {
   position: relative;
   width: 56px;
   overflow-y: scroll;
-  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  /* Snapping is handled entirely in JS (see TimeWheelPicker.js) — native
+     `scroll-snap-type: mandatory` forces a full snap on every scroll
+     operation (including tiny script-driven scrollTop nudges), which broke
+     wheel damping and caused multi-row jumps per wheel tick. */
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -465,18 +586,23 @@
   display: none;
 }
 
-/* AM/PM is not a scrollable wheel: it only ever shows one label, sliding to
-   the other when the hour wheel crosses the 12-hour boundary. */
+/* AM/PM: only two labels — wheel toggles between them, no infinite repeat. */
 .wheel-column--meridiem {
   width: 52px;
-  height: 44px;
   overflow: hidden;
+  flex-shrink: 0;
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .meridiem-track {
   display: flex;
   flex-direction: column;
+  padding-top: calc(44px * 2);
+  padding-bottom: calc(44px * 2);
   transition: transform 0.22s ease;
+  border: 0;
+  background: none;
 }
 
 .meridiem-track.is-pm {
@@ -488,23 +614,35 @@
   align-items: center;
   justify-content: center;
   height: 44px;
-  font-size: 22px;
+  border: 0;
+  background: none;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sub);
+  opacity: 0.4;
+  user-select: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, font-size 0.15s ease, color 0.15s ease;
+}
+
+.meridiem-item.active {
+  font-size: 24px;
   font-weight: 900;
   color: var(--ink);
-  user-select: none;
+  opacity: 1;
 }
 
 .wheel-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  scroll-snap-align: center;
   font-size: 17px;
   font-weight: 700;
   color: var(--sub);
   opacity: 0.4;
   transition: opacity 0.15s ease, font-size 0.15s ease, color 0.15s ease;
   user-select: none;
+  cursor: pointer;
 }
 
 .wheel-item.active {

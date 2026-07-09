@@ -2,58 +2,93 @@
 .insight-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
+}
+
+.insight-section {
+  margin-top: 40px;
+}
+
+.insight-section-title {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .insight-card {
-  position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 148px;
-  padding: 16px 16px 52px;
+  min-height: 168px;
+  padding: 18px 20px 16px;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--wave-10);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 1px 8px var(--wave-10);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.insight-card:hover {
+  border-color: var(--wave-20);
+  box-shadow: 0 4px 16px var(--wave-10);
 }
 
 .insight-card.applied {
   border-color: var(--good-18);
-  background: var(--good-15);
+  background: linear-gradient(135deg, var(--surface), var(--good-15));
+  box-shadow: 0 0 0 1px var(--good-18), 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.insight-card-head {
+  margin-bottom: 12px;
 }
 
 .insight-card-label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--excellent-text);
-  font-size: 12px;
-  font-weight: 800;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
 }
 
 .insight-card.applied .insight-card-label {
+  background: var(--good-18);
   color: var(--good-text);
 }
 
-.insight-card strong {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 17px;
+.insight-card-title {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
   line-height: 1.45;
 }
 
-.insight-card p {
+.insight-card-text {
   flex: 1;
   margin: 0;
   color: var(--sub);
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.65;
+}
+
+.insight-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.insight-card.applied .insight-card-footer {
+  border-top-color: var(--good-18);
 }
 
 .insight-card-action {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  padding: 7px 14px;
+  padding: 8px 16px;
   border: 1px solid var(--wave-30);
   border-radius: 999px;
   background: var(--surface);
@@ -61,11 +96,17 @@
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.insight-card-action:hover {
+  border-color: var(--wave);
+  background: var(--wave-05);
 }
 
 .insight-card.applied .insight-card-action {
-  border-color: var(--good-18);
+  border-color: var(--good);
   background: var(--good);
   color: var(--surface);
 }
@@ -74,7 +115,7 @@
 .care-report-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 28px;
 }
 
 .care-report-layout .card.wide {

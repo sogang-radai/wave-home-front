@@ -5,7 +5,9 @@ import {
   listGeneratedNightDates,
 } from './sleepDataGenerator';
 import { sleepWeeklyTrendData, sleepSettingSummaries } from '../../data/sleepData';
-import { listInsights, setInsightApproved } from './insightsStore';
+import { InsightsApi } from './InsightsApi';
+
+const insightsApi = new InsightsApi();
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -126,11 +128,14 @@ function buildWeeklyReport(weekStart) {
     summary: '평균 수면 시간은 줄었지만, 기상 규칙성과 깊은 수면 비율은 후반으로 갈수록 개선되었습니다.',
     averageScore,
     trend,
+    // NOTE: the frontend no longer reads this field — SleepWeeklyReport.js
+    // now derives all four summary metrics client-side from `trend` so mock
+    // and real API behave identically. Kept here for API-shape parity/back-
+    // compat only.
     analysis: [
       ['점수 변화', '74→89점', '주 후반 회복세'],
       ['총합 수면 시간', '46.8h', '전주 대비 18% 감소'],
       ['수면 부채', '2h 10m', '평일 누적 부족'],
-      ['온도 민감 구간', '3회', '26℃ 이상에서 뒤척임 증가'],
       ['기상 규칙성', '82%', '전주 대비 +6%'],
     ].map(toAnalysisItem),
   };
@@ -143,10 +148,10 @@ function requireActiveAccount() {
 }
 
 function getInsightCollection(period) {
-  if (period !== 'daily' && period !== 'weekly') {
+  if (period !== 'daily' && period !== 'weekly' && period !== undefined) {
     throw apiError(400, 'INVALID_PERIOD', 'period는 daily 또는 weekly여야 합니다.');
   }
-  return listInsights({ domain: 'sleep', period });
+  return insightsApi.listForSurface('sleep_report', { period });
 }
 
 function defaultWeekStart() {
@@ -238,15 +243,19 @@ export class SleepApi {
   async getInsights({ period } = {}) {
     await delay();
     requireActiveAccount();
-    return cloneDeep(getInsightCollection(period));
+    return getInsightCollection(period);
   }
 
   async updateInsight(insightId, { approved }) {
     await delay();
     requireActiveAccount();
-    const insight = setInsightApproved(insightId, approved);
-    if (!insight) throw apiError(404, 'NOT_FOUND', '인사이트를 찾을 수 없습니다.');
-    return { id: insight.id, approved: insight.approved };
+    return insightsApi.updateInsight(insightId, { approved });
+  }
+
+  async applyInsight(insightId) {
+    await delay();
+    requireActiveAccount();
+    return insightsApi.apply(insightId);
   }
 
   __setActiveAccountForTest(accountId) {

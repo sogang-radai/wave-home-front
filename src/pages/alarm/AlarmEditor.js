@@ -5,7 +5,7 @@ import { AlarmDevicePicker } from './AlarmDevicePicker';
 import { AlarmMethodPanel } from './AlarmMethodPanel';
 import { InfoTooltip } from './InfoTooltip';
 import {
-  DAYS_ORDER, DAY_OF_WEEK_LABELS, methodGroupFor, defaultMethodFor,
+  DAYS_ORDER, DAY_OF_WEEK_LABELS, todayDayKey, methodGroupFor, defaultMethodFor,
   formatClock12, timeMinuteFrom, validateAlarmDraft,
 } from './alarmUtils';
 
@@ -16,6 +16,7 @@ function emptyDraft() {
     minute: 0,
     meridiem: 'AM',
     daysOfWeek: [],
+    repeatWeekly: false,
     smartWake: false,
     radarDeviceId: '',
     deviceId: '',
@@ -29,6 +30,7 @@ function draftFromAlarm(alarm) {
     name: alarm.name,
     ...formatClock12(alarm.timeMinute),
     daysOfWeek: alarm.daysOfWeek || [],
+    repeatWeekly: (alarm.daysOfWeek || []).length > 0,
     smartWake: alarm.smartWake,
     radarDeviceId: alarm.radarDeviceId || '',
     deviceId: alarm.deviceId || '',
@@ -49,10 +51,27 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
   const selectedDevice = devices.find((d) => d.id === draft.deviceId) || null;
 
   const toggleDay = (day) => {
+    if (!draft.repeatWeekly) return;
     const next = draft.daysOfWeek.includes(day)
       ? draft.daysOfWeek.filter((d) => d !== day)
       : [...draft.daysOfWeek, day];
+    if (next.length === 0) {
+      setDraft((d) => ({ ...d, daysOfWeek: [], repeatWeekly: false }));
+      return;
+    }
     setDraft((d) => ({ ...d, daysOfWeek: next }));
+  };
+
+  const toggleRepeatWeekly = (checked) => {
+    if (checked) {
+      setDraft((d) => ({
+        ...d,
+        repeatWeekly: true,
+        daysOfWeek: d.daysOfWeek.length > 0 ? d.daysOfWeek : [todayDayKey()],
+      }));
+      return;
+    }
+    setDraft((d) => ({ ...d, repeatWeekly: false, daysOfWeek: [] }));
   };
 
   const setDevice = (deviceId) => {
@@ -73,7 +92,7 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
     const payload = {
       name: draft.name,
       timeMinute: timeMinuteFrom(draft.hour12, draft.minute, draft.meridiem),
-      daysOfWeek: draft.daysOfWeek,
+      daysOfWeek: draft.repeatWeekly ? draft.daysOfWeek : [],
       smartWake: draft.smartWake,
       radarDeviceId: draft.smartWake ? draft.radarDeviceId || null : null,
       deviceId: draft.deviceId,
@@ -122,23 +141,30 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
               onChange={({ hour12, minute, meridiem }) => setDraft((d) => ({ ...d, hour12, minute, meridiem }))}
             />
 
-            <div className="alarm-day-picker">
-              {DAYS_ORDER.map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  className={[draft.daysOfWeek.includes(day) && 'active', day === 'sun' && 'is-sunday'].filter(Boolean).join(' ')}
-                  onClick={() => toggleDay(day)}
-                >
-                  {DAY_OF_WEEK_LABELS[day]}
-                </button>
-              ))}
+            <div className="alarm-day-row">
+              <div className="alarm-day-picker">
+                {DAYS_ORDER.map((day) => (
+                  <button
+                    key={day}
+                    type="button"
+                    className={[draft.daysOfWeek.includes(day) && 'active', day === 'sun' && 'is-sunday'].filter(Boolean).join(' ')}
+                    onClick={() => toggleDay(day)}
+                    disabled={!draft.repeatWeekly}
+                    aria-pressed={draft.daysOfWeek.includes(day)}
+                  >
+                    {DAY_OF_WEEK_LABELS[day]}
+                  </button>
+                ))}
+              </div>
+              <label className="alarm-repeat-checkbox">
+                <input
+                  type="checkbox"
+                  checked={draft.repeatWeekly}
+                  onChange={(e) => toggleRepeatWeekly(e.target.checked)}
+                />
+                매 주 반복
+              </label>
             </div>
-
-            <label className="alarm-checkbox-row">
-              <input type="checkbox" checked={draft.daysOfWeek.length > 0} disabled readOnly />
-              <span>매주 울리기</span>
-            </label>
 
             <div className="alarm-checkbox-row alarm-smartwake-row">
               <label className="alarm-checkbox-row-label">

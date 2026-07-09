@@ -12,10 +12,17 @@ import {
 } from 'recharts';
 import powerApi from '../../api/powerApi';
 import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
-import { USE_MOCK_API } from '../../api/config';
+import { USE_CLIENT_POWER_SIM } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend, hashSeed, seededRandom } from '../../data/homeData';
+import { InsightCard } from '../../components/report/InsightCard';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
+import '../../components/report/report.css';
 import './PowerPage.css';
+
+// 한국전력 주택용(저압) 누진제 2단계(201~400kWh) 근사 단가 — 데모용 상수.
+// 실제 요금은 기본요금·단계 구간·계절별 조정이 있으나, 여기서는 "선택 구간
+// 누적 사용량 × 2단계 전력량요금"의 단순 근사치로 예상 요금을 보여준다.
+const TIER2_WON_PER_KWH = 214.6;
 
 const COMBO_OPTIONS = [
   { id: 'min1', label: '1분' },
@@ -214,13 +221,26 @@ export function PowerPage() {
   });
   const [comboMenuOpen, setComboMenuOpen] = useState(false);
   const comboRef = useRef(null);
+  const [insights, setInsights] = useState([]);
+
+  useEffect(() => {
+    powerApi.getInsights().then(setInsights);
+  }, []);
+
+  const toggleInsight = async (id) => {
+    const current = insights.find((item) => item.id === id);
+    if (!current) return;
+    const nextApproved = !current.approved;
+    setInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
+    await powerApi.updateInsight(id, { approved: nextApproved });
+  };
 
   useEffect(() => {
     const loadPlugs = () => powerApi.getPlugs()
       .then((list) => {
         setPlugs(list);
         setPlugsError('');
-        if (!USE_MOCK_API) {
+        if (!USE_CLIENT_POWER_SIM) {
           setLiveValues(Object.fromEntries(list.map((p) => ([
             p.id,
             {
@@ -237,7 +257,7 @@ export function PowerPage() {
       .finally(() => setPlugsLoading(false));
     loadPlugs();
     const t = setTimeout(() => setMounted(true), 80);
-    const refresh = USE_MOCK_API ? null : setInterval(loadPlugs, POLL_MS);
+    const refresh = USE_CLIENT_POWER_SIM ? null : setInterval(loadPlugs, POLL_MS);
     return () => {
       clearTimeout(t);
       if (refresh) clearInterval(refresh);
@@ -269,7 +289,7 @@ export function PowerPage() {
 
   // Live V/W/A simulation (1s) — mock only; real API refreshes plugs directly.
   useEffect(() => {
-    if (!USE_MOCK_API || plugs.length === 0) return;
+    if (!USE_CLIENT_POWER_SIM || plugs.length === 0) return;
     const tick = () => {
       setLiveValues((prev) => {
         const next = { ...prev };
@@ -311,7 +331,7 @@ export function PowerPage() {
   const selectedPlug = plugs.find((p) => p.id === selectedPlugId) || plugs[0] || null;
 
   useEffect(() => {
-    if (!selectedPlug || !isCombo || USE_MOCK_API) return undefined;
+    if (!selectedPlug || !isCombo || USE_CLIENT_POWER_SIM) return undefined;
     const loadTrend = () => {
       powerApi.getComboTrend({
         deviceId: selectedPlug.id,
@@ -329,7 +349,7 @@ export function PowerPage() {
   const rawTrend = useMemoTrend(trendPlug, rangeTab, isCombo);
   const chartData = useMemo(() => {
     if (!isCombo) return rawTrend;
-    if (!USE_MOCK_API) return comboTrend;
+    if (!USE_CLIENT_POWER_SIM) return comboTrend;
     // Attach synthesized V/A series (deterministic per-point jitter) for the V·A view
     const v0 = trendPlug.voltageV ?? 220;
     const a0 = (trendPlug.currentMa ?? 0) / 1000;
@@ -385,25 +405,29 @@ export function PowerPage() {
   const totalWh = chartData.reduce((s, d) => s + (d.wh ?? 0), 0);
   const totalIsKwh = !isCombo && rangeTab === 'year';
   const report = buildPowerReport(rangeTab, selectedPlug, totalWh, peakW);
+  const estimatedCostWon = (totalWh / 1000) * TIER2_WON_PER_KWH;
 
   return (
     <div className={`page-stack power-page${mounted ? ' mounted' : ''}`}>
-      {/* ── Stat cards: 전력 | 전압 | 피크 | 누적 ─────────────────────────── */}
+      {/* ── Stat cards: 전력 | 전압 | 누적 | 예상 요금 ─────────────────────── */}
       <div className="power-stat-row">
         <StatCard label="전력" value={fmtNum(live.w, 1)} unit="W" accent live sub="현재 사용량" />
         <StatCard label="전압" value={fmtNum(live.v, 1)} unit="V" live sub={`${fmtNum(live.a, 3)} A`} />
-        {isCombo ? (
-          <StatCard label="피크" value={peakW.toFixed(1)} unit="W" sub="선택 구간 최대값" />
-        ) : (
-          <div className="power-stat-card power-stat-card--empty" />
-        )}
         <StatCard
           label="누적"
           value={totalIsKwh ? totalWh.toFixed(1) : (totalWh > 1000 ? (totalWh / 1000).toFixed(2) : totalWh.toFixed(1))}
           unit={totalIsKwh ? 'kWh' : (totalWh > 1000 ? 'kWh' : 'Wh')}
           sub="선택 구간 합계"
         />
+        <StatCard
+          label="예상 요금"
+          value={estimatedCostWon.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+          unit="원"
+          sub="누진 2단계 기준"
+        />
       </div>
+
+      <PowerReportBanner report={report} />
 
       {/* ── Chart card ───────────────────────────────────────────────────── */}
       <div className="power-chart-card">
@@ -472,8 +496,6 @@ export function PowerPage() {
             </div>
           </div>
         </div>
-
-        <PowerReportBanner report={report} />
 
         <PowerChart
           key={isCombo ? 'combo' : rangeTab}
@@ -545,6 +567,17 @@ export function PowerPage() {
           );
         })}
       </div>
+
+      {insights.length > 0 && (
+        <div className="insight-section">
+          <h3 className="insight-section-title">전력 인사이트</h3>
+          <div className="insight-list">
+            {insights.map((item) => (
+              <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} title={item.title} text={item.text} onToggle={toggleInsight} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

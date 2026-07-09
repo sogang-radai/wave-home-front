@@ -1,4 +1,7 @@
 import { httpClient } from './httpClient';
+import { InsightsApi } from './InsightsApi';
+
+const insightsApi = new InsightsApi();
 
 export class SleepApi {
   async getTodaySummary() {
@@ -29,11 +32,15 @@ export class SleepApi {
     return httpClient.get('/sleep/reports/weekly', { weekStart });
   }
 
-  async getInsights({ period }) {
-    return httpClient.get('/sleep/insights', { period });
+  async getInsights({ period, date } = {}) {
+    return insightsApi.listForSurface('sleep_report', { period, date });
   }
 
   async updateInsight(insightId, { approved }) {
-    return httpClient.patch(`/insights/${insightId}`, { approved });
+    return insightsApi.updateInsight(insightId, { approved });
+  }
+
+  async applyInsight(insightId) {
+    return insightsApi.apply(insightId);
   }
 }

@@ -1,8 +1,11 @@
-import { USE_MOCK_API } from './config';
+import { createApiClient } from '../lib/apiRouter';
 import { PushApi as MockPushApi } from './mock/PushApi';
 import { PushApi as RealPushApi } from './v1/PushApi';
+import { PushApi as DemoPushApi } from './demo/PushApi';
 
-const PushApiImpl = USE_MOCK_API ? MockPushApi : RealPushApi;
-
-const pushApi = new PushApiImpl();
+const pushApi = createApiClient({
+  mock: MockPushApi,
+  real: RealPushApi,
+  demo: DemoPushApi,
+});
 export default pushApi;

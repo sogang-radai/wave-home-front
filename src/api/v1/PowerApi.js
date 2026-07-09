@@ -1,4 +1,7 @@
 import { httpClient } from './httpClient';
+import { InsightsApi } from './InsightsApi';
+
+const insightsApi = new InsightsApi();
 
 // 전력 관리 페이지·대시보드 전력 카드용 API.
 // 집계·리포트는 docs/db-schema.md 의 power_energy / power_report 를 따른다.
@@ -30,5 +33,14 @@ export class PowerApi {
    */
   async getReport({ deviceId, period, periodStart }) {
     return httpClient.get('/power/reports', { deviceId, period, periodStart });
+  }
+
+  /** 전력 인사이트 카드 (`insight` 테이블, `surface='power'`) */
+  async getInsights() {
+    return insightsApi.listForSurface('power', {});
+  }
+
+  async updateInsight(insightId, { approved }) {
+    return insightsApi.updateInsight(insightId, { approved });
   }
 }

@@ -193,7 +193,7 @@ function resolveTransitionMode(leavingKind, enteringKind) {
   return leavingKind === 'report' && enteringKind === 'report' ? 'slide' : 'fade';
 }
 
-export function SleepStatusReport() {
+export function SleepStatusReport({ weeklyReport }) {
   const [reportDate, setReportDate] = useState(getToday);
   const [latestDate] = useState(getToday);
   const [sessions, setSessions] = useState([]);
@@ -392,6 +392,12 @@ export function SleepStatusReport() {
             </div>
           </div>
         </section>
+
+        {weeklyReport && (
+          <Card title="WaveAI 수면 리포트">
+            <p className="report-summary-only">{weeklyReport.summary}</p>
+          </Card>
+        )}
 
         <Card title="수면 단계">
           <SleepHypnogram

@@ -882,7 +882,7 @@ PATCH  /api/v1/notifications/read-all
 
 ## AI 에이전트 설정
 
-`src/pages/settings/AiAgentSettings.js`, `src/App.js`, `src/chat/ChatMessages.js`
+`src/pages/settings/AiAgentSettings.js`, `src/App.js`, `src/pages/chat/ChatMessages.js`
 
 ### GET `/settings/ai-models`
 

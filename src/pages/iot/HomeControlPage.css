@@ -1623,7 +1623,7 @@
 }
 
 .trigger-wizard-step--action .trigger-wizard-step-body {
-  overflow: visible;
+  overflow: hidden;
 }
 
 .trigger-wizard-inline {
@@ -1781,8 +1781,11 @@
 }
 
 .trigger-picker-list--plain {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   max-height: none;
-  overflow: visible;
+  overflow-y: auto;
 }
 
 /* Scrollbars without arrow buttons */
@@ -1880,6 +1883,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-width: 0;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -1889,6 +1893,17 @@
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+}
+
+/* Flex items default to min-width:auto, so long labels (gesture class names,
+   action descriptions, etc.) were overflowing past the card edge instead of
+   being clipped/wrapped. */
+.trigger-picker-item-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trigger-picker-item:hover {
@@ -2123,11 +2138,19 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--wave-05);
+  /* Defensive clip: `place-items: center` overrides the default `stretch`,
+     so the image sizes to its own intrinsic dimensions rather than the grid
+     area — without this, oversized source images spilled out of the wrap
+     and covered the card body text below. */
+  overflow: hidden;
 }
 
 .gesture-thumb-wrap img {
   max-width: 100%;
-  max-height: 100%;
+  /* Fixed px instead of 100%: with `place-items: center` the img has no
+     stretched/definite height to resolve percentages against, so a percent
+     max-height was effectively ignored in some browsers. */
+  max-height: 88px;
   width: auto;
   height: auto;
   object-fit: contain;

@@ -73,6 +73,14 @@
 
 .sleep-report-content {
   will-change: transform, opacity;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Sleep page sections need more breathing room than the default page-stack gap. */
+.sleep-page.page-stack {
+  gap: 32px;
 }
 
 .sleep-report-content.is-exit-next {
@@ -552,73 +560,6 @@
   border-top: 1px solid var(--line);
   color: var(--sub);
   font-size: 11px;
-}
-
-/* ── Insight list & card ─────────────────────────────────────────────────── */
-
-.insight-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.insight-card {
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--wave-10);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.insight-card.applied {
-  border-color: var(--good-18);
-  background: var(--good-15);
-}
-
-.insight-card-label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--excellent-text);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.insight-card.applied .insight-card-label {
-  color: var(--good-text);
-}
-
-.insight-card strong {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 17px;
-  line-height: 1.45;
-}
-
-.insight-card p {
-  flex: 1;
-  margin: 0 0 14px;
-  color: var(--sub);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.insight-card-action {
-  align-self: flex-start;
-  padding: 8px 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--wave);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.insight-card.applied .insight-card-action {
-  background: var(--good);
-  color: var(--surface);
 }
 
 /* ── Date navigator ──────────────────────────────────────────────────────── */

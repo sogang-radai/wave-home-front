@@ -281,7 +281,7 @@ export function ChatPopup({
   // ── Active conversation data ──────────────────────────────────────────────
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
   const messages = activeConv?.messages || [];
-  const isNewChat = !activeConvId || messages.length === 0;
+  const isNewChat = !activeConvId;
 
   // ── 8-direction resize handles ───────────────────────────────────────────
   const HANDLES = [
