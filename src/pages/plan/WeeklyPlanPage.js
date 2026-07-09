@@ -12,6 +12,19 @@ import { TimeWheelPicker, minutesToPickerState, pickerStateToMinutes } from '../
 import '../alarm/alarm.css';
 import '../main.css';
 
+function normalizeRecommendationGroups(data) {
+  if (!data?.length) return [];
+  if (data[0]?.items) return data;
+  const groups = new Map();
+  data.forEach((item) => {
+    const label = item.label || '추천';
+    const key = item.label || 'default';
+    if (!groups.has(key)) groups.set(key, { key, label, items: [] });
+    groups.get(key).items.push(item);
+  });
+  return [...groups.values()];
+}
+
 function formatDateParam(date) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -40,9 +53,19 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   const [updatingRecommendationId, setUpdatingRecommendationId] = useState(null);
 
   useEffect(() => {
-    weeklyPlanApi.getRecommendations().then(setRecommendationGroups);
-    weeklyPlanApi.getWeeklyAgentReport().then(setAgentReport);
+    weeklyPlanApi.getRecommendations()
+      .then((items) => setRecommendationGroups(normalizeRecommendationGroups(items)))
+      .catch(() => setRecommendationGroups([]));
   }, []);
+
+  useEffect(() => {
+    const endOfWeek = weekDates[weekDates.length - 1]?.fullDate;
+    const periodStart = endOfWeek ? formatDateParam(endOfWeek) : undefined;
+    weeklyPlanApi
+      .getWeeklyAgentReport(periodStart ? { periodStart } : {})
+      .then(setAgentReport)
+      .catch(() => setAgentReport(null));
+  }, [weekDates]);
 
   const setRecommendationApproved = (id, approved) => {
     setRecommendationGroups((prev) =>
@@ -254,14 +277,12 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
 
   return (
     <div className="page-stack" style={{ paddingBottom: 32 }}>
-      {agentReport && (
-        <section className="hero card">
-          <div>
-            <h2>{agentReport.headline}</h2>
-            <p>{agentReport.body}</p>
-          </div>
-        </section>
-      )}
+      <section className="hero card">
+        <div>
+          <h2>{agentReport?.headline || '주간 계획 리포트'}</h2>
+          <p>{agentReport?.body?.trim() ? agentReport.body : '리포트 준비 중입니다.'}</p>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
 
@@ -585,6 +606,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
           })()}
 
           {/* AI recommended actions */}
+          {recommendationGroups.some((group) => group.items?.length > 0) && (
           <div>
             <h2 className="font-bold text-slate-800 text-sm mb-3">AI 맞춤 추천 계획</h2>
             <div className="pr-1">
@@ -651,6 +673,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
               })()}
             </div>
           </div>
+          )}
         </div>
 
       </div>

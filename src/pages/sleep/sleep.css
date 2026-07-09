@@ -377,7 +377,7 @@
 }
 
 .sleep-score-hero .care-analysis-grid .metric {
-  background: rgba(255, 255, 255, 0.32);
+  background: var(--surface);
   border: 1px solid rgba(255, 255, 255, 0.52);
 }
 
@@ -416,7 +416,7 @@
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.34);
+  background: var(--surface);
 }
 
 .sleep-factor-card span {
@@ -512,7 +512,7 @@
 .sleep-hypnogram-chart {
   display: block;
   width: 100%;
-  height: 132px;
+  height: 148px;
   border-radius: 12px;
   background: var(--wave-05);
 }
@@ -520,12 +520,26 @@
 .sleep-hypnogram-grid {
   stroke: var(--line);
   stroke-width: 1;
+  stroke-dasharray: 4 5;
+  opacity: 0.85;
 }
 
 .sleep-movement-plot {
   position: relative;
   height: 16px;
   margin-top: 10px;
+}
+
+.sleep-movement-label {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: var(--sub);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(-100%);
+  margin-top: -4px;
 }
 
 .sleep-movement-line {
@@ -546,20 +560,104 @@
   position: absolute;
   top: 50%;
   width: 2px;
-  height: 8px;
   transform: translate(-50%, -50%);
   border-radius: 1px;
-  background: var(--neutral-dot);
+  background: var(--accent-stage-awake);
 }
 
 .sleep-hypnogram-times {
   display: flex;
   justify-content: space-between;
+  gap: 4px;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--line);
   color: var(--sub);
   font-size: 11px;
+}
+
+.sleep-hypnogram-times span:first-child,
+.sleep-hypnogram-times span:last-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Vitals row — fixed height cards (150% of prior heart chart card) */
+.sleep-vitals-grid .card {
+  height: 339px;
+  overflow: hidden;
+}
+
+.sleep-vitals-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 210px;
+  min-height: 0;
+}
+
+.sleep-snore-summary {
+  flex-shrink: 0;
+}
+
+.sleep-snore-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.sleep-snore-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--wave-05);
+  font-size: 12px;
+}
+
+.sleep-snore-item span:first-child {
+  color: var(--sub);
+}
+
+.sleep-snore-item span:last-child {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.sleep-vitals-chart {
+  height: 210px;
+}
+
+.sleep-custom-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(68, 89, 109, 0.35) transparent;
+}
+
+.sleep-custom-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sleep-custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sleep-custom-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(68, 89, 109, 0.35);
+}
+
+.sleep-custom-scroll::-webkit-scrollbar-button,
+.sleep-custom-scroll::-webkit-scrollbar-button:single-button {
+  display: none;
+  width: 0;
+  height: 0;
+  -webkit-appearance: none;
 }
 
 /* ── Date navigator ──────────────────────────────────────────────────────── */

@@ -6,8 +6,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import chatApi from '../../api/chatApi';
 import settingsApi from '../../api/settingsApi';
+import { IS_DEMO_MODE } from '../../api/config';
 import { MarkdownMessage } from './MarkdownMessage';
 import { WaveTransitionOverlay } from '../../WaveTransitionOverlay';
+import { WaveAiIcon } from '../../components/icons/WaveAiIcon';
 
 const SUGGESTION_ICONS = {
   moon: '🌙',
@@ -49,14 +51,106 @@ function activityLabel(msg) {
   return '생각 중…';
 }
 
+function ToolCallLog({ toolEvents = [], hasText }) {
+  const [expanded, setExpanded] = useState(false);
+  const [enteringIndex, setEnteringIndex] = useState(-1);
+  const prevCountRef = useRef(0);
+  const hadTextRef = useRef(false);
+
+  useEffect(() => {
+    if (toolEvents.length > prevCountRef.current) {
+      setEnteringIndex(toolEvents.length - 1);
+      const timer = setTimeout(() => setEnteringIndex(-1), 160);
+      prevCountRef.current = toolEvents.length;
+      return () => clearTimeout(timer);
+    }
+    prevCountRef.current = toolEvents.length;
+  }, [toolEvents.length]);
+
+  useEffect(() => {
+    if (hasText && !hadTextRef.current) {
+      setExpanded(false);
+    }
+    hadTextRef.current = hasText;
+  }, [hasText]);
+
+  if (!toolEvents.length) return null;
+
+  const collapsed = hasText && !expanded;
+  const running = toolEvents.some((te) => te.status === 'running');
+  const failedCount = toolEvents.filter((te) => te.status === 'failed').length;
+  const summary = running
+    ? `도구 실행 중 (${toolEvents.length})`
+    : failedCount > 0
+      ? `도구 ${toolEvents.length}개 사용 · ${failedCount}개 실패`
+      : `도구 ${toolEvents.length}개 사용`;
+
+  return (
+    <div
+      className={[
+        'chat-tool-log',
+        hasText ? 'has-response' : '',
+        collapsed ? 'is-collapsed' : '',
+      ].filter(Boolean).join(' ')}
+    >
+      {hasText && (
+        <button
+          type="button"
+          className="chat-tool-log-toggle"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={!collapsed}
+        >
+          <span
+            className={`chat-tool-log-chevron${collapsed ? '' : ' is-open'}`}
+            aria-hidden="true"
+          />
+          <span>{summary}</span>
+        </button>
+      )}
+      <div className="chat-tool-log-body" aria-hidden={collapsed && hasText}>
+        <div className="chat-tool-log-lines">
+          {toolEvents.map((te, ti) => (
+            <div
+              key={`${te.name}-${ti}`}
+              className={[
+                'chat-tool-line',
+                te.status === 'failed' ? 'failed' : te.status === 'done' ? 'done' : 'running',
+                ti === enteringIndex ? 'is-entering' : '',
+              ].filter(Boolean).join(' ')}
+              title={te.resultSummary || undefined}
+            >
+              {te.status === 'running' ? (
+                <span className="chat-tool-spinner" aria-hidden="true" />
+              ) : te.status === 'failed' ? (
+                <span className="chat-tool-fail" aria-hidden="true">×</span>
+              ) : (
+                <span className="chat-tool-check" aria-hidden="true">✓</span>
+              )}
+              <span className="chat-tool-line-text">
+                <span className="chat-tool-line-label">{te.label || te.name}</span>
+                {te.resultSummary ? (
+                  <span className="chat-tool-line-result">{te.resultSummary}</span>
+                ) : null}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({ msg, isLast }) {
   const activity = activityLabel(msg);
   const showThinking = msg.reasoning && (msg.status === 'streaming' || msg.showReasoning);
+  const hasText = Boolean(msg.text?.trim());
 
   return (
     <div className={`chat-bubble-row ${msg.role}${isLast ? ' is-new' : ''}`}>
       {msg.role === 'assistant' && (
-        <div className="chat-bubble-avatar">✦</div>
+        <div className="chat-bubble-avatar" aria-hidden="true">
+          <WaveAiIcon size={18} />
+        </div>
       )}
       <div className={`chat-bubble ${msg.role}${msg.status === 'streaming' ? ' streaming' : ''}`}>
         {activity && (
@@ -67,25 +161,7 @@ function MessageBubble({ msg, isLast }) {
         )}
 
         {msg.toolEvents?.length > 0 && (
-          <div className="chat-tool-pills">
-            {msg.toolEvents.map((te, ti) => (
-              <span
-                key={`${te.name}-${ti}`}
-                className={`chat-tool-pill${te.status === 'done' ? ' done' : ''}`}
-                title={te.resultSummary || undefined}
-              >
-                {te.status === 'running' ? (
-                  <span className="chat-tool-spinner" aria-hidden="true" />
-                ) : (
-                  <span className="chat-tool-check" aria-hidden="true">✓</span>
-                )}
-                <span>{te.label || te.name}</span>
-                {te.resultSummary ? (
-                  <span className="chat-tool-result">{te.resultSummary}</span>
-                ) : null}
-              </span>
-            ))}
-          </div>
+          <ToolCallLog toolEvents={msg.toolEvents} hasText={hasText} />
         )}
 
         {showThinking && (
@@ -219,10 +295,19 @@ export function ChatMessages({
         <div className={msgAreaClass} style={{ userSelect: 'text' }}>
           {isNewChat ? (
             <div className={`chat-welcome${chatEntered ? ' chat-welcome--entered' : ''}`}>
-              <div className="chat-welcome-icon">✦</div>
+              <div className="chat-welcome-icon" aria-hidden="true">
+                <WaveAiIcon size={48} />
+              </div>
               {!compact && <h2 className="chat-welcome-title">WaveAI에게 무엇이든 물어보세요</h2>}
               {compact && <p className="chat-popup-welcome-hint">무엇이든 물어보세요</p>}
               {!compact && <p className="chat-welcome-sub">수면·자세·심박·가전까지, 건강 데이터 기반으로 답변드려요</p>}
+              {IS_DEMO_MODE && !compact && (
+                <div className="chat-demo-notice" role="note">
+                  <strong>시연 모드 안내</strong>
+                  <p>여러 분이 함께 쓰는 데모 환경입니다. 과도한 사용은 자제해 주세요.</p>
+                  <p>기기 조작, 알림·일정 <em>설정</em> 등 변경 작업은 지원하지 않습니다. 수면·전력·<em>일정 조회</em>와 질문 답변은 가능합니다.</p>
+                </div>
+              )}
               <div className={compact ? 'chat-popup-suggestions' : 'chat-suggestions-grid'}>
                 {shownSuggestions.map((s, idx) => (
                   <button

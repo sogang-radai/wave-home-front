@@ -10,6 +10,7 @@ import postureApi from '../api/postureApi';
 import sleepApi from '../api/sleepApi';
 import iotApi from '../api/iotApi';
 import dashboardApi from '../api/dashboardApi';
+import powerApi from '../api/powerApi';
 import './main.css';
 
 function formatOfflineDetail(devices) {
@@ -37,6 +38,7 @@ export function MainPage({
   const [currentState, setCurrentState] = useState(null);
   const [homeSummary, setHomeSummary] = useState(null);
   const [homeDevices, setHomeDevices] = useState([]);
+  const [powerInsight, setPowerInsight] = useState(null);
 
   useEffect(() => {
     postureApi.getTodaySummary().then(setPostureSummary);
@@ -46,6 +48,7 @@ export function MainPage({
     dashboardApi.getCurrentState().then(setCurrentState);
     iotApi.getSummary().then(setHomeSummary);
     iotApi.getDevices().then(setHomeDevices);
+    powerApi.getInsights().then((items) => setPowerInsight(items?.[0] || null)).catch(() => setPowerInsight(null));
   }, []);
 
   const powerChartData = useMemo(
@@ -173,14 +176,16 @@ export function MainPage({
             )}
           </button>
 
-          <button
-            type="button"
-            className="feature-tile orange dashboard-power-insight"
-            onClick={() => onOpenChatWithDraft?.('이번 주 전력 사용량을 분석하고 절약 방법을 알려줘')}
-          >
-            <strong>전력 사용량 분석</strong>
-            <span>이번 주 저녁 시간대 전력 사용이 평소보다 12% 높아요. WaveAI에게 절약 팁을 물어보세요.</span>
-          </button>
+          {powerInsight && (
+            <button
+              type="button"
+              className="feature-tile orange dashboard-power-insight"
+              onClick={() => onOpenChatWithDraft?.(powerInsight.text || '이번 주 전력 사용량을 분석하고 절약 방법을 알려줘')}
+            >
+              <strong>{powerInsight.title}</strong>
+              <span>{powerInsight.text}</span>
+            </button>
+          )}
         </div>
 
         <div className="dashboard-sleep-column">

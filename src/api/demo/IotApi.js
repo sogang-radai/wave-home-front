@@ -111,4 +111,8 @@ export class IotApi extends MockIotApi {
     if (!guardDemoWrite()) return null;
     return super.setRadarGestureSet(deviceId, gestureSetId);
   }
+
+  subscribeWaveStationTelemetry(deviceId, handlers = {}) {
+    return super.subscribeWaveStationTelemetry(deviceId, handlers);
+  }
 }

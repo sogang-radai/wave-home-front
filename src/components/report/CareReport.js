@@ -22,9 +22,22 @@ export function weeklyHoursColor(hours) {
   return hours >= 7 ? 'var(--wave)' : hours >= 6 ? 'var(--wave-40)' : 'var(--wave-20)';
 }
 
-export function WeeklyTrendSummary({ trendData, valueKey = 'hours', unit = 'h', label = '7일 평균 수면 시간', goal = 7.5, decimals = 1 }) {
-  const avgValue = trendData.reduce((sum, d) => sum + d[valueKey], 0) / trendData.length;
-  const goalPercent = Math.round((avgValue / goal) * 100);
+export function WeeklyTrendSummary({
+  trendData,
+  valueKey = 'hours',
+  unit = 'h',
+  label = '7일 평균 수면 시간',
+  goal = 7.5,
+  decimals = 1,
+  avgValue: avgValueOverride,
+}) {
+  const recorded = trendData.filter((point) => point[valueKey] > 0);
+  const avgValue = avgValueOverride ?? (
+    recorded.length > 0
+      ? recorded.reduce((sum, point) => sum + point[valueKey], 0) / recorded.length
+      : 0
+  );
+  const goalPercent = goal > 0 ? Math.round((avgValue / goal) * 100) : 0;
 
   return (
     <div className="weekly-trend-summary">
@@ -68,8 +81,10 @@ export function CareReport({
   trendSummaryLabel = '7일 평균 수면 시간',
   trendGoal = 7.5,
   trendDecimals = 1,
+  trendSummaryAvgHours,
   trendColorFn = weeklyHoursColor,
   trendTooltipLabel = '수면',
+  showSummary = true,
   showTrendSummary = true,
   showMetricDetail = true,
   averageScore,
@@ -95,7 +110,9 @@ export function CareReport({
       )}
       {isWeekly && (
         <Card title={title} wide>
-          <p className="report-summary-only">{summary}</p>
+          {showSummary && summary?.trim() && (
+            <p className="report-summary-only">{summary}</p>
+          )}
           {showTrendSummary && (
             <WeeklyTrendSummary
               trendData={trendData}
@@ -104,6 +121,7 @@ export function CareReport({
               label={trendSummaryLabel}
               goal={trendGoal}
               decimals={trendDecimals}
+              avgValue={trendSummaryAvgHours}
             />
           )}
           <div className="weekly-trend-chart" style={{ marginTop: 18 }}>

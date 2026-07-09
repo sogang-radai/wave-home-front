@@ -308,12 +308,23 @@ export function TimeWheelPicker({
   hour12, minute, meridiem, onChange, compact = false, visibleRows,
 }) {
   const hourRef = useRef(null);
+  const prevHourRef = useRef(hour12);
   const resolvedVisible = visibleRows ?? (compact ? 3 : DEFAULT_VISIBLE);
   const itemHeight = compact ? 36 : ITEM_H;
 
-  const handleHourSettle = (nextHour, wraps) => {
-    const flip = (((wraps % 2) + 2) % 2) === 1;
-    onChange({ hour12: nextHour, minute, meridiem: flip ? (meridiem === 'AM' ? 'PM' : 'AM') : meridiem });
+  useEffect(() => {
+    prevHourRef.current = hour12;
+  }, [hour12]);
+
+  const handleHourSettle = (nextHour) => {
+    const prev = prevHourRef.current;
+    const flip = (prev === 11 && nextHour === 12) || (prev === 12 && nextHour === 11);
+    prevHourRef.current = nextHour;
+    onChange({
+      hour12: nextHour,
+      minute,
+      meridiem: flip ? (meridiem === 'AM' ? 'PM' : 'AM') : meridiem,
+    });
   };
 
   const handleMinuteSettle = (nextMinute, wraps) => {

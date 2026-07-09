@@ -1,11 +1,11 @@
 import { CareReport } from '../../components/report/CareReport';
 import { SleepStatusReport } from './SleepStatusReport';
 
-export function SleepDailyReport({ weeklyReport }) {
+export function SleepDailyReport({ onReportDateChange }) {
   return (
     <CareReport
       type="daily"
-      header={<SleepStatusReport weeklyReport={weeklyReport} />}
+      header={<SleepStatusReport onReportDateChange={onReportDateChange} />}
       analysis={[]}
     />
   );

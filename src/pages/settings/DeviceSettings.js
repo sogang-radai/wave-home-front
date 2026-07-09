@@ -12,24 +12,7 @@ import {
   TrashIcon,
   PlusIcon,
 } from './SettingsUI';
-import thumbSrs from '../../img/device/thumbnail_srs_r4sn.png';
-import thumbReolink from '../../img/device/thumbnail_reolink_e1_pro.png';
-import thumbDroidCam from '../../img/device/thumbnail_droid_cam.png';
-import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
-import thumbTizen from '../../img/device/thumbnail_tizen_tv.png';
-import thumbWiz from '../../img/device/thumbnail_philips_wiz_e29.png';
-
-// 512px thumbnails from src/img/device/; falls back to placeholder when class has no matching image.
-const deviceThumbnails = {
-  srs_r4sn: thumbSrs,
-  reolink_e1_pro: thumbReolink,
-  droid_cam: thumbDroidCam,
-  tuya_ep2h: thumbTuya,
-  tizen_tv: thumbTizen,
-  samsung_g7: thumbTizen,
-  philips_wiz_e29_color: thumbWiz,
-  philips_wiz_e29_white: thumbWiz,
-};
+import { deviceThumbnails } from '../../utils/deviceThumbnails';
 
 const deviceClassLabels = {
   srs_r4sn: 'mmWave 레이더',

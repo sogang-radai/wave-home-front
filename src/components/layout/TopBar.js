@@ -108,11 +108,27 @@ export function TopActionsCluster({
   );
 }
 
-export function TopBar({ title, ...actionProps }) {
+export function TopBar({ title, isDemoMode = false, ...actionProps }) {
   return (
     <header className="topbar">
-      <div>
-        <h1>{title}</h1>
+      <div className={`topbar-left${isDemoMode ? ' topbar-left--demo' : ''}`}>
+        <h1 className="topbar-title">{title}</h1>
+        {isDemoMode && (
+          <span
+            className="demo-mode-badge"
+            role="status"
+            title="시연 모드 — 날짜는 고정되며 변경 사항은 저장되지 않습니다."
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="8.01" />
+              <line x1="12" y1="11" x2="12" y2="16" />
+            </svg>
+            <span className="demo-mode-badge-text">
+              시연 모드 — 날짜 고정, 변경 사항 미저장
+            </span>
+          </span>
+        )}
       </div>
       <TopActionsCluster variant="desktop" {...actionProps} />
     </header>

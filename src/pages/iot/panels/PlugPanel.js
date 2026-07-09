@@ -25,7 +25,7 @@ export function PlugPanel({ device, onChanged }) {
     setState(null);
     setLoadError('');
     poll();
-    const timer = setInterval(poll, 5000);
+    const timer = setInterval(poll, 10000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [device.id]);
 

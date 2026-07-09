@@ -332,13 +332,13 @@ function App() {
     setChatMode('page');
   };
 
-  // Header "WaveAI" button — opens a fresh mini chat snapped to the top-right
-  // corner. No conversation is created yet — it only enters the list once the
-  // first message is actually sent (see sendChatMessage's `user_added` handling).
+  // Header "WaveAI" button — opens a fresh popup chat ("작게 보기") at top-right.
+  // No conversation is created yet — it only enters the list once the first
+  // message is actually sent (see sendChatMessage's `user_added` handling).
   const handleHeaderWaveAiOpen = () => {
     setActiveChatId(null);
     setChatForceTopRight(true);
-    setChatMode('mini');
+    setChatMode('popup');
   };
 
   // "새 대화" only clears the active selection (welcome screen) — it doesn't
@@ -518,11 +518,6 @@ function App() {
 
   return (
     <div className="app-shell">
-      {IS_DEMO_MODE && (
-        <div className="demo-mode-banner" role="status">
-          시연 모드 — 날짜는 고정되며 변경 사항은 저장되지 않습니다.
-        </div>
-      )}
       <InsightChat open={false} onClose={() => {}} />
       {(chatMode === 'popup' || chatMode === 'mini') && (
         <ChatPopup
@@ -558,10 +553,12 @@ function App() {
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
         onUnlockDevMenu={() => setShowDevSettings(true)}
+        isDemoMode={IS_DEMO_MODE}
       />
       <section className="workspace">
         <TopBar
           title={pageTitles[page]}
+          isDemoMode={IS_DEMO_MODE}
           showNotifications={showNotifications}
           onToggleNotifications={() => setShowNotifications((value) => !value)}
           onCloseNotifications={() => setShowNotifications(false)}

@@ -1,4 +1,5 @@
 import { delay, cloneDeep } from './utils';
+import { getRollingWeekStart } from '../../lib/demoClock';
 import {
   getGeneratedDailyReport,
   getGeneratedDailySessions,
@@ -65,8 +66,8 @@ function validateDateParam(date) {
 }
 
 function validateWeekStartParam(weekStart) {
-  if (weekStart !== undefined && (!parseDateParts(weekStart) || !isMonday(weekStart))) {
-    throw apiError(400, 'INVALID_WEEK_START', 'weekStart는 해당 주의 월요일 날짜여야 합니다.');
+  if (weekStart !== undefined && !parseDateParts(weekStart)) {
+    throw apiError(400, 'INVALID_WEEK_START', 'weekStart는 YYYY-MM-DD 형식이어야 합니다.');
   }
 }
 
@@ -155,9 +156,7 @@ function getInsightCollection(period) {
 }
 
 function defaultWeekStart() {
-  const nights = listGeneratedNightDates();
-  if (nights.length === 0) return getMondayOfWeek(formatDate(new Date()));
-  return getMondayOfWeek(nights[nights.length - 1]);
+  return getRollingWeekStart();
 }
 
 export class SleepApi {

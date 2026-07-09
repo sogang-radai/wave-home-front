@@ -56,39 +56,48 @@ export class PowerApi {
     return generatePowerComboTrend(range, plug.power_w, plug.id);
   }
 
-  async getPeriodTrend({ deviceId, period }) {
+  async getPeriodTrend({ deviceId, period, refDate }) {
     await delay();
     requireActiveAccount();
-    const plug = findDemoPlug(deviceId);
-    if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
-    return generatePowerPeriodTrend(period, plug.power_w, plug.id);
+    try {
+      const { PowerApi: RealPowerApi } = await import('../v1/PowerApi');
+      const real = new RealPowerApi();
+      return real.getPeriodTrend({ deviceId, period, refDate });
+    } catch {
+      const plug = findDemoPlug(deviceId);
+      if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
+      return generatePowerPeriodTrend(period, plug.power_w, plug.id);
+    }
   }
 
-  async getReport({ deviceId, period }) {
+  async getReport({ deviceId, period, periodStart }) {
     await delay();
     requireActiveAccount();
-    const plug = findDemoPlug(deviceId);
-    if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
-    const apiPeriod = REPORT_PERIOD_MAP[period];
-    if (!apiPeriod) {
-      return { supported: false, text: '이 구간에서는 AI 리포트를 제공하지 않습니다.' };
+    try {
+      const { PowerApi: RealPowerApi } = await import('../v1/PowerApi');
+      const real = new RealPowerApi();
+      return real.getReport({ deviceId, period, periodStart });
+    } catch {
+      const plug = findDemoPlug(deviceId);
+      if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
+      const apiPeriod = REPORT_PERIOD_MAP[period];
+      if (!apiPeriod) {
+        return { supported: false, text: '선택한 시간 간격은 AI 리포트를 제공하지 않습니다.' };
+      }
+      return { supported: true, period: apiPeriod, text: '리포트 준비 중입니다.' };
     }
-    return {
-      supported: true,
-      period: apiPeriod,
-      metrics: {
-        energyWh: plug.power_w * 3.2,
-        peakW: plug.power_w * 1.15,
-        onRatio: plug.switch ? 0.72 : 0.02,
-      },
-      text: `${plug.name}의 ${period} 전력 사용 패턴을 분석했습니다. 피크 전력은 ${(plug.power_w * 1.15).toFixed(0)}W였습니다.`,
-    };
   }
 
   async getInsights() {
     await delay();
     requireActiveAccount();
-    return insightsApi.listForSurface('power', {});
+    try {
+      const { InsightsApi: RealInsightsApi } = await import('../v1/InsightsApi');
+      const real = new RealInsightsApi();
+      return real.listForSurface('power', {});
+    } catch {
+      return insightsApi.listForSurface('power', {});
+    }
   }
 
   async updateInsight(insightId, { approved }) {

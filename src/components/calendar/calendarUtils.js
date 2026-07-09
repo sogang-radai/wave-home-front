@@ -62,7 +62,7 @@ export function buildMonthCalendarCells(viewDate) {
 }
 
 export function formatDayLabel(date, latestDate) {
-  if (isSameDay(date, latestDate)) return '오늘';
+  // if (isSameDay(date, latestDate)) return '오늘';
   return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(date);
 }
 

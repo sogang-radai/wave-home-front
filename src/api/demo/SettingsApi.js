@@ -1,8 +1,10 @@
 import { SettingsApi as MockSettingsApi } from '../mock/SettingsApi';
+import { SettingsApi as RealSettingsApi } from '../v1/SettingsApi';
 import { withDemoWriteGuard } from './guardedApi';
 
-export const SettingsApi = withDemoWriteGuard(MockSettingsApi, [
-  'switchActiveAccount',
+const realSettingsApi = new RealSettingsApi();
+
+const GuardedSettingsApi = withDemoWriteGuard(MockSettingsApi, [
   'createAccount',
   'updateAccount',
   'deleteAccount',
@@ -20,3 +22,21 @@ export const SettingsApi = withDemoWriteGuard(MockSettingsApi, [
   'updateGeneralSettings',
   'markAllNotificationsRead',
 ]);
+
+export class SettingsApi extends GuardedSettingsApi {
+  getSession() {
+    return realSettingsApi.getSession();
+  }
+
+  getAccounts() {
+    return realSettingsApi.getAccounts();
+  }
+
+  switchActiveAccount(accountId) {
+    return realSettingsApi.switchActiveAccount(accountId);
+  }
+
+  getSleepConfig() {
+    return realSettingsApi.getSleepConfig();
+  }
+}

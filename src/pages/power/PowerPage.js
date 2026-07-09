@@ -3,6 +3,7 @@ import {
   Area,
   Bar,
   CartesianGrid,
+  Cell,
   ComposedChart,
   ReferenceLine,
   ResponsiveContainer,
@@ -13,8 +14,9 @@ import {
 import powerApi from '../../api/powerApi';
 import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
 import { USE_CLIENT_POWER_SIM } from '../../api/config';
-import { generatePowerComboTrend, generatePowerPeriodTrend, hashSeed, seededRandom } from '../../data/homeData';
+import { generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
 import { InsightCard } from '../../components/report/InsightCard';
+import { formatAnchorDate, resolvePowerReportRequest } from './powerReportUtils';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
 import '../../components/report/report.css';
 import './PowerPage.css';
@@ -49,8 +51,6 @@ const METRIC_TABS = [
 // power_report.period 스키마에 정의된 단위만 AI 리포트를 제공한다 (docs/db-schema.md 참고).
 // combo 의 min1/min10/min30 은 너무 짧아 리포트 대상이 아니다.
 const REPORT_PERIOD_MAP = { hour: '1h', day: '24h', week: '1w', month: '1mo', year: '1yr' };
-const REPORT_RANGE_LABEL = { hour: '최근 1시간', day: '오늘', week: '이번 주', month: '이번 달', year: '올해' };
-const REPORT_WINDOW_DAYS = { week: 7, month: 30 };
 
 const LS_METRIC = 'powerMetricTab';
 const LS_RANGE = 'powerRangeTab';
@@ -121,44 +121,28 @@ function StatCard({ label, value, unit, sub, accent, live }) {
 }
 
 // ── AI report banner ─────────────────────────────────────────────────────
-// power_report.metrics 의 energy_wh / peak_w / on_ratio / vs_prev_pct / avg_daily_wh
-// 필드를 본떠 만든 목업 리포트. period 가 스키마에 없는 간격(1분/10분/30분)이면
-// "리포트 없음" 안내를 보여준다.
-function buildPowerReport(rangeTab, plug, totalWh, comboPeakW) {
-  const schemaPeriod = REPORT_PERIOD_MAP[rangeTab];
-  if (!schemaPeriod) {
-    return {
-      supported: false,
-      text: '선택한 시간 간격은 너무 짧아 AI 리포트를 제공하지 않아요. 1시간 이상 단위(1시간·일간·주간·월간·연간)를 선택하면 리포트를 볼 수 있어요.',
-    };
-  }
+function PowerReportBanner({ header, report, loading }) {
+  const [visible, setVisible] = useState(true);
+  const [display, setDisplay] = useState({ header, text: report?.text || '' });
 
-  const rand = seededRandom(hashSeed(`${plug.id}:${rangeTab}:report`));
-  const vsPrevPct = Math.round((rand() - 0.42) * 44);
-  const onRatio = Math.round((0.32 + rand() * 0.55) * 100);
-  const syntheticPeak = (plug.powerW ?? 0) * (1.12 + rand() * 0.35);
-  const peakW = comboPeakW > 0 ? comboPeakW : syntheticPeak;
-  const whLabel = totalWh >= 1000 ? `${(totalWh / 1000).toFixed(2)}kWh` : `${totalWh.toFixed(1)}Wh`;
-  const trendWord = vsPrevPct >= 0 ? '증가' : '감소';
-  const deviceLabel = plug.id === 'all' ? '계측 플러그 전체 합산' : `${plug.name}(${plug.room})`;
+  useEffect(() => {
+    setVisible(false);
+    const timer = setTimeout(() => {
+      setDisplay({ header, text: report?.text || '' });
+      setVisible(true);
+    }, 140);
+    return () => clearTimeout(timer);
+  }, [header, report?.text]);
 
-  let text = `${REPORT_RANGE_LABEL[rangeTab]} ${deviceLabel} 사용량은 총 ${whLabel}예요. 피크는 ${peakW.toFixed(1)}W였고, 가동 비율은 ${onRatio}%로 이전 동일 기간 대비 ${Math.abs(vsPrevPct)}% ${trendWord}했어요.`;
+  if (!report) return null;
 
-  const windowDays = REPORT_WINDOW_DAYS[rangeTab];
-  if (windowDays) {
-    const avgDailyWh = totalWh / windowDays;
-    const avgLabel = avgDailyWh >= 1000 ? `${(avgDailyWh / 1000).toFixed(2)}kWh` : `${avgDailyWh.toFixed(1)}Wh`;
-    text += ` 최근 ${windowDays}일 창 기준 하루 평균 사용량은 ${avgLabel}예요.`;
-  }
-
-  return { supported: true, text, period: schemaPeriod };
-}
-
-function PowerReportBanner({ report }) {
   return (
-    <div className={`power-report-banner${report.supported ? '' : ' unsupported'}`}>
+    <div className={`power-report-banner${report.supported ? '' : ' unsupported'}${loading ? ' loading' : ''}`}>
       <span className="power-report-icon">✦</span>
-      <p>{report.text}</p>
+      <div className="power-report-content">
+        <h3 className="power-report-header">{display.header}</h3>
+        <p className={`power-report-body${visible ? ' visible' : ''}`}>{display.text}</p>
+      </div>
     </div>
   );
 }
@@ -222,17 +206,27 @@ export function PowerPage() {
   const [comboMenuOpen, setComboMenuOpen] = useState(false);
   const comboRef = useRef(null);
   const [insights, setInsights] = useState([]);
+  const [powerReport, setPowerReport] = useState(null);
+  const [reportHeader, setReportHeader] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [selectedBarIndex, setSelectedBarIndex] = useState(null);
+  const [periodTrend, setPeriodTrend] = useState([]);
 
   useEffect(() => {
-    powerApi.getInsights().then(setInsights);
+    powerApi.getInsights().then((items) => setInsights(items || [])).catch(() => setInsights([]));
   }, []);
+
+  useEffect(() => {
+    setSelectedBarIndex(null);
+  }, [rangeTab, selectedPlugId]);
 
   const toggleInsight = async (id) => {
     const current = insights.find((item) => item.id === id);
     if (!current) return;
     const nextApproved = !current.approved;
+    const result = await powerApi.updateInsight(id, { approved: nextApproved });
+    if (result === null) return;
     setInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
-    await powerApi.updateInsight(id, { approved: nextApproved });
   };
 
   useEffect(() => {
@@ -310,6 +304,21 @@ export function PowerPage() {
   }, [plugs]);
 
   const isCombo = COMBO_IDS.includes(rangeTab);
+  const barSelectable = metricTab === 'wh' && !isCombo;
+  const { dateStr } = formatAnchorDate();
+
+  // Period Wh charts: prefer DB-backed trend (demo/real); combo stays client-sim or live API.
+  useEffect(() => {
+    if (!selectedPlugId || isCombo) {
+      setPeriodTrend([]);
+      return undefined;
+    }
+    let cancelled = false;
+    powerApi.getPeriodTrend({ deviceId: selectedPlugId, period: rangeTab, refDate: dateStr })
+      .then((data) => { if (!cancelled) setPeriodTrend(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setPeriodTrend([]); });
+    return () => { cancelled = true; };
+  }, [selectedPlugId, rangeTab, isCombo, dateStr]);
 
   // Trigger chart-enter animation on mount, and whenever the transition crosses
   // the combo/period boundary or moves between two different period tabs —
@@ -348,7 +357,10 @@ export function PowerPage() {
   const trendPlug = selectedPlug || { id: 'none', powerW: 0, voltageV: 0, currentMa: 0 };
   const rawTrend = useMemoTrend(trendPlug, rangeTab, isCombo);
   const chartData = useMemo(() => {
-    if (!isCombo) return rawTrend;
+    if (!isCombo) {
+      if (periodTrend.length > 0) return periodTrend;
+      return rawTrend;
+    }
     if (!USE_CLIENT_POWER_SIM) return comboTrend;
     // Attach synthesized V/A series (deterministic per-point jitter) for the V·A view
     const v0 = trendPlug.voltageV ?? 220;
@@ -358,14 +370,57 @@ export function PowerPage() {
       v: +(v0 + Math.sin(i / 5) * 1.5).toFixed(1),
       a: +(a0 + Math.sin(i / 5 + 1) * a0 * 0.06).toFixed(3),
     }));
-  }, [rawTrend, isCombo, trendPlug.voltageV, trendPlug.currentMa, comboTrend]);
+  }, [rawTrend, isCombo, trendPlug.voltageV, trendPlug.currentMa, comboTrend, periodTrend]);
+
+  useEffect(() => {
+    if (!selectedPlugId) return undefined;
+    let cancelled = false;
+
+    if (!REPORT_PERIOD_MAP[rangeTab]) {
+      const { m, d } = formatAnchorDate();
+      setReportHeader(`${m}월 ${d}일 기준 1시간 리포트`);
+      setPowerReport({
+        supported: false,
+        text: '선택한 시간 간격은 너무 짧아 AI 리포트를 제공하지 않아요. 1시간 이상 단위(1시간·일간·주간·월간·연간)를 선택하면 리포트를 볼 수 있어요.',
+      });
+      return undefined;
+    }
+
+    const request = resolvePowerReportRequest({
+      rangeTab,
+      selectedBarIndex: barSelectable ? selectedBarIndex : null,
+      chartData,
+    });
+    setReportHeader(request.header);
+    setReportLoading(true);
+
+    powerApi.getReport({
+      deviceId: selectedPlugId,
+      period: request.period,
+      periodStart: request.periodStart,
+    })
+      .then((data) => { if (!cancelled) setPowerReport(data); })
+      .catch(() => {
+        if (!cancelled) setPowerReport({ supported: true, text: '리포트 준비 중입니다.' });
+      })
+      .finally(() => { if (!cancelled) setReportLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [selectedPlugId, rangeTab, selectedBarIndex, barSelectable, chartData]);
 
   const selectPeriodTab = (id) => {
     if (metricTab !== 'wh') return; // period tabs are disabled while W/VA is active
+    setSelectedBarIndex(null);
+    setRangeTab(id);
+  };
+
+  const selectComboRange = (id) => {
+    setSelectedBarIndex(null);
     setRangeTab(id);
   };
 
   const selectMetricTab = (id) => {
+    setSelectedBarIndex(null);
     setMetricTab(id);
     if (id !== 'wh' && !isCombo) setRangeTab('hour');
   };
@@ -404,7 +459,6 @@ export function PowerPage() {
   const peakW = isCombo ? Math.max(...chartData.map((d) => d.value ?? 0), 0) : 0;
   const totalWh = chartData.reduce((s, d) => s + (d.wh ?? 0), 0);
   const totalIsKwh = !isCombo && rangeTab === 'year';
-  const report = buildPowerReport(rangeTab, selectedPlug, totalWh, peakW);
   const estimatedCostWon = (totalWh / 1000) * TIER2_WON_PER_KWH;
 
   return (
@@ -427,7 +481,9 @@ export function PowerPage() {
         />
       </div>
 
-      <PowerReportBanner report={report} />
+      {powerReport && (
+        <PowerReportBanner header={reportHeader} report={powerReport} loading={reportLoading} />
+      )}
 
       {/* ── Chart card ───────────────────────────────────────────────────── */}
       <div className="power-chart-card">
@@ -460,7 +516,7 @@ export function PowerPage() {
                 <button
                   type="button"
                   className="power-combo-label"
-                  onClick={() => setRangeTab(comboRange)}
+                  onClick={() => selectComboRange(comboRange)}
                 >
                   {COMBO_OPTIONS.find((o) => o.id === comboRange)?.label}
                 </button>
@@ -478,7 +534,7 @@ export function PowerPage() {
                       <button
                         key={o.id}
                         className={`power-combo-menu-item${isCombo && rangeTab === o.id ? ' active' : ''}`}
-                        onClick={() => { setRangeTab(o.id); setComboMenuOpen(false); }}
+                        onClick={() => { selectComboRange(o.id); setComboMenuOpen(false); }}
                       >{o.label}</button>
                     ))}
                   </div>
@@ -504,6 +560,9 @@ export function PowerPage() {
           peakW={peakW}
           animate={animateChart}
           animToken={chartAnimToken}
+          barSelectable={barSelectable}
+          selectedBarIndex={selectedBarIndex}
+          onBarSelect={setSelectedBarIndex}
         />
       </div>
 
@@ -573,7 +632,7 @@ export function PowerPage() {
           <h3 className="insight-section-title">전력 인사이트</h3>
           <div className="insight-list">
             {insights.map((item) => (
-              <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} title={item.title} text={item.text} onToggle={toggleInsight} />
+              <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} title={item.title} text={item.text} onToggle={toggleInsight} plainFooter />
             ))}
           </div>
         </div>
@@ -624,6 +683,13 @@ function minSpanDomain(minSpan) {
 const VOLTAGE_DOMAIN = minSpanDomain(50);
 const CURRENT_DOMAIN = minSpanDomain(0.3);
 
+function barFillColor(index, { selectedBarIndex, hoveredBarIndex, barSelectable }) {
+  if (!barSelectable) return 'var(--power-blue)';
+  if (selectedBarIndex === index) return 'var(--wave)';
+  if (hoveredBarIndex === index) return 'var(--power-blue-hover)';
+  return 'var(--power-blue)';
+}
+
 // Line-chart grid only — vertical lines align with every sample; labels are
 // thinned separately via PowerXAxis so we never need a second hidden XAxis
 // (that pattern broke V/A area rendering).
@@ -661,11 +727,21 @@ function PowerXAxis({ data, tickInterval }) {
 }
 
 // ── Chart body: split single-purpose charts per metric ──────────────────────
-function PowerChart({ data, metricTab, peakW, animate, animToken }) {
+function PowerChart({
+  data,
+  metricTab,
+  peakW,
+  animate,
+  animToken,
+  barSelectable,
+  selectedBarIndex,
+  onBarSelect,
+}) {
+  const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+
   // Combo ranges have 60 points — thin the x-axis labels down to ~5 for readability.
   const tickInterval = data.length > 24 ? Math.max(0, Math.ceil(data.length / 5) - 1) : 0;
   const whUnit = data[0]?.unitKwh ? 'kWh' : 'Wh';
-  const tooltipProps = { isAnimationActive: false, wrapperStyle: { transition: 'none' }, cursor: { stroke: 'var(--line)' } };
   const yAxisWh = { width: 52, ...commonAxisProps, tickFormatter: (v) => `${v} ${whUnit}` };
   const yAxisW = {
     width: 52,
@@ -673,18 +749,56 @@ function PowerChart({ data, metricTab, peakW, animate, animToken }) {
     tickFormatter: (v) => `${v} W`,
     domain: [0, (max) => (max > 0 ? Math.ceil(max * 1.12) : 10)],
   };
+  const whTooltipProps = {
+    isAnimationActive: false,
+    wrapperStyle: { transition: 'none' },
+    cursor: false,
+  };
+  const lineTooltipProps = {
+    isAnimationActive: false,
+    wrapperStyle: { transition: 'none' },
+    cursor: { stroke: 'var(--line)' },
+  };
+
+  const handleBarClick = (barData, index) => {
+    if (!barSelectable) return;
+    const i = typeof index === 'number' ? index : data.findIndex((d) => d === barData?.payload);
+    if (i < 0) return;
+    onBarSelect(selectedBarIndex === i ? null : i);
+  };
 
   // 누적 Wh — 콤보(1분/10분/30분/1시간)와 기간(일/주/월/연) 모두 막대, 그리드 없음
   if (metricTab === 'wh') {
     return (
       <ChartRevealBox animate={animate} animToken={animToken}>
-        <div className="power-chart">
+        <div className="power-chart" onMouseDown={(e) => e.preventDefault()}>
           <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={data} margin={chartMargin}>
               <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={tickInterval} {...commonAxisProps} />
               <YAxis yAxisId="left" {...yAxisWh} />
-              <Tooltip content={<PowerTooltip />} {...tooltipProps} />
-              <Bar xAxisId={X_AXIS_ID} yAxisId="left" dataKey="wh" name="누적 에너지" unit={whUnit} fill="var(--power-blue)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+              <Tooltip content={<PowerTooltip />} {...whTooltipProps} />
+              <Bar
+                xAxisId={X_AXIS_ID}
+                yAxisId="left"
+                dataKey="wh"
+                name="누적 에너지"
+                unit={whUnit}
+                radius={[4, 4, 0, 0]}
+                isAnimationActive={false}
+                activeBar={false}
+                onClick={handleBarClick}
+                onMouseLeave={() => setHoveredBarIndex(null)}
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={entry.label ?? index}
+                    fill={barFillColor(index, { selectedBarIndex, hoveredBarIndex, barSelectable })}
+                    cursor={barSelectable ? 'pointer' : 'default'}
+                    onMouseEnter={() => barSelectable && setHoveredBarIndex(index)}
+                    style={{ transition: 'fill 0.18s ease' }}
+                  />
+                ))}
+              </Bar>
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -701,7 +815,7 @@ function PowerChart({ data, metricTab, peakW, animate, animToken }) {
               <PowerLineChartGrid />
               <PowerXAxis data={data} tickInterval={tickInterval} />
               <YAxis yAxisId="left" {...yAxisW} />
-              <Tooltip content={<PowerTooltip />} {...tooltipProps} />
+              <Tooltip content={<PowerTooltip />} {...lineTooltipProps} />
               <Area xAxisId={X_AXIS_ID} yAxisId="left" type="linear" dataKey="value" name="전력" unit="W"
                 stroke="var(--power-green)" strokeWidth={2} dot={false}
                 fill="var(--power-green)" fillOpacity={0.18} isAnimationActive={false} />
@@ -736,7 +850,7 @@ function PowerChart({ data, metricTab, peakW, animate, animToken }) {
             <PowerLineChartGrid />
             <PowerXAxis data={data} tickInterval={tickInterval} />
             <YAxis yAxisId="left" {...yAxisVA} />
-            <Tooltip content={<PowerTooltip />} {...tooltipProps} />
+            <Tooltip content={<PowerTooltip />} {...lineTooltipProps} />
             <Area xAxisId={X_AXIS_ID} yAxisId="left" type="linear" dataKey={seriesKey} name={seriesName} unit={seriesUnit}
               stroke={seriesColor} strokeWidth={2} dot={false}
               fill={seriesColor} fillOpacity={0.18} isAnimationActive={false} />

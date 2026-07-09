@@ -1,22 +1,7 @@
-import thumbSrs from '../../img/device/thumbnail_srs_r4sn.png';
-import thumbReolink from '../../img/device/thumbnail_reolink_e1_pro.png';
-import thumbDroidCam from '../../img/device/thumbnail_droid_cam.png';
-import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
-import thumbTizen from '../../img/device/thumbnail_tizen_tv.png';
-import thumbWiz from '../../img/device/thumbnail_philips_wiz_e29.png';
 import { isDeviceOnline } from '../../utils/deviceSort';
+import { deviceThumbnails } from '../../utils/deviceThumbnails';
 
-export const deviceThumbnails = {
-  srs_r4sn: thumbSrs,
-  wave_station: null,
-  reolink_e1_pro: thumbReolink,
-  droid_cam: thumbDroidCam,
-  tuya_ep2h: thumbTuya,
-  tizen_tv: thumbTizen,
-  samsung_g7: thumbTizen,
-  philips_wiz_e29_color: thumbWiz,
-  philips_wiz_e29_white: thumbWiz,
-};
+export { deviceThumbnails };
 
 /** API connectionStatus → CSS dot class (online | idle | offline | missing) */
 export function deviceDotClass(device) {

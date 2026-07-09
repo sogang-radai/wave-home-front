@@ -25,3 +25,18 @@ export function getToday() {
   today.setHours(0, 0, 0, 0);
   return today;
 }
+
+function formatDateParam(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Rolling 7-day window ending on `anchor` (inclusive): [anchor-6, anchor]. */
+export function getRollingWeekStart(anchor = getToday()) {
+  const start = new Date(anchor);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - 6);
+  return formatDateParam(start);
+}

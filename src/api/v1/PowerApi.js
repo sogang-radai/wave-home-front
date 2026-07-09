@@ -23,8 +23,8 @@ export class PowerApi {
    * 일·주·월·연 기간 차트
    * @param {{ deviceId: string, period: 'day'|'week'|'month'|'year', metric?: 'w'|'wh' }} params
    */
-  async getPeriodTrend({ deviceId, period, metric = 'wh' }) {
-    return httpClient.get('/power/trend/period', { deviceId, period, metric });
+  async getPeriodTrend({ deviceId, period, refDate }) {
+    return httpClient.get('/power/trend/period', { deviceId, period, refDate });
   }
 
   /**

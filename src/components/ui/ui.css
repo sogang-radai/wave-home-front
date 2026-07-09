@@ -109,7 +109,7 @@
   min-height: 108px;
   padding: 16px;
   border-radius: 16px;
-  background: var(--wave-05);
+  background: var(--surface);
 }
 
 .metric p {

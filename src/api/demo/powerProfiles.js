@@ -38,7 +38,7 @@ function plugProfile({
 }
 
 const PLUG_AC = plugProfile({
-  id: 'plug-ac',
+  id: '4a2d9c7f1e60b358',
   name: '플러그3 - 에어컨',
   room: '침실',
   summary: '냉방 부하가 안정적으로 유지되고 있습니다.',
@@ -47,7 +47,7 @@ const PLUG_AC = plugProfile({
 });
 
 const PLUG_PC = plugProfile({
-  id: 'plug-pc',
+  id: '1f8c5a2e7b93064d',
   name: '플러그2 - 컴퓨터',
   room: '침실',
   summary: '업무 시간대에 일정한 소비 전력이 관측됩니다.',
@@ -56,7 +56,7 @@ const PLUG_PC = plugProfile({
 });
 
 const PLUG_FAN = plugProfile({
-  id: 'plug-fan',
+  id: '6b0f3e8a92c47d15',
   name: '플러그1 - 선풍기',
   room: '거실',
   summary: '저전력 부하가 유지되고 있습니다.',
@@ -65,10 +65,10 @@ const PLUG_FAN = plugProfile({
 });
 
 const PLUG_INDUCTION = plugProfile({
-  id: 'plug-induction',
+  id: '7e3b1d8a5f02c964',
   name: '플러그4 - 인덕션',
   room: '부엌',
-  summary: '현재 꺼져 있으며 대기 전력만 감지됩니다.',
+  summary: '조리 시간대에 짧게 소비가 집중됩니다.',
   powerW: 0,
   switchOn: false,
 });

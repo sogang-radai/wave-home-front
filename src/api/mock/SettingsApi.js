@@ -165,6 +165,7 @@ const accountsSeed = [
 const defaultSleepConfig = {
   bedtime: '23:30',
   wakeTime: '07:00',
+  goalHours: 7.5,
   wakeUpSound: 'love-yourself',
   acAuto: true,
   acTemp: 24,
@@ -269,6 +270,9 @@ function validateSleepConfig(payload) {
   }
   if (!soundsSeed.some((sound) => sound.id === payload.wakeUpSound)) {
     details.push({ field: 'wakeUpSound', code: 'UNKNOWN_SOUND', message: '존재하지 않는 알람음입니다.' });
+  }
+  if (payload.goalHours != null && (payload.goalHours < 4 || payload.goalHours > 12)) {
+    details.push({ field: 'goalHours', code: 'OUT_OF_RANGE', message: '수면 목표는 4~12시간 사이여야 합니다.' });
   }
 
   if (details.length > 0) {

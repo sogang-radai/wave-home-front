@@ -127,11 +127,12 @@ export function ChatPopup({
 
   useEffect(() => { saveCorner(corner); }, [corner]);
 
-  // Notify the parent once we've consumed the one-shot force-top-right flag.
   useEffect(() => {
-    if (forceTopRight) onForceTopRightConsumed?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!forceTopRight) return;
+    setCorner({ h: 'right', v: 'top' });
+    setDragPos(null);
+    onForceTopRightConsumed?.();
+  }, [forceTopRight, onForceTopRightConsumed]);
 
   // Re-render on viewport resize so the corner-derived position recalculates.
   useEffect(() => {

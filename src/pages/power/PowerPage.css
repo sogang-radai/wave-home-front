@@ -2,9 +2,8 @@
 
 .power-page {
   --power-green: #22c55e;
-  /* Desaturated/lightened blue — the original #3b82f6 read too dark against
-     the light theme once used as a large fill area. */
   --power-blue: #7fa8e0;
+  --power-blue-hover: #5d91d4;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -288,8 +287,42 @@
   gap: 12px;
   padding: 16px 20px;
   border-radius: 14px;
-  background: var(--wave-08);
+  background: var(--surface);
   border: 1px solid var(--wave-15);
+  min-height: 184px;
+}
+
+.power-report-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.power-report-header {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--wave);
+  letter-spacing: -0.01em;
+}
+
+.power-report-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  min-height: 4.8em;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.power-report-body.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.power-report-banner.loading .power-report-body.visible {
+  opacity: 0.72;
 }
 
 .power-report-banner p {
@@ -307,7 +340,6 @@
 }
 
 .power-report-banner.unsupported {
-  background: var(--bg);
   border-style: dashed;
   border-color: var(--line);
 }
@@ -333,6 +365,37 @@
 /* Curtain-drop reveal: content becomes visible top-down. Only applied on
    mount / range-group changes — never for switches *within* the combo
    group, so it never feels sluggish during quick tab flips. */
+
+.power-chart {
+  outline: none;
+  user-select: none;
+}
+
+.power-chart .recharts-wrapper,
+.power-chart .recharts-surface,
+.power-chart svg,
+.power-chart .recharts-responsive-container {
+  outline: none !important;
+}
+
+.power-chart *:focus,
+.power-chart *:focus-visible {
+  outline: none !important;
+}
+
+.power-chart .recharts-wrapper:focus,
+.power-chart .recharts-wrapper:focus-visible,
+.power-chart svg:focus,
+.power-chart svg:focus-visible,
+.power-chart rect:focus,
+.power-chart rect:focus-visible {
+  outline: none !important;
+}
+
+.power-chart .recharts-active-bar .recharts-rectangle,
+.power-chart .recharts-bar-rectangle {
+  stroke: none !important;
+}
 
 .power-chart-reveal.animate {
   animation: power-chart-reveal-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;

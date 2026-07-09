@@ -111,6 +111,16 @@
   color: var(--surface);
 }
 
+.insight-card.plain-footer .insight-card-footer {
+  margin-top: 12px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.insight-card.plain-footer.applied .insight-card-footer {
+  border-top: none;
+}
+
 /* CareReport */
 .care-report-layout {
   display: grid;

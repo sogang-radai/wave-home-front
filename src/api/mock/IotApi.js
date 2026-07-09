@@ -681,6 +681,65 @@ export class IotApi {
     })));
   }
 
+  subscribeWaveStationTelemetry(deviceId, handlers = {}) {
+    const { onEvent, onComplete, onError } = handlers;
+    let cancelled = false;
+    let timer = null;
+
+    const pushSnapshot = () => {
+      requireActiveAccount();
+      const { device, runtime } = findDeviceOrThrow(deviceId);
+      if (device.class !== 'wave_station') {
+        throw apiError(400, 'UNSUPPORTED_DEVICE', 'Wave Station 장치가 아닙니다.');
+      }
+      if (!runtime.connected) {
+        throw apiError(409, 'DEVICE_OFFLINE', '장치가 오프라인 상태입니다.');
+      }
+
+      runtime.state.micLevel = clamp(
+        (runtime.state.micLevel ?? 0.12) + (Math.random() - 0.5) * 0.1,
+        0,
+        1,
+      );
+      if (runtime.state.env) {
+        runtime.state.env.lux = clamp(runtime.state.env.lux + (Math.random() - 0.5) * 8, 0, 2000);
+        runtime.state.env.tempC = clamp(runtime.state.env.tempC + (Math.random() - 0.5) * 0.2, 15, 35);
+        runtime.state.env.humidity = clamp(runtime.state.env.humidity + (Math.random() - 0.5) * 2, 20, 80);
+      }
+
+      if (!cancelled && onEvent) {
+        onEvent({
+          ok: true,
+          micLevel: runtime.state.micLevel,
+          env: cloneDeep(runtime.state.env ?? null),
+        });
+      }
+    };
+
+    (async () => {
+      try {
+        await delay(50);
+        if (cancelled) return;
+        pushSnapshot();
+        timer = setInterval(() => {
+          try {
+            pushSnapshot();
+          } catch (err) {
+            if (!cancelled && onError) onError(err);
+          }
+        }, 1000);
+      } catch (err) {
+        if (!cancelled && onError) onError(err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+      onComplete?.();
+    };
+  }
+
   // 테스트에서 activeAccount required 경로를 확인할 때만 사용한다.
   __setActiveAccountForTest(accountId) {
     activeAccountId = accountId;

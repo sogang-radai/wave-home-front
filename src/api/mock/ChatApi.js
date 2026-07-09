@@ -71,6 +71,24 @@ function requireText(text) {
 // 메모리에만 보관되는 mock 상태. 새로고침하면 초기 데이터로 리셋된다.
 let conversations = cloneDeep(initialChatConversations).map(normalizeConversation);
 
+export const SEED_CONVERSATION_IDS = new Set(initialChatConversations.map((c) => c.id));
+
+export function isSeedConversationId(id) {
+  return id != null && SEED_CONVERSATION_IDS.has(id);
+}
+
+export function findStoredConversation(id) {
+  return conversations.find((c) => c.id === id);
+}
+
+export function getStoredConversations() {
+  return conversations;
+}
+
+export function replaceStoredConversations(next) {
+  conversations = next;
+}
+
 /** 테스트·데모 빌드에서 대화 목록 시드를 교체한다. */
 export function resetChatConversations(seed = []) {
   conversations = cloneDeep(seed).map((conversation, index) => normalizeConversation(conversation, index));

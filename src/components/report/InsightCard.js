@@ -3,9 +3,9 @@ export function withInsightIds(items) {
   return items.map(([label, title, text]) => ({ id: ++insightIdCounter, label, title, text }));
 }
 
-export function InsightCard({ id, label, title, text, approved, onToggle }) {
+export function InsightCard({ id, label, title, text, approved, onToggle, plainFooter }) {
   return (
-    <article className={`insight-card${approved ? ' applied' : ''}`}>
+    <article className={`insight-card${approved ? ' applied' : ''}${plainFooter ? ' plain-footer' : ''}`}>
       <header className="insight-card-head">
         <span className="insight-card-label">{label}</span>
       </header>
