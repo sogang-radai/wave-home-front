@@ -11,6 +11,7 @@ import '../report/report.css';
 import './calendar.css';
 
 const POPUP_EST_HEIGHT = 360;
+const MOBILE_LAYOUT_MAX = 760;
 
 function usePopupPosition(anchorRef, open, mode) {
   const [position, setPosition] = useState(null);
@@ -23,16 +24,22 @@ function usePopupPosition(anchorRef, open, mode) {
 
     const update = () => {
       const rect = anchorRef.current.getBoundingClientRect();
+      const isMobile = window.innerWidth <= MOBILE_LAYOUT_MAX;
+      const centeredMobileWeek = isMobile && mode === 'week';
+      const popupHeight = centeredMobileWeek ? POPUP_EST_HEIGHT * 1.2 : POPUP_EST_HEIGHT;
       const spaceBelow = window.innerHeight - rect.bottom;
-      const openAbove = mode !== 'week' && spaceBelow < POPUP_EST_HEIGHT + 16;
-      const top = openAbove
-        ? Math.max(12, rect.top - POPUP_EST_HEIGHT - 8)
-        : rect.bottom + 8;
+      const openAbove = !centeredMobileWeek && mode !== 'week' && spaceBelow < popupHeight + 16;
+      const top = centeredMobileWeek
+        ? Math.max(72, rect.bottom + 10)
+        : openAbove
+          ? Math.max(12, rect.top - popupHeight - 8)
+          : rect.bottom + 8;
 
       setPosition({
         top,
-        left: rect.left + rect.width / 2,
+        left: centeredMobileWeek ? window.innerWidth / 2 : rect.left + rect.width / 2,
         placement: openAbove ? 'above' : 'below',
+        centeredMobileWeek,
       });
     };
 
@@ -115,7 +122,7 @@ export function MonthCalendarPopup({
       <div className="calendar-popup-backdrop" onClick={onClose} aria-hidden="true" />
       <div
         ref={popupRef}
-        className={`calendar-popup month-calendar-popup ${className}${position.placement === 'above' ? ' placement-above' : ' placement-below'}`.trim()}
+        className={`calendar-popup month-calendar-popup ${className}${position.placement === 'above' ? ' placement-above' : ' placement-below'}${position.centeredMobileWeek ? ' centered-mobile-week' : ''}`.trim()}
         style={{ top: position.top, left: position.left }}
         onClick={(event) => event.stopPropagation()}
       >

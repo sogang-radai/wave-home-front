@@ -1,9 +1,9 @@
-import { Fragment, useRef } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import './layout.css';
 import logo from '../../img/logo.png';
 import { pages } from '../../data/appData';
-import { TopActionsCluster } from './TopBar';
 import { WaveAiIcon } from '../icons/WaveAiIcon';
+import { useMobileLayout } from '../../hooks/useMobileLayout';
 
 function SidebarIcon({ name }) {
   const common = {
@@ -105,18 +105,15 @@ export function Sidebar({
   onSelect,
   onNavigateToChat,
   today,
-  showNotifications,
-  onToggleNotifications,
-  onCloseNotifications,
-  notifications,
-  onMarkAllNotificationsRead,
-  accounts,
-  account,
-  onSwitchAccount,
   collapsed,
   onCollapsedChange,
   onUnlockDevMenu,
   isDemoMode = false,
+  mobileOpen = false,
+  onMobileClose,
+  accounts = [],
+  account,
+  onSwitchAccount,
 }) {
   // Five rapid clicks on the logo unlocks the hidden developer menu. State resets on page refresh.
   const devClickRef = useRef({ count: 0, last: 0 });
@@ -131,10 +128,23 @@ export function Sidebar({
     }
   };
 
+  const isMobile = useMobileLayout();
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+
   const visiblePages = isDemoMode ? pages.filter((item) => item.id !== 'posture') : pages;
 
+  const handleSelect = (id) => {
+    onSelect(id);
+    onMobileClose?.();
+  };
+
+  const handleNavigateToChat = () => {
+    onNavigateToChat?.();
+    onMobileClose?.();
+  };
+
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="brand">
         <div className="brand-mark dev-unlock-target" onClick={handleLogoClick}>
           <img src={logo} alt="WaveHome" />
@@ -146,17 +156,6 @@ export function Sidebar({
         <button className="collapse-button" aria-label="collapse sidebar" onClick={() => onCollapsedChange((value) => !value)}>
           {collapsed ? '›' : '‹'}
         </button>
-        <TopActionsCluster
-          variant="mobile"
-          showNotifications={showNotifications}
-          onToggleNotifications={onToggleNotifications}
-          onCloseNotifications={onCloseNotifications}
-          notifications={notifications}
-          onMarkAllNotificationsRead={onMarkAllNotificationsRead}
-          accounts={accounts}
-          account={account}
-          onSwitchAccount={onSwitchAccount}
-        />
       </div>
 
       <nav className="nav-list">
@@ -166,9 +165,9 @@ export function Sidebar({
               className={`nav-item ${page === item.id ? 'active' : ''}`}
               onClick={() => {
                 if (item.id === 'chat') {
-                  onNavigateToChat?.();
+                  handleNavigateToChat();
                 } else {
-                  onSelect(item.id);
+                  handleSelect(item.id);
                 }
                 if (collapsed) onCollapsedChange(false);
               }}
@@ -184,9 +183,47 @@ export function Sidebar({
 
       <div className="sidebar-bottom">
         <p className="sidebar-date">{today}</p>
+        {isMobile && accounts.length > 0 && account && (
+          <div className="sidebar-account-mobile">
+            <button
+              type="button"
+              className="sidebar-account-trigger"
+              aria-expanded={showAccountMenu}
+              onClick={() => setShowAccountMenu((value) => !value)}
+            >
+              <span className="mini-avatar">{account.name.charAt(0)}</span>
+              <span className="profile-text">
+                <strong>{account.name}</strong>
+                <span>계정 전환</span>
+              </span>
+            </button>
+            {showAccountMenu && (
+              <div className="sidebar-account-menu">
+                {accounts.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`sidebar-account-item${item.id === account.id ? ' active' : ''}`}
+                    onClick={() => {
+                      onSwitchAccount?.(item.id);
+                      setShowAccountMenu(false);
+                      onMobileClose?.();
+                    }}
+                  >
+                    <span className="mini-avatar">{item.name.charAt(0)}</span>
+                    <span className="profile-text">
+                      <strong>{item.name}</strong>
+                    </span>
+                    {item.id === account.id && <i>✓</i>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <button
           className={`nav-item bottom-setting ${page === 'setting' ? 'active' : ''}`}
-          onClick={() => onSelect('setting')}
+          onClick={() => handleSelect('setting')}
           title={collapsed ? 'Setting' : undefined}
         >
           <span className="nav-icon">

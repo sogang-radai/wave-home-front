@@ -637,3 +637,33 @@
   accent-color: #2563eb;
   cursor: pointer;
 }
+
+.weekly-plan-time-col--mobile {
+  font-size: 9px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: -0.02em;
+}
+
+.weekly-plan-shell--mobile {
+  padding: 12px 10px 14px;
+  gap: 16px;
+  border-radius: 20px;
+}
+
+.weekly-plan-sticky-header--mobile .grid button {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.weekly-plan-sticky-header--mobile .grid button .text-xs {
+  font-size: 10px;
+}
+
+.weekly-plan-sticky-header--mobile .grid button .text-sm {
+  font-size: 12px;
+}
+
+.weekly-plan-calendar-grid--mobile {
+  margin-left: -2px;
+}

@@ -17,6 +17,7 @@ import { USE_CLIENT_POWER_SIM } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
 import { InsightCard } from '../../components/report/InsightCard';
 import { formatAnchorDate, resolvePowerReportRequest } from './powerReportUtils';
+import { useMobileLayout } from '../../hooks/useMobileLayout';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
 import '../../components/report/report.css';
 import './PowerPage.css';
@@ -178,6 +179,7 @@ function PeakLabel({ viewBox, value }) {
 }
 
 export function PowerPage() {
+  const isMobile = useMobileLayout();
   const [plugs, setPlugs] = useState([]);
   const [plugsLoading, setPlugsLoading] = useState(true);
   const [plugsError, setPlugsError] = useState('');
@@ -461,6 +463,66 @@ export function PowerPage() {
   const totalIsKwh = !isCombo && rangeTab === 'year';
   const estimatedCostWon = (totalWh / 1000) * TIER2_WON_PER_KWH;
 
+  const metricTabControls = (
+    <div className="power-tab-group">
+      {METRIC_TABS.map((t) => {
+        const active = metricTab === t.id;
+        return (
+          <button
+            key={t.id}
+            className={`power-tab${active ? ' active' : ''}`}
+            onClick={() => selectMetricTab(t.id)}
+          >
+            {t.short}
+            {active && <span className="power-tab-suffix"> {t.suffix}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const rangeToolbarControls = (
+    <div className="power-range-toolbar">
+      <div className={`power-combo-wrap${isCombo ? ' active' : ''}`} ref={comboRef}>
+        <button
+          type="button"
+          className="power-combo-label"
+          onClick={() => selectComboRange(comboRange)}
+        >
+          {COMBO_OPTIONS.find((o) => o.id === comboRange)?.label}
+        </button>
+        <button
+          type="button"
+          className="power-combo-caret-btn"
+          aria-label="시간 간격 선택"
+          onClick={() => setComboMenuOpen((v) => !v)}
+        >
+          <ChevronDownIcon />
+        </button>
+        {comboMenuOpen && (
+          <div className="power-combo-menu">
+            {COMBO_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                className={`power-combo-menu-item${isCombo && rangeTab === o.id ? ' active' : ''}`}
+                onClick={() => { selectComboRange(o.id); setComboMenuOpen(false); }}
+              >{o.label}</button>
+            ))}
+          </div>
+        )}
+      </div>
+      <span className="power-toolbar-divider" aria-hidden="true" />
+      {PERIOD_OPTIONS.map((t) => (
+        <button
+          key={t.id}
+          className={`power-tab${rangeTab === t.id ? ' active' : ''}`}
+          disabled={metricTab !== 'wh'}
+          onClick={() => selectPeriodTab(t.id)}
+        >{t.label}</button>
+      ))}
+    </div>
+  );
+
   return (
     <div className={`page-stack power-page${mounted ? ' mounted' : ''}`}>
       {/* ── Stat cards: 전력 | 전압 | 누적 | 예상 요금 ─────────────────────── */}
@@ -492,78 +554,30 @@ export function PowerPage() {
             <strong>{selectedPlugId === 'all' ? '전체 콘센트' : selectedPlug.name}</strong>
             <span>{selectedPlug.room}</span>
           </div>
-          <div className="power-chart-controls">
-            <div className="power-tab-group">
-              {METRIC_TABS.map((t) => {
-                const active = metricTab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    className={`power-tab${active ? ' active' : ''}`}
-                    onClick={() => selectMetricTab(t.id)}
-                  >
-                    {t.short}
-                    {active && <span className="power-tab-suffix"> {t.suffix}</span>}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Combo interval + period tabs merged into a single pill so it reads
-                as one control: |1분ˇ|일간|주간|월간|연간|. Clicking the interval
-                text selects it directly; the chevron opens the interval picker. */}
-            <div className="power-range-toolbar">
-              <div className={`power-combo-wrap${isCombo ? ' active' : ''}`} ref={comboRef}>
-                <button
-                  type="button"
-                  className="power-combo-label"
-                  onClick={() => selectComboRange(comboRange)}
-                >
-                  {COMBO_OPTIONS.find((o) => o.id === comboRange)?.label}
-                </button>
-                <button
-                  type="button"
-                  className="power-combo-caret-btn"
-                  aria-label="시간 간격 선택"
-                  onClick={() => setComboMenuOpen((v) => !v)}
-                >
-                  <ChevronDownIcon />
-                </button>
-                {comboMenuOpen && (
-                  <div className="power-combo-menu">
-                    {COMBO_OPTIONS.map((o) => (
-                      <button
-                        key={o.id}
-                        className={`power-combo-menu-item${isCombo && rangeTab === o.id ? ' active' : ''}`}
-                        onClick={() => { selectComboRange(o.id); setComboMenuOpen(false); }}
-                      >{o.label}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <span className="power-toolbar-divider" aria-hidden="true" />
-              {PERIOD_OPTIONS.map((t) => (
-                <button
-                  key={t.id}
-                  className={`power-tab${rangeTab === t.id ? ' active' : ''}`}
-                  disabled={metricTab !== 'wh'}
-                  onClick={() => selectPeriodTab(t.id)}
-                >{t.label}</button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <PowerChart
-          key={isCombo ? 'combo' : rangeTab}
-          data={chartData}
-          metricTab={metricTab}
-          peakW={peakW}
-          animate={animateChart}
-          animToken={chartAnimToken}
-          barSelectable={barSelectable}
-          selectedBarIndex={selectedBarIndex}
-          onBarSelect={setSelectedBarIndex}
-        />
+        <div className="power-chart-stage">
+          <div className="power-chart-controls-bar">
+            <div className="power-chart-controls-slot power-chart-controls-slot--metrics">
+              {metricTabControls}
+            </div>
+            <div className="power-chart-controls-slot power-chart-controls-slot--range">
+              {rangeToolbarControls}
+            </div>
+          </div>
+          <PowerChart
+            key={isCombo ? 'combo' : rangeTab}
+            data={chartData}
+            metricTab={metricTab}
+            peakW={peakW}
+            animate={animateChart}
+            animToken={chartAnimToken}
+            barSelectable={barSelectable}
+            selectedBarIndex={selectedBarIndex}
+            onBarSelect={setSelectedBarIndex}
+            isMobile={isMobile}
+          />
+        </div>
       </div>
 
       {/* ── Power sources ────────────────────────────────────────────────── */}
@@ -661,9 +675,18 @@ function ChartRevealBox({ animate, animToken, children }) {
   );
 }
 
-const commonAxisProps = { tick: { fontSize: 11, fill: 'var(--sub)' }, axisLine: false, tickLine: false };
-const chartMargin = { top: 16, right: 16, bottom: 4, left: 8 };
+const axisProps = (isMobile) => ({
+  tick: { fontSize: isMobile ? 9 : 11, fill: 'var(--sub)' },
+  axisLine: false,
+  tickLine: false,
+});
+const chartMarginDesktop = { top: 16, right: 16, bottom: 4, left: 8 };
+const chartMarginMobile = { top: 8, right: 4, bottom: 6, left: -2 };
+const Y_AXIS_WIDTH_DESKTOP = 52;
+const Y_AXIS_WIDTH_MOBILE = 34;
 const X_AXIS_ID = 'main';
+const GRID_AXIS_ID = 'grid';
+const MOBILE_GRID_INTERVAL = 3;
 
 // Guarantees the Y axis always spans at least `minSpan` units (50V for
 // voltage, 1A for current).
@@ -693,18 +716,34 @@ function barFillColor(index, { selectedBarIndex, hoveredBarIndex, barSelectable 
 // Line-chart grid only — vertical lines align with every sample; labels are
 // thinned separately via PowerXAxis so we never need a second hidden XAxis
 // (that pattern broke V/A area rendering).
-function PowerLineChartGrid() {
+function PowerLineChartGrid({ isMobile }) {
   return (
     <>
-      <CartesianGrid xAxisId={X_AXIS_ID} stroke="var(--wave-30)" horizontal={false} />
+      {isMobile && (
+        <XAxis
+          xAxisId={GRID_AXIS_ID}
+          dataKey="label"
+          hide
+          interval={MOBILE_GRID_INTERVAL}
+          axisLine={false}
+          tickLine={false}
+          tick={false}
+        />
+      )}
+      <CartesianGrid
+        xAxisId={isMobile ? GRID_AXIS_ID : X_AXIS_ID}
+        stroke="var(--wave-30)"
+        horizontal={false}
+      />
       <CartesianGrid xAxisId={X_AXIS_ID} stroke="var(--ink-16)" strokeDasharray="3 3" vertical={false} />
     </>
   );
 }
 
-function PowerXAxis({ data, tickInterval }) {
+function PowerXAxis({ data, tickInterval, isMobile }) {
+  const axis = axisProps(isMobile);
   if (tickInterval <= 0) {
-    return <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={0} {...commonAxisProps} />;
+    return <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={0} {...axis} />;
   }
   return (
     <XAxis
@@ -717,7 +756,7 @@ function PowerXAxis({ data, tickInterval }) {
         const show = index % (tickInterval + 1) === 0 || index === data.length - 1;
         if (!show) return null;
         return (
-          <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill="var(--sub)">
+          <text x={x} y={y + 12} textAnchor="middle" fontSize={isMobile ? 9 : 11} fill="var(--sub)">
             {payload.value}
           </text>
         );
@@ -736,17 +775,27 @@ function PowerChart({
   barSelectable,
   selectedBarIndex,
   onBarSelect,
+  isMobile = false,
 }) {
   const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+
+  const chartMargin = isMobile ? chartMarginMobile : chartMarginDesktop;
+  const yAxisWidth = isMobile ? Y_AXIS_WIDTH_MOBILE : Y_AXIS_WIDTH_DESKTOP;
+  const axis = axisProps(isMobile);
+  const chartHeight = isMobile ? 232 : 240;
 
   // Combo ranges have 60 points — thin the x-axis labels down to ~5 for readability.
   const tickInterval = data.length > 24 ? Math.max(0, Math.ceil(data.length / 5) - 1) : 0;
   const whUnit = data[0]?.unitKwh ? 'kWh' : 'Wh';
-  const yAxisWh = { width: 52, ...commonAxisProps, tickFormatter: (v) => `${v} ${whUnit}` };
+  const yAxisWh = {
+    width: yAxisWidth,
+    ...axis,
+    tickFormatter: (v) => (isMobile ? `${v}` : `${v} ${whUnit}`),
+  };
   const yAxisW = {
-    width: 52,
-    ...commonAxisProps,
-    tickFormatter: (v) => `${v} W`,
+    width: yAxisWidth,
+    ...axis,
+    tickFormatter: (v) => (isMobile ? `${v}` : `${v} W`),
     domain: [0, (max) => (max > 0 ? Math.ceil(max * 1.12) : 10)],
   };
   const whTooltipProps = {
@@ -772,9 +821,9 @@ function PowerChart({
     return (
       <ChartRevealBox animate={animate} animToken={animToken}>
         <div className="power-chart" onMouseDown={(e) => e.preventDefault()}>
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <ComposedChart data={data} margin={chartMargin}>
-              <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={tickInterval} {...commonAxisProps} />
+              <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={tickInterval} {...axis} />
               <YAxis yAxisId="left" {...yAxisWh} />
               <Tooltip content={<PowerTooltip />} {...whTooltipProps} />
               <Bar
@@ -810,10 +859,10 @@ function PowerChart({
     return (
       <ChartRevealBox animate={animate} animToken={animToken}>
         <div className="power-chart">
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <ComposedChart data={data} margin={chartMargin}>
-              <PowerLineChartGrid />
-              <PowerXAxis data={data} tickInterval={tickInterval} />
+              <PowerLineChartGrid isMobile={isMobile} />
+              <PowerXAxis data={data} tickInterval={tickInterval} isMobile={isMobile} />
               <YAxis yAxisId="left" {...yAxisW} />
               <Tooltip content={<PowerTooltip />} {...lineTooltipProps} />
               <Area xAxisId={X_AXIS_ID} yAxisId="left" type="linear" dataKey="value" name="전력" unit="W"
@@ -837,18 +886,20 @@ function PowerChart({
   const seriesUnit = isVoltage ? 'V' : 'A';
   const seriesColor = isVoltage ? 'var(--power-green)' : 'var(--accent-navy)';
   const yAxisVA = {
-    width: 52,
-    ...commonAxisProps,
-    tickFormatter: (v) => `${Number(v).toFixed(isVoltage ? 1 : 3)} ${seriesUnit}`,
+    width: yAxisWidth,
+    ...axis,
+    tickFormatter: (v) => (isMobile
+      ? `${Number(v).toFixed(isVoltage ? 0 : 2)}`
+      : `${Number(v).toFixed(isVoltage ? 1 : 3)} ${seriesUnit}`),
     domain: isVoltage ? VOLTAGE_DOMAIN : CURRENT_DOMAIN,
   };
   return (
     <ChartRevealBox animate={animate} animToken={animToken}>
       <div className="power-chart">
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
           <ComposedChart data={data} margin={chartMargin}>
-            <PowerLineChartGrid />
-            <PowerXAxis data={data} tickInterval={tickInterval} />
+            <PowerLineChartGrid isMobile={isMobile} />
+            <PowerXAxis data={data} tickInterval={tickInterval} isMobile={isMobile} />
             <YAxis yAxisId="left" {...yAxisVA} />
             <Tooltip content={<PowerTooltip />} {...lineTooltipProps} />
             <Area xAxisId={X_AXIS_ID} yAxisId="left" type="linear" dataKey={seriesKey} name={seriesName} unit={seriesUnit}

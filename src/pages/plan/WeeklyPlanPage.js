@@ -8,6 +8,7 @@ import weeklyPlanApi from '../../api/weeklyPlanApi';
 import { DateNavigatorBar } from '../../components/calendar/DateNavigatorBar';
 import { getToday, isSameDay, normalizeDate } from '../../components/calendar/calendarUtils';
 import { getNow } from '../../lib/demoClock';
+import { useMobileLayout } from '../../hooks/useMobileLayout';
 import { TimeWheelPicker, minutesToPickerState, pickerStateToMinutes } from '../alarm/TimeWheelPicker';
 import '../alarm/alarm.css';
 import '../main.css';
@@ -46,6 +47,7 @@ function buildPopupState({ dayLabel, startMin, endMin }) {
 }
 
 export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight }) {
+  const isMobile = useMobileLayout();
   const [weekStartDate, setWeekStartDate] = useState(getToday);
   const weekDates = useMemo(() => getWeekDatesFromAnchor(weekStartDate), [weekStartDate]);
   const [recommendationGroups, setRecommendationGroups] = useState([]);
@@ -159,7 +161,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
       if (!eventsRef.current) return;
       const rect = eventsRef.current.getBoundingClientRect();
       const y = Math.max(0, Math.min(CAL_H, e.clientY - rect.top));
-      const dayIdx = Math.min(6, Math.max(0, Math.floor((e.clientX - rect.left) / (rect.width / 7))));
+      const dayIdx = resolveDayIdxFromX(e.clientX);
       setMoveDrag((prev) => prev ? { ...prev, currentY: y, dayIdx } : null);
     };
     const onUp = () => {
@@ -180,18 +182,25 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   }, [moveDragActive, weekDates, onUpdateTodo]);
 
   const colW = 100 / 7;
+  const timeColWidth = isMobile ? 26 : 72;
+
   const s = weekDates[0];
   const e = weekDates[6];
   const dateRange = s.month === e.month
     ? `${s.month}월 ${s.date}일 - ${e.date}일`
     : `${s.month}월 ${s.date}일 - ${e.month}월 ${e.date}일`;
 
+  const resolveDayIdxFromX = (clientX) => {
+    if (!eventsRef.current) return 0;
+    const rect = eventsRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    return Math.min(6, Math.max(0, Math.floor(x / (rect.width / 7))));
+  };
+
   const getEvtCoords = (ev) => {
     const rect = eventsRef.current.getBoundingClientRect();
-    const x = ev.clientX - rect.left;
     const y = Math.max(0, Math.min(CAL_H, ev.clientY - rect.top));
-    const dayIdx = Math.min(6, Math.max(0, Math.floor(x / (rect.width / 7))));
-    return { x, y, dayIdx };
+    return { x: ev.clientX - rect.left, y, dayIdx: resolveDayIdxFromX(ev.clientX) };
   };
 
   const handleEventsMouseMove = (ev) => {
@@ -227,7 +236,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     if (!eventsRef.current) return;
     const rect = eventsRef.current.getBoundingClientRect();
     const y = ev.clientY - rect.top;
-    const dayIdx = Math.min(6, Math.max(0, Math.floor((ev.clientX - rect.left) / (rect.width / 7))));
+    const dayIdx = resolveDayIdxFromX(ev.clientX);
     setMoveDrag({
       id: todo.id,
       duration: endMin - startMin,
@@ -268,12 +277,19 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     });
   };
 
-  // Build TIME_SLOTS array from 0..23
-  const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
-    if (i === 0) return '00:00';
-    if (i === 24) return '24:00';
-    return `${String(i).padStart(2, '0')}:00`;
-  });
+  const formatHourSlot = (hour) => {
+    if (isMobile) {
+      if (hour === 0) return '00h';
+      if (hour === 24) return '24h';
+      return `${String(hour).padStart(2, '0')}h`;
+    }
+    if (hour === 0) return '00:00';
+    if (hour === 24) return '24:00';
+    return `${String(hour).padStart(2, '0')}:00`;
+  };
+
+  // Build TIME_SLOTS array from 0..24
+  const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => formatHourSlot(i));
 
   return (
     <div className="page-stack" style={{ paddingBottom: 32 }}>
@@ -284,7 +300,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-8 bg-white rounded-3xl shadow-sm border border-slate-100 weekly-plan-shell${isMobile ? ' weekly-plan-shell--mobile' : ' p-8'}`}>
 
         {/* Left: Calendar (3 cols) */}
         <div className="lg:col-span-3">
@@ -299,7 +315,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
             onSelectWeek={(date) => setWeekStartDate(normalizeDate(date))}
             showTodayReset={!isSameDay(weekStartDate, getToday())}
             onTodayReset={() => setWeekStartDate(getToday())}
-            className="mb-8"
+            className={isMobile ? 'mb-4' : 'mb-8'}
           />
 
           <div className="relative">
@@ -307,8 +323,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
               <div>
 
                 {/* Sticky day header */}
-                <div className="weekly-plan-sticky-header sticky top-0 bg-white pb-2" style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
-                  <div className="grid" style={{ gridTemplateColumns: '72px repeat(7, 1fr)' }}>
+                <div className={`weekly-plan-sticky-header sticky top-0 bg-white pb-2${isMobile ? ' weekly-plan-sticky-header--mobile' : ''}`} style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
+                  <div className="grid" style={{ gridTemplateColumns: `${timeColWidth}px repeat(7, 1fr)` }}>
                     <div />
                     {weekDates.map((d, i) => {
                       const isSunday = d.label === '일';
@@ -328,9 +344,12 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 </div>
 
                 {/* Calendar body */}
-                <div className="grid pt-3" style={{ gridTemplateColumns: '72px 1fr' }}>
+                <div className={`grid pt-3${isMobile ? ' weekly-plan-calendar-grid--mobile' : ''}`} style={{ gridTemplateColumns: `${timeColWidth}px 1fr` }}>
                   {/* Time labels */}
-                  <div className="relative text-xs font-semibold text-slate-400" style={{ height: `${CAL_H}px` }}>
+                  <div
+                    className={`relative font-semibold text-slate-400${isMobile ? ' weekly-plan-time-col--mobile' : ' text-xs'}`}
+                    style={{ height: `${CAL_H}px` }}
+                  >
                     {TIME_SLOTS.map((t, i) => {
                       const y = minToY(i * 60);
                       return (
@@ -339,7 +358,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                           style={{
                             position: 'absolute',
                             top: y,
-                            right: 8,
+                            left: isMobile ? 0 : undefined,
+                            right: isMobile ? undefined : 8,
                             transform: i === 0 ? 'none' : 'translateY(-50%)',
                             lineHeight: 1,
                           }}
@@ -474,15 +494,15 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                           const startMin = todo.startMin ?? cs.defaultMin ?? 540;
                           const endMin = todo.endMin ?? (startMin + 30);
                           const idealTop = minToY(startMin);
-                          const height = Math.max(46, minToY(endMin) - idealTop);
+                          const height = Math.max(isMobile ? 34 : 46, minToY(endMin) - idealTop);
                           const top = Math.max(idealTop, nextY);
-                          nextY = top + height + 3;
+                          nextY = top + height + (isMobile ? 2 : 3);
                           const isBeingMoved = moveDrag?.id === todo.id;
                           return (
                             <div
                               key={todo.id}
                               data-todo-block="true"
-                              className="absolute rounded-xl px-2 py-1.5"
+                              className={`absolute rounded-xl${isMobile ? ' px-1 py-0.5' : ' px-2 py-1.5'}`}
                               style={{
                                 top,
                                 height,
@@ -506,8 +526,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                               }}
                             >
                               <p
-                                className="text-[11px] font-medium leading-snug"
-                                style={{ textDecoration: todo.done ? 'line-through' : 'none', opacity: todo.done ? 0.55 : 1, whiteSpace: 'normal', wordBreak: 'keep-all' }}
+                                className={`${isMobile ? 'text-[9px]' : 'text-[11px]'} font-medium leading-tight`}
+                                style={{ textDecoration: todo.done ? 'line-through' : 'none', opacity: todo.done ? 0.55 : 1, whiteSpace: 'normal', wordBreak: 'break-all' }}
                               >
                                 {todo.title}
                               </p>
@@ -524,7 +544,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                       const cs = CAT_STYLE[todo.cat] || CAT_STYLE['멘탈'];
                       const newStartMin = Math.max(0, Math.min(CAL_END_MIN - moveDrag.duration, snapMin(yToMin(moveDrag.currentY - moveDrag.grabOffsetY))));
                       const blockTop = minToY(newStartMin);
-                      const height = Math.max(46, minToY(newStartMin + moveDrag.duration) - blockTop);
+                      const height = Math.max(isMobile ? 34 : 46, minToY(newStartMin + moveDrag.duration) - blockTop);
                       return (
                         <div
                           style={{

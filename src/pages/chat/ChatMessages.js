@@ -305,7 +305,7 @@ export function ChatMessages({
                 <div className="chat-demo-notice" role="note">
                   <strong>시연 모드 안내</strong>
                   <p>여러 분이 함께 쓰는 데모 환경입니다. 과도한 사용은 자제해 주세요.</p>
-                  <p>기기 조작, 알림·일정 <em>설정</em> 등 변경 작업은 지원하지 않습니다. 수면·전력·<em>일정 조회</em>와 질문 답변은 가능합니다.</p>
+                  <p>기기 조작, <em>알림·일정 설정</em> 등 변경 작업은 지원하지 않습니다. <em>수면·전력·일정 조회</em>와 질문 답변은 가능합니다.</p>
                 </div>
               )}
               <div className={compact ? 'chat-popup-suggestions' : 'chat-suggestions-grid'}>

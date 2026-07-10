@@ -24,6 +24,7 @@ import {
 } from './push/browserPush';
 import { getNow } from './lib/demoClock';
 import { IS_DEMO_MODE } from './api/config';
+import { useMobileLayout } from './hooks/useMobileLayout';
 
 function formatNotificationTime(iso) {
   const date = new Date(iso);
@@ -217,6 +218,24 @@ function App() {
   const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
   const [prevPage, setPrevPage] = useState('main');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileChatConvOpen, setMobileChatConvOpen] = useState(false);
+  const isMobileLayout = useMobileLayout();
+
+  useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+    setMobileChatConvOpen(false);
+  }, [page]);
+
   // One-shot flag: force the popup to open snapped to the top-right corner
   // (used by the header WaveAI button). Consumed once by ChatPopup on mount.
   const [chatForceTopRight, setChatForceTopRight] = useState(false);
@@ -332,10 +351,18 @@ function App() {
     setChatMode('page');
   };
 
-  // Header "WaveAI" button — opens a fresh popup chat ("작게 보기") at top-right.
-  // No conversation is created yet — it only enters the list once the first
-  // message is actually sent (see sendChatMessage's `user_added` handling).
+  // Header WaveAI — desktop: popup. Mobile: full chat page.
   const handleHeaderWaveAiOpen = () => {
+    if (isMobileLayout) {
+      setActiveChatId(null);
+      setChatMode('page');
+      setPrevPage(page);
+      setPage('chat');
+      playBubbleTransitionSound();
+      setWaveTransition(true);
+      setTimeout(() => setWaveTransition(false), 750);
+      return;
+    }
     setActiveChatId(null);
     setChatForceTopRight(true);
     setChatMode('popup');
@@ -537,28 +564,37 @@ function App() {
           onForceTopRightConsumed={() => setChatForceTopRight(false)}
         />
       )}
+      <button
+        type="button"
+        className={`mobile-nav-backdrop${mobileNavOpen ? ' visible' : ''}`}
+        aria-label="메뉴 닫기"
+        tabIndex={mobileNavOpen ? 0 : -1}
+        onClick={() => setMobileNavOpen(false)}
+      />
       <Sidebar
         page={page}
         onSelect={setPage}
         onNavigateToChat={handleNavigateToChat}
         today={today}
-        showNotifications={showNotifications}
-        onToggleNotifications={() => setShowNotifications((value) => !value)}
-        onCloseNotifications={() => setShowNotifications(false)}
-        notifications={notifications}
-        onMarkAllNotificationsRead={markAllNotificationsRead}
-        accounts={accounts}
-        account={account}
-        onSwitchAccount={switchAccount}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
         onUnlockDevMenu={() => setShowDevSettings(true)}
         isDemoMode={IS_DEMO_MODE}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+        accounts={accounts}
+        account={account}
+        onSwitchAccount={switchAccount}
       />
       <section className="workspace">
         <TopBar
           title={pageTitles[page]}
           isDemoMode={IS_DEMO_MODE}
+          mobileNavOpen={mobileNavOpen}
+          onToggleMobileNav={() => setMobileNavOpen((value) => !value)}
+          showChatConvToggle={isMobileLayout && page === 'chat' && chatMode === 'page'}
+          chatConvOpen={mobileChatConvOpen}
+          onToggleChatConv={() => setMobileChatConvOpen((value) => !value)}
           showNotifications={showNotifications}
           onToggleNotifications={() => setShowNotifications((value) => !value)}
           onCloseNotifications={() => setShowNotifications(false)}
@@ -619,11 +655,13 @@ function App() {
               onDeleteConv={deleteChatConversation}
               onRenameConv={renameChatConversation}
               onSendMessage={sendChatMessage}
-              onShrink={handleShrinkChat}
+              onShrink={isMobileLayout ? undefined : handleShrinkChat}
               waveTransition={waveTransition}
               sidebarWidth={sidebarCollapsed ? 76 : 263}
               initialDraft={pendingChatDraft}
               onConsumeInitialDraft={() => setPendingChatDraft(null)}
+              mobileConvOpen={mobileChatConvOpen}
+              onMobileConvOpenChange={setMobileChatConvOpen}
             />
           )}
         </main>

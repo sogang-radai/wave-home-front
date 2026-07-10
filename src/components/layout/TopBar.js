@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { NotificationsPanel } from '../notifications/NotificationsPanel';
+import { useMobileLayout } from '../../hooks/useMobileLayout';
 
+export function MenuIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M4 7h16" />
+      <path d="M4 12h16" />
+      <path d="M4 17h16" />
+    </svg>
+  );
+}
 export function BellIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -15,6 +25,14 @@ export function WaveSparkIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M12 3l1.8 5.1L19 10l-5.2 1.9L12 17l-1.8-5.1L5 10l5.2-1.9L12 3Z" />
       <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+    </svg>
+  );
+}
+
+export function ConvListIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
@@ -56,6 +74,7 @@ export function TopActionsCluster({
   onOpenWaveAi,
   waveAiDisabled,
 }) {
+  const isMobile = useMobileLayout();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const unreadCount = notifications.filter((item) => !item.read).length;
 
@@ -64,8 +83,8 @@ export function TopActionsCluster({
       {onOpenWaveAi && (
         <button
           className="wave-ai-trigger"
-          aria-label="WaveAI 새 대화"
-          title={waveAiDisabled ? 'WaveAI 대화창이 이미 열려 있어요' : 'WaveAI 새 대화 열기'}
+          aria-label="WaveAI"
+          title={waveAiDisabled ? 'WaveAI 대화창이 이미 열려 있어요' : 'WaveAI 열기'}
           onClick={onOpenWaveAi}
           disabled={waveAiDisabled}
         >
@@ -85,7 +104,7 @@ export function TopActionsCluster({
         />
       )}
       <button
-        className="profile profile-trigger"
+        className={`profile profile-trigger${isMobile && variant === 'mobile' ? ' profile-trigger--hidden-mobile' : ''}`}
         aria-label="프로필 메뉴"
         onClick={() => setShowProfileMenu((value) => !value)}
       >
@@ -108,10 +127,28 @@ export function TopActionsCluster({
   );
 }
 
-export function TopBar({ title, isDemoMode = false, ...actionProps }) {
+export function TopBar({
+  title,
+  isDemoMode = false,
+  mobileNavOpen = false,
+  onToggleMobileNav,
+  showChatConvToggle = false,
+  chatConvOpen = false,
+  onToggleChatConv,
+  ...actionProps
+}) {
   return (
     <header className="topbar">
       <div className={`topbar-left${isDemoMode ? ' topbar-left--demo' : ''}`}>
+        <button
+          type="button"
+          className="mobile-nav-toggle"
+          aria-label={mobileNavOpen ? '메뉴 닫기' : '메뉴 열기'}
+          aria-expanded={mobileNavOpen}
+          onClick={onToggleMobileNav}
+        >
+          <MenuIcon />
+        </button>
         <h1 className="topbar-title">{title}</h1>
         {isDemoMode && (
           <span
@@ -131,6 +168,23 @@ export function TopBar({ title, isDemoMode = false, ...actionProps }) {
         )}
       </div>
       <TopActionsCluster variant="desktop" {...actionProps} />
+      {showChatConvToggle ? (
+        <div className="top-actions top-actions-mobile top-actions-mobile--chat">
+          <span className="topbar-action-separator" aria-hidden="true" />
+          <button
+            type="button"
+            className="chat-conv-toggle-btn chat-conv-toggle-btn--header"
+            onClick={onToggleChatConv}
+            title={chatConvOpen ? '대화 목록 닫기' : '대화 목록 열기'}
+            aria-expanded={chatConvOpen}
+            aria-label={chatConvOpen ? '대화 목록 닫기' : '대화 목록 열기'}
+          >
+            <ConvListIcon />
+          </button>
+        </div>
+      ) : (
+        <TopActionsCluster variant="mobile" {...actionProps} />
+      )}
     </header>
   );
 }

@@ -1169,9 +1169,8 @@ details[open] .chat-thinking-summary::before {
 
 @media (max-width: 760px) {
   .content.chat-active {
-    position: fixed;
-    inset: 0;
-    z-index: 25;
+    flex: 1;
+    min-height: 0;
     padding: 0;
     overflow: hidden;
   }
@@ -1180,33 +1179,41 @@ details[open] .chat-thinking-summary::before {
     position: relative;
   }
 
-  .chat-conv-overlay {
+  .chat-page-body--mobile .chat-conv-overlay {
+    display: block;
     position: absolute;
     inset: 0;
     z-index: 9;
     background: rgba(0, 0, 0, 0.25);
   }
 
-  .chat-conv-sidebar {
+  .chat-page-body--mobile .chat-conv-sidebar {
     position: absolute;
     top: 0;
-    left: 0;
+    right: 0;
+    left: auto;
     height: 100%;
-    width: 75vw;
+    width: min(300px, 86vw);
     max-width: 300px;
     min-width: unset;
     z-index: 10;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.12);
+    border-right: 0;
+    border-left: 1px solid var(--line);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
     transition: transform 0.22s ease, box-shadow 0.22s ease;
   }
 
-  .chat-conv-sidebar.collapsed {
-    transform: translateX(-100%);
-    width: 75vw;
+  .chat-page-body--mobile .chat-conv-sidebar.collapsed {
+    transform: translateX(100%);
+    width: min(300px, 86vw);
     max-width: 300px;
     min-width: 0;
     box-shadow: none;
     border-color: transparent;
+  }
+
+  .chat-shrink-btn {
+    display: none;
   }
 
   .chat-suggestions-grid {

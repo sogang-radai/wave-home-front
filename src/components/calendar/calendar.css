@@ -143,3 +143,38 @@ body.calendar-modal-open .topbar {
   background: #60a5fa !important;
   color: #fff !important;
 }
+
+@media (max-width: 760px) {
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week {
+    width: min(336px, calc(100vw - 32px));
+    padding: 17px;
+  }
+
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week .calendar-popup-head {
+    margin-bottom: 12px;
+  }
+
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week .calendar-popup-head strong {
+    font-size: 15.6px;
+  }
+
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week .calendar-popup-head button {
+    width: 31px;
+    height: 31px;
+    font-size: 18px;
+  }
+
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week .calendar-popup-weekdays span {
+    font-size: 13.2px;
+  }
+
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week .calendar-popup-grid {
+    gap: 5px;
+  }
+
+  .month-calendar-popup.week-calendar-popup.centered-mobile-week .calendar-popup-grid button {
+    height: 36px;
+    font-size: 14.4px;
+    border-radius: 10px;
+  }
+}
