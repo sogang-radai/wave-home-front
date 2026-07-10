@@ -6,6 +6,12 @@
 - **인증**: `Authorization: Bearer <token>` (선택, 로컬 개발 시 생략 가능)
 - **활성 구성원**: 대부분의 도메인은 세션의 `activeAccount` 기준으로 동작합니다.
 
+## 변경 내역 (2026-07-10)
+
+| 문서 | 변경 |
+|------|------|
+| [dashboard.md](./dashboard.md) | **갱신** — `GET /dashboard/alarms/upcoming`(오늘/내일 아침 알람), `GET /dashboard/gestures/active`(활성 제스처 룰) 추가. 대시보드 "알람"·"제스처 인식" 카드용 |
+
 ## 변경 내역 (2026-07-08)
 
 | 문서 | 변경 |
@@ -44,7 +50,7 @@
 | [schedule-tasks.md](./schedule-tasks.md) | 루틴·일정(TODO) | `weeklyPlanApi.js` | |
 | [alarm.md](./alarm.md) | 알람 | `alarmApi.js` | 백엔드 미구현 |
 | [insights.md](./insights.md) | 인사이트 조회·적용 | `insightsApi.js` + 도메인 API | 백엔드 미구현 |
-| [dashboard.md](./dashboard.md) | 대시보드 메시지·현재 상태 | `dashboardApi.js` | 백엔드 미구현 |
+| [dashboard.md](./dashboard.md) | 대시보드 메시지·현재 상태·알람/제스처 요약 | `dashboardApi.js` | 백엔드 미구현 |
 | [iot.md](./iot.md) | 가전 제어·룰 | `iotApi.js` | 룰 일부 구현 |
 | [power.md](./power.md) | 전력 모니터링·리포트 | `powerApi.js` | plugs·combo 일부 구현 |
 

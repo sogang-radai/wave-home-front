@@ -8,4 +8,12 @@ export class DashboardApi {
   async getCurrentState() {
     return httpClient.get('/dashboard/current-state');
   }
+
+  async getUpcomingAlarms() {
+    return httpClient.get('/dashboard/alarms/upcoming');
+  }
+
+  async getActiveGestureRules() {
+    return httpClient.get('/dashboard/gestures/active');
+  }
 }
