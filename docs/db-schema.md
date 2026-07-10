@@ -2,6 +2,10 @@
 
 ## 변경 내역
 
+- **2026-07-10** — 홈 자동화 스키마 실 데이터 대조 보정 (`mock.db` 기준)
+  - `automation_rule.actions_json` 예시를 실제 저장 형태(배열)로 수정
+  - `automation_rule.trigger_json`에 `kind` 판별 필드 필요성 명시 + 예시 추가(현재 실데이터엔 없음, 백엔드 반영 필요)
+  - `device.gesture_set_id` 추가 — 레이더↔제스처 세트 배정 저장 위치가 없던 문제 해결
 - **2026-07-08** — 알람·일정·인사이트·리포트 전면 재설계
   - `routine_task` → `schedule_task` (`schedule_kind`, `event_date`)
   - `alarm` 테이블 추가
@@ -161,17 +165,20 @@ TV
 
 ```sql
 CREATE TABLE device (
-    id          INTEGER NOT NULL,
-    name        TEXT    NOT NULL,   -- 장치 표시 이름
-    description TEXT    NOT NULL,   -- 장치 설명
-    class       TEXT    NOT NULL,   -- 장치 클래스(srs_r4sn, tuya_ep2h 등). json 과 동일
-    archived    INTEGER NOT NULL,   -- 1 = json에서 사라짐(보관), 0 = 활성
+    id             INTEGER NOT NULL,
+    name           TEXT    NOT NULL,   -- 장치 표시 이름
+    description    TEXT    NOT NULL,   -- 장치 설명
+    class          TEXT    NOT NULL,   -- 장치 클래스(srs_r4sn, tuya_ep2h 등). json 과 동일
+    archived       INTEGER NOT NULL,   -- 1 = json에서 사라짐(보관), 0 = 활성
+    gesture_set_id INTEGER,            -- nullable. 레이더(class='srs_r4sn')에 배정된 제스처 세트. "제스처" 섹션 gesture_set 참고
 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    FOREIGN KEY (gesture_set_id) REFERENCES gesture_set(id)
 );
 
 -- manifest wire id(16자리 hex)는 `device_list.json`에만 존재한다.
 -- DB `device.id`는 INTEGER PK(보통 JSON 배열 순서 1..N). API wire id는 런타임에 manifest·이름으로 변환한다.
+-- gesture_set_id는 레이더가 아닌 장치에서는 항상 NULL이다(레이더 전용, 애플리케이션 레벨에서만 검증).
 
 CREATE TABLE device_user_map (
     device_id INTEGER NOT NULL,
@@ -571,9 +578,10 @@ CREATE VIRTUAL TABLE vec_weekly_plan_report USING vec0 (
 ## 제스처
 
 - 제스처 세트/클래스 정의는 json으로 관리함(gestures/gesture_sets.json + 각 set.json).
-- 세트 테이블은 FK 참조용 id 만 둔다(장치와 동일한 방식). 로그가 어떤 세트에서 나왔는지 가리키는 용도.
+- 세트 테이블은 FK 참조용 id 만 둔다(장치와 동일한 방식). `gesture_log`가 어떤 세트에서 나왔는지, `device.gesture_set_id`가 레이더에 어떤 세트가 배정됐는지 가리키는 용도.
 - 세트 내 개별 제스처는 set.json 의 class_id 로 식별하며 별도 테이블을 두지 않는다.
 - 로그는 json 이 바뀌어도 남아야 하므로 이름/동작을 스냅샷으로 저장한다.
+- 레이더 1대에는 세트가 최대 1개만 배정된다(1:1, nullable) — 배정은 `device.gesture_set_id`, 배정 API는 `docs/api/iot.md`의 `GET/PUT /iot/devices/{deviceId}/gesture-set`.
 
 스키마
 
@@ -625,9 +633,9 @@ CREATE TABLE automation_rule (
     name            VARCHAR(100) NOT NULL,
     enabled         INTEGER      NOT NULL DEFAULT 1,
     cooldown_ms     INTEGER      NOT NULL DEFAULT 0,
-    trigger_json    TEXT,                           -- nullable: 디바이스 쿼리 트리거
+    trigger_json    TEXT,                           -- nullable: 트리거 조건. 'kind' 로 트리거 종류를 구분한다(필수)
     schedule_json   TEXT,                           -- nullable: cron/시간 스케줄
-    actions_json    TEXT         NOT NULL,          -- action + execMode + repeatIntervalMs
+    actions_json    TEXT         NOT NULL,          -- action(+ execMode + repeatIntervalMs) 배열
     created_at      VARCHAR(50)  NOT NULL,
     updated_at      VARCHAR(50)  NOT NULL,
 
@@ -637,17 +645,41 @@ CREATE TABLE automation_rule (
 CREATE INDEX idx_automation_rule_user ON automation_rule (user_id);
 ```
 
-`actions_json` 예시 (단일 액션 룰):
+`actions_json` 예시 (배열. 대부분 액션 1개지만 여러 개도 가능):
 
 ```json
-{
-  "deviceId": "2c9f6a1b4d78e350",
-  "name": "off",
-  "params": {},
-  "execMode": "once",
-  "repeatIntervalMs": 0
-}
+[
+  {
+    "deviceId": "2c9f6a1b4d78e350",
+    "name": "off",
+    "params": {},
+    "execMode": "once",
+    "repeatIntervalMs": 0
+  }
+]
 ```
+
+`trigger_json` 예시 — **`kind` 필드로 트리거 종류를 구분해야 한다.** 지금 저장된 실데이터엔 `kind`가
+빠져 있고(`{"deviceQuery": "presence", "condition": "absent"}`처럼 트리거마다 제각각인 ad-hoc 구조),
+제스처 트리거 룰 자체도 없다 — 아래는 `kind`가 채워졌다고 가정한 목표 형태다. `dashboard.md`의
+`GET /dashboard/gestures/active`가 `trigger_json.kind='gesture'`로 필터링하려면 이 필드가 반드시 있어야 한다.
+
+```json
+{ "kind": "gesture", "deviceId": "3a7f2c9d10b4e85f", "gestureSetId": "desk_set", "classId": 7 }
+```
+
+```json
+{ "kind": "device_state", "deviceId": "4a2d9c7f1e60b358", "query": "presence", "condition": "absent" }
+```
+
+```json
+{ "kind": "ir_recv", "deviceId": "5c1e8b6402fda973", "commandId": 1 }
+```
+
+- 제스처 트리거는 `gestureSetPath`(파일 경로) 대신 `gestureSetId`를 직접 저장한다 — 프론트에서 경로를
+  파싱해 세트 id를 역산하지 않도록.
+- 기존 `deviceQuery`/`afterDeviceOn` 같은 필드명은 `kind` 도입 시 위 예시처럼 일관된 키(`query`/`condition`
+  등)로 정리하는 걸 권장한다.
 
 
 
