@@ -192,6 +192,11 @@ function App() {
     setPage('power');
   };
 
+  const goToGestureManagement = () => {
+    setHomeTab('gesture');
+    setPage('home');
+  };
+
   const goToChatWithDraft = (text) => {
     setActiveChatId(null);
     setChatMode('page');
@@ -614,6 +619,7 @@ function App() {
               onToggleTodo={toggleTodo}
               onGoToPowerAnalysis={goToPowerAnalysis}
               onOpenChatWithDraft={goToChatWithDraft}
+              onGoToGestures={goToGestureManagement}
             />
           )}
           {page === 'sleep' && (

@@ -4,6 +4,7 @@ import { Card } from '../components/ui/Card';
 import { Metric } from '../components/ui/Metric';
 import { Donut } from '../components/ui/Donut';
 import { PostureScoreGauge } from './posture/PostureScoreGauge';
+import { formatClock12, formatNextFireLabel } from './alarm/alarmUtils';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
 import { getNow } from '../lib/demoClock';
 import postureApi from '../api/postureApi';
@@ -11,7 +12,10 @@ import sleepApi from '../api/sleepApi';
 import iotApi from '../api/iotApi';
 import dashboardApi from '../api/dashboardApi';
 import powerApi from '../api/powerApi';
+import { findAction } from '../api/mock/deviceClassRegistry';
 import './main.css';
+
+const GESTURES_PER_PAGE = 1;
 
 function formatOfflineDetail(devices) {
   const offline = devices.filter((device) => !device.connected);
@@ -20,12 +24,28 @@ function formatOfflineDetail(devices) {
   return `${offline[0].name} 외 ${offline.length - 1}개`;
 }
 
+function actionLabelFor(rule, devices) {
+  const device = devices.find((d) => d.id === rule.actionDeviceId);
+  const actionDef = device ? findAction(device.class, rule.actionName) : null;
+  return `${rule.actionDeviceName} ${actionDef?.description || rule.actionName}`;
+}
+
+function NavChevronIcon({ direction }) {
+  const points = direction === 'prev' ? '15 18 9 12 15 6' : '9 18 15 12 9 6';
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points={points} />
+    </svg>
+  );
+}
+
 export function MainPage({
   onNavigate,
   todos,
   onToggleTodo,
   onGoToPowerAnalysis,
   onOpenChatWithDraft,
+  onGoToGestures,
 }) {
   const todayLabel = koreanWeekdayLabels[getNow().getDay()];
   const todayTodos = todos.filter((t) => t.day === todayLabel);
@@ -39,6 +59,10 @@ export function MainPage({
   const [homeSummary, setHomeSummary] = useState(null);
   const [homeDevices, setHomeDevices] = useState([]);
   const [powerInsight, setPowerInsight] = useState(null);
+  const [upcomingAlarms, setUpcomingAlarms] = useState([]);
+  const [activeGestureRules, setActiveGestureRules] = useState([]);
+  const [gestureSetDefsById, setGestureSetDefsById] = useState({});
+  const [gesturePage, setGesturePage] = useState(0);
 
   useEffect(() => {
     postureApi.getTodaySummary().then(setPostureSummary);
@@ -49,7 +73,26 @@ export function MainPage({
     iotApi.getSummary().then(setHomeSummary);
     iotApi.getDevices().then(setHomeDevices);
     powerApi.getInsights().then((items) => setPowerInsight(items?.[0] || null)).catch(() => setPowerInsight(null));
+    dashboardApi.getUpcomingAlarms().then(setUpcomingAlarms);
+    dashboardApi.getActiveGestureRules().then(setActiveGestureRules);
   }, []);
+
+  // 활성 제스처 룰이 가리키는 제스처 세트 정의(이름·썸네일)를 세트별로 한 번씩만 가져와 캐시한다.
+  useEffect(() => {
+    const missingSetIds = [...new Set(activeGestureRules.map((r) => r.gestureSetId))]
+      .filter((setId) => setId && !gestureSetDefsById[setId]);
+    if (missingSetIds.length === 0) return;
+    Promise.all(missingSetIds.map((setId) => iotApi.getGestureSetDefinition(setId).catch(() => null))).then((defs) => {
+      setGestureSetDefsById((prev) => {
+        const next = { ...prev };
+        defs.forEach((def, index) => {
+          if (def) next[missingSetIds[index]] = def;
+        });
+        return next;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGestureRules]);
 
   const powerChartData = useMemo(
     () => totalPower?.trend?.tenSec || totalPower?.trend?.hour || [],
@@ -73,6 +116,13 @@ export function MainPage({
       ? 'online'
       : undefined
     : undefined;
+
+  const gesturePageCount = Math.max(1, Math.ceil(activeGestureRules.length / GESTURES_PER_PAGE));
+  const currentGesturePage = Math.min(gesturePage, gesturePageCount - 1);
+  const visibleGestureRules = activeGestureRules.slice(
+    currentGesturePage * GESTURES_PER_PAGE,
+    currentGesturePage * GESTURES_PER_PAGE + GESTURES_PER_PAGE
+  );
 
   return (
     <div className="page-stack">
@@ -254,30 +304,129 @@ export function MainPage({
         </div>
 
         <div className="dashboard-posture-column">
-          <div className="dashboard-posture-card">
-            <Card title="자세 점수" onClick={() => onNavigate('posture')}>
-              {postureSummary && (
-                <>
-                  <PostureScoreGauge score={postureSummary.score} />
-                  <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
-                    거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>{postureSummary.turtleNeckCount}회</span>
-                  </p>
-                  <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>
-                    전주 평균 {postureSummary.turtleNeckLastWeekAverageCount}회 대비 개선
-                  </p>
-                  <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
-                    <div className="grid grid-cols-2 gap-2 text-center">
-                      <div>
-                        <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.correctPosturePercent}%</p>
-                        <p className="text-xs" style={{ color: 'var(--sub)' }}>바른 자세</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.alertAcceptRatePercent}%</p>
-                        <p className="text-xs" style={{ color: 'var(--sub)' }}>알림 수락</p>
+          {/* 자세 점수 카드는 대시보드에서 알림 목록 / 제스처 인식 카드로 대체됨.
+              소스는 유지하고 렌더링만 비활성화 — 필요 시 {false}를 지우면 복원된다. */}
+          {false && (
+            <div className="dashboard-posture-card">
+              <Card title="자세 점수" onClick={() => onNavigate('posture')}>
+                {postureSummary && (
+                  <>
+                    <PostureScoreGauge score={postureSummary.score} />
+                    <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
+                      거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>{postureSummary.turtleNeckCount}회</span>
+                    </p>
+                    <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>
+                      전주 평균 {postureSummary.turtleNeckLastWeekAverageCount}회 대비 개선
+                    </p>
+                    <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
+                      <div className="grid grid-cols-2 gap-2 text-center">
+                        <div>
+                          <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.correctPosturePercent}%</p>
+                          <p className="text-xs" style={{ color: 'var(--sub)' }}>바른 자세</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.alertAcceptRatePercent}%</p>
+                          <p className="text-xs" style={{ color: 'var(--sub)' }}>알림 수락</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </>
+                  </>
+                )}
+              </Card>
+            </div>
+          )}
+
+          <div className="dashboard-posture-card">
+            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={() => onNavigate('alarm')}>
+              <div className="mt-3 flex flex-col gap-2">
+                {upcomingAlarms.length === 0 && (
+                  <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>
+                )}
+                {upcomingAlarms.map((alarm) => {
+                  const { hour12, minute, meridiem } = formatClock12(alarm.timeMinute);
+                  return (
+                    <div
+                      key={alarm.id}
+                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+                      style={{ background: 'var(--wave-05)' }}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{alarm.name}</p>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>{formatNextFireLabel(new Date(alarm.nextFireAt))}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                          {String(hour12).padStart(2, '0')}:{String(minute).padStart(2, '0')}
+                        </span>
+                        <span className="ml-1 text-xs" style={{ color: 'var(--sub)' }}>{meridiem}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+
+          <div className="dashboard-posture-card">
+            <Card title="활성화된 제스처 목록" action={`${activeGestureRules.length}개 사용 중`} onClick={onGoToGestures}>
+              <div className="mt-3 flex flex-col gap-2">
+                {activeGestureRules.length === 0 && (
+                  <p className="text-sm" style={{ color: 'var(--sub)' }}>아직 활성화된 제스처가 없어요.</p>
+                )}
+                {visibleGestureRules.map((rule) => {
+                  const gestureClass = gestureSetDefsById[rule.gestureSetId]?.classes.find((c) => c.classId === rule.classId);
+                  return (
+                    <div
+                      key={rule.id}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2"
+                      style={{ background: 'var(--wave-05)' }}
+                    >
+                      {gestureClass?.thumbnail && (
+                        <img
+                          src={gestureClass.thumbnail}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-lg object-cover"
+                          style={{ background: 'var(--wave-10)' }}
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>
+                          {gestureClass?.name || '제스처'}
+                        </p>
+                        <p className="truncate text-xs" style={{ color: 'var(--sub)' }}>
+                          {actionLabelFor(rule, homeDevices)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {gesturePageCount > 1 && (
+                <div className="mt-3 flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--wave-10)] disabled:opacity-30"
+                    style={{ color: 'var(--ink)' }}
+                    onClick={(event) => { event.stopPropagation(); setGesturePage((p) => Math.max(0, p - 1)); }}
+                    disabled={currentGesturePage === 0}
+                    aria-label="이전 제스처"
+                  >
+                    <NavChevronIcon direction="prev" />
+                  </button>
+                  <span className="text-xs" style={{ color: 'var(--sub)' }}>
+                    {currentGesturePage + 1} / {gesturePageCount}
+                  </span>
+                  <button
+                    type="button"
+                    className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--wave-10)] disabled:opacity-30"
+                    style={{ color: 'var(--ink)' }}
+                    onClick={(event) => { event.stopPropagation(); setGesturePage((p) => Math.min(gesturePageCount - 1, p + 1)); }}
+                    disabled={currentGesturePage === gesturePageCount - 1}
+                    aria-label="다음 제스처"
+                  >
+                    <NavChevronIcon direction="next" />
+                  </button>
+                </div>
               )}
             </Card>
           </div>

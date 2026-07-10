@@ -1,8 +1,12 @@
 // Mirrors bin/device/rules.json — see devicesStore.js header comment for why
 // this is a hardcoded JS mirror rather than a direct import.
+// externalId: automation_rule.external_id 형식(`rule_<카테고리>_<슬러그>`)을 그대로 흉내낸 것.
+// 내부 id(숫자)는 이 mock 배열 안에서만 쓰는 인덱스이고, API 응답의 공개 id는 externalId다
+// (dashboard.md 의 GET /dashboard/gestures/active 참고).
 export const ruleSeed = [
   {
     id: 1,
+    externalId: 'rule_gesture_desk_flash_light_on',
     name: '책상 반짝 제스처로 조명 켜기',
     enabled: true,
     trigger: {
@@ -18,6 +22,7 @@ export const ruleSeed = [
   },
   {
     id: 2,
+    externalId: 'rule_gesture_desk_swipe_tv_volume_up',
     name: '오른손 시계방향 → TV 볼륨 연속 증가',
     enabled: true,
     trigger: {
@@ -34,6 +39,7 @@ export const ruleSeed = [
   },
   {
     id: 3,
+    externalId: 'rule_trigger_ir_recv_plug1_toggle',
     name: 'IR 수신 시 플러그1 토글',
     enabled: true,
     trigger: { kind: 'ir_recv', deviceId: '5c1e8b6402fda973', commandId: 1 },
@@ -44,6 +50,7 @@ export const ruleSeed = [
   },
   {
     id: 4,
+    externalId: 'rule_trigger_plug2_overload_off',
     name: '플러그2 과부하 시 자동 차단',
     enabled: true,
     trigger: { kind: 'device_state', deviceId: '1f8c5a2e7b93064d', query: 'power', op: '>', value: 1500 },
@@ -54,6 +61,7 @@ export const ruleSeed = [
   },
   {
     id: 5,
+    externalId: 'rule_schedule_living_light_dim_2230',
     name: '매일 22:30 거실 조명 밝기 낮춤',
     enabled: true,
     trigger: null,
@@ -64,6 +72,7 @@ export const ruleSeed = [
   },
   {
     id: 6,
+    externalId: 'rule_schedule_tv_off_once',
     name: '30분 뒤 TV 끄기',
     enabled: true,
     trigger: null,
@@ -74,6 +83,7 @@ export const ruleSeed = [
   },
   {
     id: 7,
+    externalId: 'rule_schedule_bedroom_light_on_weekday',
     name: '매일 평일 07:00 침실 조명 켜기',
     enabled: false,
     trigger: null,
