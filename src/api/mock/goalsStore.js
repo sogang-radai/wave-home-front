@@ -27,7 +27,7 @@ const CATEGORY_COACHING = {
     completionRate: 0.61,
     trend: 'improving',
     recommendation: { title: '저녁 10분 명상 알림', text: '하루를 마무리하며 짧은 명상 시간을 가져보세요.', dayOfWeek: 'tue' },
-    tip: { title: '취침 전 걱정 노트', text: '자기 전 걱정거리를 적어두면 마음이 한결 가벼워져요.' },
+    tip: { title: '취침 전 걱정 노트 작성해보기', text: '자기 전 걱정거리를 적어두면 마음이 한결 가벼워져요.' },
   },
   life: {
     pastSummary: '최근 30일간 생활 습관 목표를 약 70% 완료했어요.',
@@ -43,7 +43,7 @@ const CATEGORY_COACHING = {
     completionRate: 0.58,
     trend: 'improving',
     recommendation: { title: '점심 채소 위주 식단 알림', text: '점심시간 전 알림으로 식단 선택을 도와드려요.', dayOfWeek: 'fri' },
-    tip: { title: '식사 전 물 한 잔', text: '식사 전 물을 마시면 과식을 줄이는 데 도움이 돼요.' },
+    tip: { title: '식사 전 물 한 잔 마시기', text: '식사 전 물을 마시면 과식을 줄이는 데 도움이 돼요.' },
   },
 };
 

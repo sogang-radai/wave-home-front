@@ -779,13 +779,13 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
             <h2 className="font-bold text-slate-800 text-sm mb-3">목표 코칭</h2>
             {!activeGoal ? (
               <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
-                <p className="text-xs text-slate-500">이루고 싶은 목표를 한 줄로 적어보세요.</p>
+                <p className="text-xs text-slate-500">이루고 싶은 목표를 한 줄로 적어보세요. WaveAI가 당신의 목표를 지원해드릴게요.</p>
                 <input
                   type="text"
                   value={goalTitleInput}
                   onChange={(e) => setGoalTitleInput(e.target.value)}
                   placeholder="예: 취침 11시 전에 자기"
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white outline-none focus:border-slate-400"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
                 <div className="flex flex-wrap gap-1.5">
                   {GOAL_CATEGORY_OPTIONS.map((opt) => (
@@ -796,7 +796,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                       className="text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all"
                       style={
                         goalCategoryInput === opt.value
-                          ? { background: '#4c1d95', color: 'white' }
+                          ? { background: '#2cb3f1', color: 'white' }
                           : { background: '#f1f5f9', color: '#64748b' }
                       }
                     >
@@ -809,7 +809,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                   onClick={submitGoal}
                   disabled={!goalTitleInput.trim() || goalFormBusy}
                   className="w-full text-xs font-semibold py-2 rounded-xl transition-all"
-                  style={{ background: '#4c1d95', color: 'white', opacity: !goalTitleInput.trim() || goalFormBusy ? 0.5 : 1 }}
+                  style={{ background: '#2cb3f1', color: 'white', opacity: !goalTitleInput.trim() || goalFormBusy ? 0.5 : 1 }}
                 >
                   {goalFormBusy ? '설정 중' : '목표 설정'}
                 </button>
@@ -819,7 +819,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
                   <span
                     className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                    style={{ background: '#ede9fe', color: '#4c1d95' }}
+                    style={{ background: '#dbeafe', color: '#2cb3f1' }}
                   >
                     {GOAL_CATEGORY_OPTIONS.find((opt) => opt.value === activeGoal.category)?.label || activeGoal.category}
                   </span>
@@ -842,7 +842,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                   <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                     <p className="text-xs text-slate-600 leading-relaxed">{goalCoaching.pastSummary}</p>
                     {goalCoaching.projectedMetrics?.completionRate !== undefined && (
-                      <p className="text-xs font-semibold" style={{ color: '#4c1d95' }}>
+                      <p className="text-xs font-semibold" style={{ color: '#2cb3f1' }}>
                         완료율 {Math.round(goalCoaching.projectedMetrics.completionRate * 100)}%
                         {goalCoaching.projectedMetrics.trend && ` · ${GOAL_TREND_LABEL[goalCoaching.projectedMetrics.trend] || goalCoaching.projectedMetrics.trend}`}
                       </p>
@@ -857,7 +857,12 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                       const isBusy = goalRecBusyId === item.id;
                       return (
                         <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                          <p className="flex-1 min-w-0 text-xs text-slate-700 leading-snug">{item.title}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-slate-700 leading-snug">{item.title}</p>
+                            {item.text && (
+                              <p className="text-[11px] text-slate-400 leading-snug mt-0.5">{item.text}</p>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1 shrink-0">
                             {item.actionable && (
                               <button
