@@ -107,7 +107,7 @@ type Insight = {
 
 ## GET `/sleep/today/plan`
 
-오늘 밤 추천 수면 계획(`SleepPage`의 "오늘 밤 추천 수면 시간" 카드).
+오늘 밤 추천 수면 계획(`MainPage`의 "수면 관리" 카드 하단). 최근 7일 평균 수면 시간(3일 이상 기록이 있을 때) 또는 `goalHours`(부족할 때)를 목표 수면 시간으로 삼고, 내일 가장 이른 `schedule_task` 시작 시각을 기상 시각의 제약으로 반영해 계산한다. 결과는 하루 1회 `sleep_plan` 테이블에 캐시되어 같은 날 재요청 시 그대로 재사용된다.
 
 **Response 200**
 ```json
@@ -116,7 +116,8 @@ type Insight = {
   "wakeTime": "06:40",
   "prepTime": "22:50",
   "lightDimTime": "23:00",
-  "recommendedTemperatureCelsius": 24
+  "recommendedTemperatureCelsius": 24,
+  "rationale": "최근 7일 평균 수면 시간은 7시간 12분이에요. 내일 08:30 일정을 고려해 23:30에 잠자리에 들면 목표 수면 시간을 채울 수 있어요."
 }
 ```
 

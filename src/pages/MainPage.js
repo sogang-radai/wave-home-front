@@ -62,6 +62,7 @@ export function MainPage({
   const remaining = todayTodos.filter((todo) => !todo.done).length;
 
   const [sleepSummary, setSleepSummary] = useState(null);
+  const [todayPlan, setTodayPlan] = useState(null);
   const [totalPower, setTotalPower] = useState(null);
   const [powerTrend, setPowerTrend] = useState([]);
   const [dailyMessage, setDailyMessage] = useState(null);
@@ -77,6 +78,7 @@ export function MainPage({
   useEffect(() => {
     // 데모/실서버 모두 /sleep/today/summary → sleep_session DB 조회.
     sleepApi.getTodaySummary().then(setSleepSummary).catch(() => setSleepSummary(null));
+    sleepApi.getTodayPlan().then(setTodayPlan).catch(() => setTodayPlan(null));
     dashboardApi.getDailyMessage().then(setDailyMessage);
     dashboardApi.getCurrentState().then(setCurrentState);
     iotApi.getSummary().then(setHomeSummary);
@@ -352,10 +354,10 @@ export function MainPage({
           <button
             type="button"
             className="promo-card navy dashboard-sleep-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('가장 상쾌하게 깨어날 수 있는 취침 시간을 추천해줘')}
+            onClick={() => onOpenChatWithDraft?.('서카디안 리듬 기반으로 나에게 맞는 취침 시간을 추천해줘')}
           >
             <strong>취침 가이드</strong>
-            <p>가장 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
+            <p>나의 수면 패턴을 분석하고, 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
           </button>
 
           <button
@@ -383,6 +385,17 @@ export function MainPage({
                     하방 레이더로 입면·뒤척임·기상 구간을 추적하고 있어요.
                   </p>
                 </div>
+                {todayPlan && (
+                  <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
+                    <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 밤 추천 수면 시간</p>
+                    <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+                      {todayPlan.bedtime} 취침 · {todayPlan.wakeTime} 기상
+                    </span>
+                    {todayPlan.rationale && (
+                      <p className="mt-1 text-xs" style={{ color: 'var(--sub)' }}>{todayPlan.rationale}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </Card>
           </div>
