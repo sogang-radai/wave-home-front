@@ -5,6 +5,7 @@ import {
   PLAN_WEEKDAYS, PLAN_CAT_STYLE,
 } from '../../data/weeklyPlanData';
 import weeklyPlanApi from '../../api/weeklyPlanApi';
+import goalsApi from '../../api/goalsApi';
 import { DateNavigatorBar } from '../../components/calendar/DateNavigatorBar';
 import { getToday, isSameDay, normalizeDate } from '../../components/calendar/calendarUtils';
 import { getNow } from '../../lib/demoClock';
@@ -12,6 +13,20 @@ import { useMobileLayout } from '../../hooks/useMobileLayout';
 import { TimeWheelPicker, minutesToPickerState, pickerStateToMinutes } from '../alarm/TimeWheelPicker';
 import '../alarm/alarm.css';
 import '../main.css';
+
+const GOAL_CATEGORY_OPTIONS = [
+  { value: 'sleep', label: '수면' },
+  { value: 'posture', label: '자세' },
+  { value: 'mental', label: '멘탈' },
+  { value: 'life', label: '생활' },
+  { value: 'diet', label: '식습관' },
+];
+
+const GOAL_TREND_LABEL = {
+  improving: '개선되는 흐름이에요',
+  steady: '꾸준히 유지되고 있어요',
+  declining: '흔들리는 추세예요',
+};
 
 function normalizeRecommendationGroups(data) {
   if (!data?.length) return [];
@@ -46,7 +61,7 @@ function buildPopupState({ dayLabel, startMin, endMin }) {
   };
 }
 
-export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight }) {
+export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight, onRefreshTodos }) {
   const isMobile = useMobileLayout();
   const [weekStartDate, setWeekStartDate] = useState(getToday);
   const weekDates = useMemo(() => getWeekDatesFromAnchor(weekStartDate), [weekStartDate]);
@@ -104,6 +119,70 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
       setUpdatingRecommendationId(null);
     }
   };
+
+  const [activeGoal, setActiveGoal] = useState(null);
+  const [goalCoaching, setGoalCoaching] = useState(null);
+  const [goalTitleInput, setGoalTitleInput] = useState('');
+  const [goalCategoryInput, setGoalCategoryInput] = useState('sleep');
+  const [goalFormBusy, setGoalFormBusy] = useState(false);
+  const [goalRecBusyId, setGoalRecBusyId] = useState(null);
+  const [goalDismissed, setGoalDismissed] = useState(() => new Set());
+
+  useEffect(() => {
+    goalsApi.getActiveGoal().then((goal) => {
+      setActiveGoal(goal);
+      if (!goal) return;
+      goalsApi.getCoaching(goal.id).then(setGoalCoaching).catch(() => setGoalCoaching(null));
+    }).catch(() => setActiveGoal(null));
+  }, []);
+
+  const submitGoal = async () => {
+    const title = goalTitleInput.trim();
+    if (!title || goalFormBusy) return;
+    setGoalFormBusy(true);
+    try {
+      const goal = await goalsApi.createGoal({ title, category: goalCategoryInput });
+      setActiveGoal(goal);
+      setGoalTitleInput('');
+      setGoalDismissed(new Set());
+      const coaching = await goalsApi.getCoaching(goal.id);
+      setGoalCoaching(coaching);
+    } finally {
+      setGoalFormBusy(false);
+    }
+  };
+
+  const archiveActiveGoal = async () => {
+    if (!activeGoal || goalFormBusy) return;
+    setGoalFormBusy(true);
+    try {
+      await goalsApi.archiveGoal(activeGoal.id);
+      setActiveGoal(null);
+      setGoalCoaching(null);
+    } finally {
+      setGoalFormBusy(false);
+    }
+  };
+
+  const toggleGoalRecommendation = async (item) => {
+    if (!activeGoal || goalRecBusyId) return;
+    setGoalRecBusyId(item.id);
+    try {
+      if (item.approved) {
+        await goalsApi.cancelRecommendation(activeGoal.id, item.id);
+      } else {
+        await goalsApi.applyRecommendation(activeGoal.id, item.id);
+      }
+      const coaching = await goalsApi.getCoaching(activeGoal.id);
+      setGoalCoaching(coaching);
+      if (item.actionType === 'schedule_task' && onRefreshTodos) {
+        await onRefreshTodos();
+      }
+    } finally {
+      setGoalRecBusyId(null);
+    }
+  };
+
   const [dismissed, setDismissed] = useState(() => new Set());
   const [hoverApprovedId, setHoverApprovedId] = useState(null);
   const [detailTodo, setDetailTodo] = useState(null);
@@ -694,6 +773,127 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
             </div>
           </div>
           )}
+
+          {/* 목표 기반 습관 코칭 */}
+          <div>
+            <h2 className="font-bold text-slate-800 text-sm mb-3">목표 코칭</h2>
+            {!activeGoal ? (
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+                <p className="text-xs text-slate-500">이루고 싶은 목표를 한 줄로 적어보세요.</p>
+                <input
+                  type="text"
+                  value={goalTitleInput}
+                  onChange={(e) => setGoalTitleInput(e.target.value)}
+                  placeholder="예: 취침 11시 전에 자기"
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white outline-none focus:border-slate-400"
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {GOAL_CATEGORY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setGoalCategoryInput(opt.value)}
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all"
+                      style={
+                        goalCategoryInput === opt.value
+                          ? { background: '#4c1d95', color: 'white' }
+                          : { background: '#f1f5f9', color: '#64748b' }
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={submitGoal}
+                  disabled={!goalTitleInput.trim() || goalFormBusy}
+                  className="w-full text-xs font-semibold py-2 rounded-xl transition-all"
+                  style={{ background: '#4c1d95', color: 'white', opacity: !goalTitleInput.trim() || goalFormBusy ? 0.5 : 1 }}
+                >
+                  {goalFormBusy ? '설정 중' : '목표 설정'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+                  <span
+                    className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                    style={{ background: '#ede9fe', color: '#4c1d95' }}
+                  >
+                    {GOAL_CATEGORY_OPTIONS.find((opt) => opt.value === activeGoal.category)?.label || activeGoal.category}
+                  </span>
+                  <p className="flex-1 min-w-0 text-xs font-medium text-slate-700 truncate">{activeGoal.title}</p>
+                  <button
+                    type="button"
+                    onClick={archiveActiveGoal}
+                    disabled={goalFormBusy}
+                    className="p-0.5 rounded shrink-0"
+                    style={{ color: '#cbd5e1' }}
+                    onMouseEnter={(ev) => { ev.currentTarget.style.color = '#64748b'; }}
+                    onMouseLeave={(ev) => { ev.currentTarget.style.color = '#cbd5e1'; }}
+                    aria-label="목표 보관"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+
+                {goalCoaching && (
+                  <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
+                    <p className="text-xs text-slate-600 leading-relaxed">{goalCoaching.pastSummary}</p>
+                    {goalCoaching.projectedMetrics?.completionRate !== undefined && (
+                      <p className="text-xs font-semibold" style={{ color: '#4c1d95' }}>
+                        완료율 {Math.round(goalCoaching.projectedMetrics.completionRate * 100)}%
+                        {goalCoaching.projectedMetrics.trend && ` · ${GOAL_TREND_LABEL[goalCoaching.projectedMetrics.trend] || goalCoaching.projectedMetrics.trend}`}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-2">{goalCoaching.projection}</p>
+                  </div>
+                )}
+
+                {goalCoaching?.recommendations?.some((item) => !goalDismissed.has(item.id)) && (
+                  <div className="space-y-1.5">
+                    {goalCoaching.recommendations.filter((item) => !goalDismissed.has(item.id)).map((item) => {
+                      const isBusy = goalRecBusyId === item.id;
+                      return (
+                        <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                          <p className="flex-1 min-w-0 text-xs text-slate-700 leading-snug">{item.title}</p>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {item.actionable && (
+                              <button
+                                type="button"
+                                onClick={() => toggleGoalRecommendation(item)}
+                                disabled={isBusy}
+                                className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
+                                style={
+                                  item.approved
+                                    ? { background: '#dcfce7', color: '#16a34a', opacity: isBusy ? 0.6 : 1 }
+                                    : { background: '#f1f5f9', color: '#64748b', opacity: isBusy ? 0.6 : 1 }
+                                }
+                              >
+                                {isBusy ? '처리 중' : item.approved ? '적용됨' : '추가'}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setGoalDismissed((prev) => new Set([...prev, item.id]))}
+                              className="p-0.5 rounded transition-opacity opacity-0 group-hover:opacity-100"
+                              style={{ color: '#cbd5e1' }}
+                              onMouseEnter={(ev) => { ev.currentTarget.style.color = '#64748b'; }}
+                              onMouseLeave={(ev) => { ev.currentTarget.style.color = '#cbd5e1'; }}
+                              aria-label="삭제"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

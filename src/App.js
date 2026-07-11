@@ -122,11 +122,12 @@ function App() {
     setNotifications(updated.map(toViewNotification));
   };
   const [todos, setTodos] = useState([]);
+  const refreshTodos = async () => {
+    const tasks = await weeklyPlanApi.getTasks();
+    setTodos(Array.isArray(tasks) ? tasks.map(toViewTodo) : []);
+  };
   useEffect(() => {
-    weeklyPlanApi
-      .getTasks()
-      .then((tasks) => setTodos(Array.isArray(tasks) ? tasks.map(toViewTodo) : []))
-      .catch(() => setTodos([]));
+    refreshTodos().catch(() => setTodos([]));
   }, []);
 
   const toggleTodo = async (id) => {
@@ -639,6 +640,7 @@ function App() {
               onUpdateTodo={updateTodo}
               onDeleteTodo={deleteTodo}
               onAddTodoFromInsight={addTodoFromInsight}
+              onRefreshTodos={refreshTodos}
             />
           )}
           {page === 'alarm' && <AlarmPage />}
