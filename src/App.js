@@ -57,8 +57,8 @@ function toViewNotification(notification) {
 // 뷰 모델(day/cat/startMin/endMin, 한글 요일·카테고리)로 변환한다.
 const DAY_TO_KOREAN = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일' };
 const KOREAN_TO_DAY = { 월: 'mon', 화: 'tue', 수: 'wed', 목: 'thu', 금: 'fri', 토: 'sat', 일: 'sun' };
-const CATEGORY_TO_KOREAN = { posture: '자세', sleep: '수면', diet: '식습관', mental: '멘탈' };
-const KOREAN_TO_CATEGORY = { 자세: 'posture', 수면: 'sleep', 식습관: 'diet', 멘탈: 'mental', 일정: 'mental' };
+const CATEGORY_TO_KOREAN = { posture: '자세', sleep: '수면', diet: '식습관', mental: '멘탈', life: '일상' };
+const KOREAN_TO_CATEGORY = { 자세: 'posture', 수면: 'sleep', 식습관: 'diet', 멘탈: 'mental', 일상: 'life', 일정: 'mental' };
 
 function formatDateParam(date) {
   const year = date.getFullYear();

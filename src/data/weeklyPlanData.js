@@ -48,6 +48,7 @@ export const PLAN_CAT_STYLE = {
   '일정': { bg: '#dbeafe', text: '#1d4ed8', shadow: 'rgba(59,130,246,0.15)' },
   '자세': { bg: '#fce7f3', text: '#9d174d', shadow: 'rgba(244,114,182,0.15)' },
   '멘탈': { bg: '#d1fae5', text: '#064e3b', shadow: 'rgba(52,211,153,0.15)' },
+  '일상': { bg: '#fee2e2', text: '#991b1b', shadow: 'rgba(248,113,113,0.15)' },
 };
 
 export const PLAN_CATEGORY_TO_API = {
@@ -55,6 +56,7 @@ export const PLAN_CATEGORY_TO_API = {
   일정: 'mental',
   자세: 'posture',
   멘탈: 'mental',
+  일상: 'life',
 };
 
 export const CAT_STYLE = {
@@ -62,6 +64,7 @@ export const CAT_STYLE = {
   '수면': { bg: '#ede9fe', text: '#4c1d95', shadow: 'rgba(167,139,250,0.15)', defaultMin: 10 * 60 + 30 },
   '식습관': { bg: '#fef9c3', text: '#713f12', shadow: 'rgba(251,191,36,0.15)', defaultMin: 12 * 60 },
   '멘탈': { bg: '#d1fae5', text: '#064e3b', shadow: 'rgba(52,211,153,0.15)', defaultMin: 13 * 60 + 30 },
+  '일상': { bg: '#fee2e2', text: '#991b1b', shadow: 'rgba(248,113,113,0.15)', defaultMin: 15 * 60 },
 };
 
 export const ENG_LABELS = ['Mon', 'Tues', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -89,7 +92,8 @@ export function pickAICat(title) {
   if (/스트레칭|자세|운동|걷기|요가|스쿼트|기지개|목|허리|체조/.test(title)) return '자세';
   if (/수면|잠|취침|기상|낮잠|불면|휴식/.test(title)) return '수면';
   if (/먹|식사|점심|저녁|아침|식단|수분|물|영양|칼로리|간식|채소|과일/.test(title)) return '식습관';
-  return '멘탈';
+  // posture/sleep/diet 어디에도 안 걸리면 '멘탈'보다 '일상'(병원 예약·행정 용무 등)이 더 정확한 catch-all이다.
+  return '일상';
 }
 
 export function getWeekDates(weekOffset = 0) {

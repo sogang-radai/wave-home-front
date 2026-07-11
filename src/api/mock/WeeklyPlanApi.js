@@ -45,6 +45,7 @@ const CATEGORY_TO_KEY = {
   수면: 'sleep',
   식습관: 'diet',
   멘탈: 'mental',
+  일상: 'life',
 };
 
 const CATEGORY_TO_LABEL = {
@@ -52,9 +53,10 @@ const CATEGORY_TO_LABEL = {
   sleep: '수면',
   diet: '식습관',
   mental: '멘탈',
+  life: '일상',
 };
 
-const VALID_CATEGORIES = ['posture', 'sleep', 'diet', 'mental'];
+const VALID_CATEGORIES = ['posture', 'sleep', 'diet', 'mental', 'life'];
 
 const DEFAULT_DURATION_MINUTES = 30;
 
@@ -110,7 +112,7 @@ function validateCategory(category) {
     return [{
       field: 'category',
       code: 'INVALID_ENUM',
-      message: 'category는 posture, sleep, diet, mental 중 하나여야 합니다.',
+      message: `category는 ${VALID_CATEGORIES.join(', ')} 중 하나여야 합니다.`,
     }];
   }
   return [];
