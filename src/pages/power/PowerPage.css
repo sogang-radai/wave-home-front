@@ -175,7 +175,7 @@
 }
 
 .power-tab.active {
-  background: var(--wave);
+  background: #2cb3f1;
   color: #fff;
   display: flex;
 }
@@ -212,7 +212,7 @@
 }
 
 .power-combo-wrap.active {
-  background: var(--wave);
+  background: #2cb3f1;
 }
 
 /* Clicking the label selects the remembered interval directly; the caret
@@ -280,7 +280,7 @@
 
 .power-combo-menu-item.active {
   background: var(--wave-10);
-  color: var(--wave);
+  color: #2cb3f1;
   font-weight: 700;
 }
 
@@ -319,7 +319,7 @@
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--wave);
+  color: #2cb3f1;
   letter-spacing: -0.01em;
 }
 
@@ -607,7 +607,7 @@
 }
 
 .power-device-card.selected .power-device-w-big {
-  color: var(--wave);
+  color: #2cb3f1;
 }
 
 .power-device-center small {
