@@ -1556,6 +1556,22 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
+}
+
+.rule-inline-fields--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rule-inline-fields > .settings-field + .settings-field {
+  margin-top: 0;
+}
+
+.rule-inline-fields .settings-select,
+.rule-inline-fields .settings-field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .rule-params-grid {
@@ -2351,6 +2367,10 @@
   .rule-params-grid,
   .telemetry-grid,
   .light-swatch-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rule-inline-fields--2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

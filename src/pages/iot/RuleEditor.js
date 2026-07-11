@@ -308,7 +308,7 @@ export function RuleEditor({ open, initialRule, defaults, devices, onSave, onCan
 
       <div className="rule-section">
         <h4 className="rule-section-title">실행할 동작</h4>
-        <div className="rule-inline-fields">
+        <div className="rule-inline-fields rule-inline-fields--2">
           <label className="settings-field">
             <span>장치</span>
             <select className="settings-select" value={rule.action.deviceId} onChange={(e) => setActionDevice(e.target.value)}>

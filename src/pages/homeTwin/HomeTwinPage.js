@@ -23,6 +23,12 @@ export function HomeTwinPage() {
     setMode('room');
   }, []);
 
+  const handleTour = useCallback(() => {
+    setSelectedRoom(null);
+    setHoveredRoom(null);
+    setMode('tour');
+  }, []);
+
   const handleBack = useCallback(() => {
     setMode('overview');
     setSelectedRoom(null);
@@ -30,13 +36,25 @@ export function HomeTwinPage() {
   }, []);
 
   const roomLabel = selectedRoom ? twinRoomByGltfRoot(selectedRoom)?.label : null;
+  const showLabels = mode === 'room' || mode === 'tour';
 
   return (
     <div className="home-twin-page">
+      {mode === 'overview' && (
+        <button type="button" className="twin-back-button" onClick={handleTour} aria-label="둘러보기">
+          <span>둘러보기</span>
+        </button>
+      )}
       {mode === 'room' && (
         <button type="button" className="twin-back-button" onClick={handleBack} aria-label="전체 보기">
           <BackIcon />
           <span>전체 보기</span>
+        </button>
+      )}
+      {mode === 'tour' && (
+        <button type="button" className="twin-back-button" onClick={handleBack} aria-label="돌아가기">
+          <BackIcon />
+          <span>돌아가기</span>
         </button>
       )}
       {roomLabel && mode === 'room' && (
@@ -50,7 +68,7 @@ export function HomeTwinPage() {
         onRoomHover={setHoveredRoom}
         onRoomSelect={handleRoomSelect}
         viewModels={viewModels}
-        showLabels={mode === 'room'}
+        showLabels={showLabels}
         cameraMode="ortho"
       />
     </div>

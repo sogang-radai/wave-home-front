@@ -155,29 +155,44 @@ export class IotApi extends MockIotApi {
     return super.getStreamInfo(deviceId);
   }
 
+  async getRules() {
+    return preferReal(() => realIotApi.getRules(), () => super.getRules());
+  }
+
+  async getRulesForDevice(deviceId) {
+    return preferReal(
+      () => realIotApi.getRulesForDevice(deviceId),
+      () => super.getRulesForDevice(deviceId),
+    );
+  }
+
   async createRule(payload) {
-    if (!guardDemoWrite()) return null;
-    return super.createRule(payload);
+    return preferReal(() => realIotApi.createRule(payload), () => super.createRule(payload));
   }
 
   async updateRule(ruleId, patch) {
-    if (!guardDemoWrite()) return null;
-    return super.updateRule(ruleId, patch);
+    return preferReal(
+      () => realIotApi.updateRule(ruleId, patch),
+      () => super.updateRule(ruleId, patch),
+    );
   }
 
   async deleteRule(ruleId) {
-    if (!guardDemoWrite()) return null;
-    return super.deleteRule(ruleId);
+    return preferReal(() => realIotApi.deleteRule(ruleId), () => super.deleteRule(ruleId));
   }
 
   async setRuleEnabled(ruleId, enabled) {
-    if (!guardDemoWrite()) return null;
-    return super.setRuleEnabled(ruleId, enabled);
+    return preferReal(
+      () => realIotApi.setRuleEnabled(ruleId, enabled),
+      () => super.setRuleEnabled(ruleId, enabled),
+    );
   }
 
   async executeRuleManually(ruleId) {
-    if (!guardDemoWrite()) return null;
-    return super.executeRuleManually(ruleId);
+    return preferReal(
+      () => realIotApi.executeRuleManually(ruleId),
+      () => super.executeRuleManually(ruleId),
+    );
   }
 
   async saveIrCommand(command) {

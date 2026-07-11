@@ -24,7 +24,13 @@ function getDemoRuntimeId() {
   } catch {
     // ignore storage failures
   }
-  return null;
+  // Mint client-side so chat/IoT/agent share one session before the first response.
+  const minted =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID().replace(/-/g, '')
+      : `demo${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`;
+  rememberDemoRuntimeId(minted);
+  return minted;
 }
 
 function rememberDemoRuntimeId(runtimeId) {

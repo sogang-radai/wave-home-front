@@ -2,77 +2,143 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { OrthographicCamera } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { computeTwinOverviewLayout, computeTwinRoomLayout } from './twinOverviewLayout';
+import {
+  computeTwinOverviewLayout,
+  computeTwinRoomLayout,
+  computeTwinTourLayout,
+} from './twinOverviewLayout';
 
-const tempTarget = new THREE.Vector3();
+const TRANSITION_DURATION = 0.95;
+const _lookMat = new THREE.Matrix4();
+const _endPos = new THREE.Vector3();
+const _endTarget = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2;
+}
+
+function quatLookingAt(position, target, out) {
+  _lookMat.lookAt(position, target, _up);
+  return out.setFromRotationMatrix(_lookMat);
+}
+
+function applyOrthoFrustum(camera, layout) {
+  camera.left = layout.left;
+  camera.right = layout.right;
+  camera.top = layout.top;
+  camera.bottom = layout.bottom;
+  camera.near = layout.near;
+  camera.far = layout.far;
+  camera.zoom = 1;
+}
 
 export function TwinOverviewCamera({
   sceneRoot,
   mode,
   selectedRoom,
   onLayoutReady,
+  onTransitionChange,
 }) {
   const cameraRef = useRef();
   const { size, invalidate } = useThree();
   const currentTarget = useRef(new THREE.Vector3());
-  const desiredTarget = useRef(new THREE.Vector3());
   const desiredLayout = useRef(null);
   const transitioning = useRef(false);
+  const transitionT = useRef(0);
 
-  const layout = useMemo(
-    () => mode === 'room'
-      ? computeTwinRoomLayout(sceneRoot, selectedRoom, size.width, size.height)
-      : computeTwinOverviewLayout(sceneRoot, size.width, size.height),
-    [sceneRoot, mode, selectedRoom, size.width, size.height],
-  );
+  const startPos = useRef(new THREE.Vector3());
+  const startTarget = useRef(new THREE.Vector3());
+  const startQuat = useRef(new THREE.Quaternion());
+  const startFrustum = useRef({ left: -10, right: 10, top: 10, bottom: -10, near: 0.1, far: 200 });
+  const endQuat = useRef(new THREE.Quaternion());
+
+  const layout = useMemo(() => {
+    if (mode === 'room') {
+      return computeTwinRoomLayout(sceneRoot, selectedRoom, size.width, size.height);
+    }
+    if (mode === 'tour') {
+      return computeTwinTourLayout(sceneRoot, size.width, size.height);
+    }
+    return computeTwinOverviewLayout(sceneRoot, size.width, size.height);
+  }, [sceneRoot, mode, selectedRoom, size.width, size.height]);
 
   useLayoutEffect(() => {
     if (!layout || !cameraRef.current) return;
 
+    const camera = cameraRef.current;
     desiredLayout.current = layout;
-    desiredTarget.current.copy(layout.target);
-    if (mode === 'overview' || currentTarget.current.lengthSq() === 0) {
-      const camera = cameraRef.current;
-      camera.position.fromArray(layout.position);
-      camera.left = layout.left;
-      camera.right = layout.right;
-      camera.top = layout.top;
-      camera.bottom = layout.bottom;
-      camera.near = layout.near;
-      camera.far = layout.far;
-      camera.zoom = 1;
-      currentTarget.current.copy(layout.target);
-      camera.lookAt(currentTarget.current);
+    _endPos.fromArray(layout.position);
+    _endTarget.copy(layout.target);
+    quatLookingAt(_endPos, _endTarget, endQuat.current);
+
+    // First layout only: snap into place.
+    if (currentTarget.current.lengthSq() === 0) {
+      camera.up.copy(_up);
+      camera.position.copy(_endPos);
+      applyOrthoFrustum(camera, layout);
+      currentTarget.current.copy(_endTarget);
+      camera.quaternion.copy(endQuat.current);
       camera.updateProjectionMatrix();
       transitioning.current = false;
+      transitionT.current = 1;
+      onTransitionChange?.(false);
     } else {
+      startPos.current.copy(camera.position);
+      startTarget.current.copy(currentTarget.current);
+      startQuat.current.copy(camera.quaternion);
+      startFrustum.current = {
+        left: camera.left,
+        right: camera.right,
+        top: camera.top,
+        bottom: camera.bottom,
+        near: camera.near,
+        far: camera.far,
+      };
       transitioning.current = true;
+      transitionT.current = 0;
+      onTransitionChange?.(true);
     }
 
     onLayoutReady?.(true);
     invalidate();
-  }, [layout, mode, invalidate, onLayoutReady]);
+  }, [layout, mode, invalidate, onLayoutReady, onTransitionChange]);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const camera = cameraRef.current;
     const desired = desiredLayout.current;
     if (!camera || !desired || !transitioning.current) return;
 
-    camera.position.lerp(tempTarget.fromArray(desired.position), 0.09);
-    currentTarget.current.lerp(desiredTarget.current, 0.09);
-    camera.left = THREE.MathUtils.lerp(camera.left, desired.left, 0.09);
-    camera.right = THREE.MathUtils.lerp(camera.right, desired.right, 0.09);
-    camera.top = THREE.MathUtils.lerp(camera.top, desired.top, 0.09);
-    camera.bottom = THREE.MathUtils.lerp(camera.bottom, desired.bottom, 0.09);
-    camera.near = desired.near;
-    camera.far = desired.far;
-    camera.zoom = THREE.MathUtils.lerp(camera.zoom, 1, 0.09);
-    camera.lookAt(currentTarget.current);
+    transitionT.current = Math.min(1, transitionT.current + delta / TRANSITION_DURATION);
+    const t = easeInOutCubic(transitionT.current);
+
+    _endPos.fromArray(desired.position);
+    _endTarget.copy(desired.target);
+
+    camera.position.lerpVectors(startPos.current, _endPos, t);
+    currentTarget.current.lerpVectors(startTarget.current, _endTarget, t);
+    camera.quaternion.slerpQuaternions(startQuat.current, endQuat.current, t);
+    camera.up.copy(_up);
+
+    const sf = startFrustum.current;
+    camera.left = THREE.MathUtils.lerp(sf.left, desired.left, t);
+    camera.right = THREE.MathUtils.lerp(sf.right, desired.right, t);
+    camera.top = THREE.MathUtils.lerp(sf.top, desired.top, t);
+    camera.bottom = THREE.MathUtils.lerp(sf.bottom, desired.bottom, t);
+    camera.near = THREE.MathUtils.lerp(sf.near, desired.near, t);
+    camera.far = THREE.MathUtils.lerp(sf.far, desired.far, t);
+    camera.zoom = 1;
     camera.updateProjectionMatrix();
 
-    const arrived = camera.position.distanceTo(tempTarget) < 0.02
-      && currentTarget.current.distanceTo(desiredTarget.current) < 0.02;
-    if (arrived) transitioning.current = false;
+    if (transitionT.current >= 1) {
+      camera.position.copy(_endPos);
+      currentTarget.current.copy(_endTarget);
+      camera.quaternion.copy(endQuat.current);
+      applyOrthoFrustum(camera, desired);
+      camera.updateProjectionMatrix();
+      transitioning.current = false;
+      onTransitionChange?.(false);
+    }
   });
 
   return (

@@ -58,6 +58,8 @@ function ensureFallbackSpotlight(anchor, shade) {
 const WIND_WISP_COUNT = 6;
 const WIND_WISP_DURATION = 1.3;
 const WIND_SPAN = 0.65;
+/** Tilt wind from straight-down toward AC front (-X): 45° forward. */
+const WIND_TILT_RAD = -Math.PI / 4;
 
 function createWindWispGeometry() {
   const segments = 20;
@@ -80,6 +82,8 @@ function ensureWindEmitter(anchor) {
   const group = new THREE.Group();
   group.name = `${anchor.name}_wind_emitter`;
   group.visible = false;
+  // bed_ac local: front = -X, down = -Y → rotate around Z so stream goes 45° forward.
+  group.rotation.z = WIND_TILT_RAD;
   anchor.add(group);
 
   const wisps = Array.from({ length: WIND_WISP_COUNT }, (_, index) => {
@@ -94,11 +98,11 @@ function ensureWindEmitter(anchor) {
     );
     line.visible = false;
     group.add(line);
-    const laneX = -WIND_SPAN / 2 + ((index + 0.5) / WIND_WISP_COUNT) * WIND_SPAN;
+    const laneZ = -WIND_SPAN / 2 + ((index + 0.5) / WIND_WISP_COUNT) * WIND_SPAN;
     return {
       line,
       life: 0,
-      laneX,
+      laneZ,
       seed: Math.random() * Math.PI * 2,
       spawnTimer: Math.random() * 1.2,
     };
@@ -111,10 +115,12 @@ function ensureWindEmitter(anchor) {
 
 function setMaterialOpacity(material, opacity) {
   if (material.userData.twinOriginalOpacity === undefined)
-    material.userData.twinOriginalOpacity = material.opacity;
-  material.transparent = opacity < 1;
-  material.opacity = opacity < 1 ? opacity : material.userData.twinOriginalOpacity;
-  material.depthWrite = opacity >= 1;
+    material.userData.twinOriginalOpacity = material.opacity ?? 1;
+  const base = material.userData.twinOriginalOpacity;
+  const next = opacity < 1 ? opacity : base;
+  material.transparent = next < 0.999;
+  material.opacity = next;
+  material.depthWrite = next >= 0.95;
 }
 
 export function findNodeByName(root, name) {
@@ -127,21 +133,91 @@ export function findNodeByName(root, name) {
   return null;
 }
 
-export function setRoomOpacity(roomGroup, opacity) {
-  if (!roomGroup) return;
-  roomGroup.traverse((obj) => {
+/** Capture true material opacities once (call right after cloning). */
+export function captureRoomMaterialBases(root) {
+  if (!root) return;
+  root.traverse((obj) => {
     if (!obj.isMesh || !obj.material) return;
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
     mats.forEach((mat) => {
-      mat.transparent = opacity < 1;
-      mat.opacity = opacity;
-      mat.depthWrite = opacity >= 0.95;
+      if (mat.userData.twinOriginalOpacity === undefined)
+        mat.userData.twinOriginalOpacity = mat.opacity ?? 1;
     });
   });
 }
 
+export function setRoomOpacity(roomGroup, opacity) {
+  if (!roomGroup) return;
+  const clamped = THREE.MathUtils.clamp(opacity, 0, 1);
+  // Skip full mesh traverse when fade has not moved (was a per-frame hitch source).
+  if (roomGroup.userData.twinRoomFadeApplied === clamped) {
+    roomGroup.userData.twinRoomFade = clamped;
+    return;
+  }
+  roomGroup.userData.twinRoomFade = clamped;
+  roomGroup.userData.twinRoomFadeApplied = clamped;
+  roomGroup.traverse((obj) => {
+    if (!obj.isMesh || !obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    mats.forEach((mat) => {
+      if (mat.userData.twinOriginalOpacity === undefined)
+        mat.userData.twinOriginalOpacity = 1;
+      const base = mat.userData.twinOriginalOpacity;
+      const next = base * clamped;
+      mat.transparent = next < 0.999;
+      mat.opacity = next;
+      mat.depthWrite = next >= 0.95;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
+/** Force materials back to their captured base opacity (fade = 1). */
+export function restoreRoomOpacity(roomGroup) {
+  if (!roomGroup) return;
+  roomGroup.userData.twinRoomFade = 1;
+  roomGroup.userData.twinRoomFadeApplied = undefined;
+  roomGroup.visible = true;
+  roomGroup.traverse((obj) => {
+    obj.visible = true;
+    if (!obj.isMesh || !obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    mats.forEach((mat) => {
+      const base = mat.userData.twinOriginalOpacity ?? 1;
+      mat.userData.twinOriginalOpacity = base;
+      mat.transparent = base < 0.999;
+      mat.opacity = base;
+      mat.depthWrite = base >= 0.95;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
+const FAN_SPIN_SPEED = -30;
+const FAN_SPINDOWN_SEC = 3;
+
+function visualKeyForViewModels(viewModels) {
+  return (viewModels || []).map((vm) => [
+    vm.deviceId,
+    vm.connected ? 1 : 0,
+    vm.on ? 1 : 0,
+    vm.state?.brightness ?? '',
+    vm.state?.temperature ?? '',
+    vm.state?.color?.r ?? '',
+    vm.state?.color?.g ?? '',
+    vm.state?.color?.b ?? '',
+  ].join(':')).join('|');
+}
+
 export function applyDeviceVisuals(scene, viewModels) {
-  if (!scene) return;
+  if (!scene) return false;
+  const nextKey = visualKeyForViewModels(viewModels);
+  if (scene.userData.twinVisualKey === nextKey) return false;
+  scene.userData.twinVisualKey = nextKey;
+
+  const fanBlades = [];
+  const windEmitters = [];
+
   viewModels.forEach((vm) => {
     const anchor = findNodeByName(scene, vm.anchor);
     if (!anchor) return;
@@ -163,9 +239,9 @@ export function applyDeviceVisuals(scene, viewModels) {
         if (!obj.isMesh || !obj.material) return;
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
         mats.forEach((mat) => {
-          mat.emissive = new THREE.Color(vm.on ? 0xffffff : 0x000000);
+          mat.emissive?.set(vm.on ? 0xffffff : 0x000000);
           mat.emissiveIntensity = vm.on ? 0.85 : 0;
-          mat.color = new THREE.Color(vm.on ? 0xffffff : 0x111111);
+          mat.color?.set(vm.on ? 0xffffff : 0x111111);
         });
       });
       // 화면 오브젝트는 켜져 있을 때만 표시(꺼지면 본체만 남음).
@@ -204,10 +280,10 @@ export function applyDeviceVisuals(scene, viewModels) {
             mat.userData.twinBaseEmissiveStrength = mat.emissiveIntensity ?? 1;
           }
           if (vm.on && vm.connected) {
-            mat.emissive = mat.userData.twinBaseEmissive.clone();
+            mat.emissive?.copy(mat.userData.twinBaseEmissive);
             mat.emissiveIntensity = Math.max(0.9, mat.userData.twinBaseEmissiveIntensity || 0.9);
           } else {
-            mat.emissive = new THREE.Color(0x000000);
+            mat.emissive?.set(0x000000);
             mat.emissiveIntensity = 0;
           }
           mat.needsUpdate = true;
@@ -223,8 +299,26 @@ export function applyDeviceVisuals(scene, viewModels) {
     if (vm.kind === 'fan') {
       const blade = vm.bladeNode ? findNodeByName(scene, vm.bladeNode) : null;
       if (blade) {
-        blade.userData.twinSpin = vm.on && vm.connected;
-        blade.userData.twinSpinSpeed = -30;
+        fanBlades.push(blade);
+        const wantOn = vm.on && vm.connected;
+        const speed = blade.userData.twinSpinSpeed ?? 0;
+        if (wantOn) {
+          blade.userData.twinSpin = true;
+          blade.userData.twinSpinSpeed = FAN_SPIN_SPEED;
+          blade.userData.twinSpinDecel = 0;
+        } else if (blade.userData.twinSpin || Math.abs(speed) > 1e-3) {
+          // Constant angular deceleration over FAN_SPINDOWN_SEC.
+          if (!blade.userData.twinSpinDecel) {
+            const from = blade.userData.twinSpin ? FAN_SPIN_SPEED : speed;
+            blade.userData.twinSpinSpeed = from;
+            blade.userData.twinSpinDecel = Math.abs(from) / FAN_SPINDOWN_SEC;
+          }
+          blade.userData.twinSpin = false;
+        } else {
+          blade.userData.twinSpin = false;
+          blade.userData.twinSpinSpeed = 0;
+          blade.userData.twinSpinDecel = 0;
+        }
       }
     }
 
@@ -232,88 +326,251 @@ export function applyDeviceVisuals(scene, viewModels) {
       const windAnchor = (vm.windNode && findNodeByName(scene, vm.windNode)) || anchor;
       const emitter = ensureWindEmitter(windAnchor);
       emitter.active = vm.on && vm.connected;
+      windEmitters.push(emitter);
     }
   });
+
+  scene.userData.twinFanBlades = fanBlades;
+  scene.userData.twinWindEmitters = windEmitters;
+  return true;
+}
+
+function updateFanBlade(obj, delta) {
+  const ud = obj.userData;
+  if (ud.twinSpin) {
+    obj.rotation.x += (ud.twinSpinSpeed || FAN_SPIN_SPEED) * delta;
+    return;
+  }
+
+  const speed = ud.twinSpinSpeed || 0;
+  const decel = ud.twinSpinDecel || 0;
+  if (decel <= 0 || Math.abs(speed) <= 1e-4) {
+    if (decel > 0) {
+      ud.twinSpinSpeed = 0;
+      ud.twinSpinDecel = 0;
+    }
+    return;
+  }
+
+  const sign = Math.sign(speed);
+  const accel = -sign * decel;
+  const nextSpeed = speed + accel * delta;
+  if (Math.sign(nextSpeed) !== sign) {
+    // Integrate only until stop within this frame.
+    const dtStop = Math.abs(speed) / decel;
+    obj.rotation.x += speed * dtStop + 0.5 * accel * dtStop * dtStop;
+    ud.twinSpinSpeed = 0;
+    ud.twinSpinDecel = 0;
+    return;
+  }
+
+  obj.rotation.x += speed * delta + 0.5 * accel * delta * delta;
+  ud.twinSpinSpeed = nextSpeed;
 }
 
 export function updateFanSpin(scene, delta) {
+  const blades = scene?.userData?.twinFanBlades;
+  if (blades?.length) {
+    blades.forEach((obj) => updateFanBlade(obj, delta));
+    return;
+  }
   scene?.traverse((obj) => {
-    if (obj.userData.twinSpin) {
-      obj.rotation.x += (obj.userData.twinSpinSpeed || -30) * delta;
+    if (obj.userData.twinSpin !== undefined || obj.userData.twinSpinDecel)
+      updateFanBlade(obj, delta);
+  });
+}
+
+function updateWindEmitter(emitter, delta) {
+  let anyVisible = false;
+  emitter.wisps.forEach((wisp) => {
+    if (wisp.life > 0) {
+      wisp.life = Math.max(0, wisp.life - delta);
+      const t = 1 - wisp.life / WIND_WISP_DURATION;
+      const fadeIn = Math.min(t / 0.25, 1);
+      const fadeOut = Math.min((1 - t) / 0.35, 1);
+      wisp.line.material.opacity = Math.max(0, Math.min(fadeIn, fadeOut)) * 0.95;
+      wisp.line.position.set(
+        0,
+        -t * 0.42,
+        wisp.laneZ + Math.sin(t * Math.PI * 2 + wisp.seed) * 0.03,
+      );
+      wisp.line.scale.setScalar(0.7 + t * 0.5);
+      wisp.line.visible = wisp.line.material.opacity > 0.01;
+      if (wisp.line.visible) anyVisible = true;
+    }
+
+    if (!emitter.active) return;
+
+    wisp.spawnTimer -= delta;
+    if (wisp.life <= 0 && wisp.spawnTimer <= 0) {
+      wisp.life = WIND_WISP_DURATION;
+      wisp.seed = Math.random() * Math.PI * 2;
+      wisp.line.position.set(0, 0, wisp.laneZ);
+      wisp.line.material.opacity = 0;
+      wisp.line.visible = true;
+      wisp.spawnTimer = 0.55 + Math.random() * 1.1;
+      anyVisible = true;
     }
   });
+
+  emitter.group.visible = emitter.active || anyVisible;
 }
 
 export function updateAirconWind(scene, delta) {
+  const emitters = scene?.userData?.twinWindEmitters;
+  if (emitters?.length) {
+    emitters.forEach((emitter) => updateWindEmitter(emitter, delta));
+    return;
+  }
   scene?.traverse((obj) => {
     const emitter = obj.userData.twinWindEmitter;
-    if (!emitter) return;
-
-    let anyVisible = false;
-    emitter.wisps.forEach((wisp) => {
-      if (wisp.life > 0) {
-        wisp.life = Math.max(0, wisp.life - delta);
-        const t = 1 - wisp.life / WIND_WISP_DURATION;
-        const fadeIn = Math.min(t / 0.25, 1);
-        const fadeOut = Math.min((1 - t) / 0.35, 1);
-        wisp.line.material.opacity = Math.max(0, Math.min(fadeIn, fadeOut)) * 0.95;
-        wisp.line.position.set(
-          0,
-          -t * 0.42,
-          wisp.laneX + Math.sin(t * Math.PI * 2 + wisp.seed) * 0.03,
-        );
-        wisp.line.scale.setScalar(0.7 + t * 0.5);
-        wisp.line.visible = wisp.line.material.opacity > 0.01;
-        if (wisp.line.visible) anyVisible = true;
-      }
-
-      if (!emitter.active) return;
-
-      wisp.spawnTimer -= delta;
-      if (wisp.life <= 0 && wisp.spawnTimer <= 0) {
-        wisp.life = WIND_WISP_DURATION;
-        wisp.seed = Math.random() * Math.PI * 2;
-        wisp.line.position.set(wisp.laneX, 0, 0);
-        wisp.line.material.opacity = 0;
-        wisp.line.visible = true;
-        wisp.spawnTimer = 0.55 + Math.random() * 1.1;
-        anyVisible = true;
-      }
-    });
-
-    emitter.group.visible = emitter.active || anyVisible;
+    if (emitter) updateWindEmitter(emitter, delta);
   });
 }
 
-export function updateWallVisibility(room, walls, camera) {
-  if (!room || !camera || !walls?.length) return;
+const WALL_OUTWARD = {
+  px: new THREE.Vector3(1, 0, 0),
+  mx: new THREE.Vector3(-1, 0, 0),
+  py: new THREE.Vector3(0, 0, -1),
+  my: new THREE.Vector3(0, 0, 1),
+};
 
-  const cameraLocal = room.worldToLocal(camera.getWorldPosition(new THREE.Vector3()));
-  const roomCenter = new THREE.Box3().setFromObject(room).getCenter(new THREE.Vector3());
-  room.worldToLocal(roomCenter);
-  const toCamera = cameraLocal.sub(roomCenter).setY(0).normalize();
-  const wallDirections = {
-    px: new THREE.Vector3(1, 0, 0),
-    mx: new THREE.Vector3(-1, 0, 0),
-    py: new THREE.Vector3(0, 0, -1),
-    my: new THREE.Vector3(0, 0, 1),
-  };
+/** Tour mode: outer shell walls that should never be culled. */
+export const TOUR_ALWAYS_VISIBLE_WALLS = new Set([
+  'bed_px',
+  'kitchen_mx',
+  'bed_py',
+  'living_my',
+]);
 
+const WALL_FADE_SPEED = 6.5;
+const CAMERA_SIDE_PROP_OPACITY = 0.18;
+
+function applyWallMeshOpacity(obj, factor) {
+  if (!obj.isMesh || !obj.material) return;
+  const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+  const isWallMesh = obj.name.includes('_wall_');
+  // factor 1 = fully solid, 0 = camera-side (wall gone, props ghosted).
+  if (isWallMesh) {
+    const opacity = factor;
+    obj.visible = opacity > 0.02;
+    mats.forEach((material) => setMaterialOpacity(material, opacity));
+  } else {
+    obj.visible = true;
+    const opacity = THREE.MathUtils.lerp(CAMERA_SIDE_PROP_OPACITY, 1, factor);
+    mats.forEach((material) => setMaterialOpacity(material, opacity));
+  }
+}
+
+function applyWallCameraSide(wallGroup, isCameraSide, delta = 0) {
+  const target = isCameraSide ? 0 : 1;
+  let current = wallGroup.userData.twinWallSolid;
+  if (current === undefined) current = 1;
+
+  if (delta > 0) {
+    current = THREE.MathUtils.damp(current, target, WALL_FADE_SPEED, delta);
+    if (Math.abs(current - target) < 0.004) current = target;
+  } else {
+    current = target;
+  }
+  if (wallGroup.userData.twinWallSolidApplied === current) {
+    wallGroup.userData.twinWallSolid = current;
+    return;
+  }
+  wallGroup.userData.twinWallSolid = current;
+  wallGroup.userData.twinWallSolidApplied = current;
+  wallGroup.visible = true;
+  wallGroup.traverse((obj) => applyWallMeshOpacity(obj, current));
+}
+
+/** Fade culled walls back to fully solid (used when returning to ceiling view). */
+export function fadeWallsToSolid(room, walls, delta) {
+  if (!room || !walls?.length) return false;
+  let anyFading = false;
   walls.forEach((wallName) => {
     const wallGroup = findNodeByName(room, wallName);
     if (!wallGroup) return;
-    const suffix = wallName.slice(-2);
-    const outward = wallDirections[suffix];
-    const isCameraSide = outward && outward.dot(toCamera) > 0;
+    const current = wallGroup.userData.twinWallSolid;
+    if (current !== undefined && current < 0.999) anyFading = true;
+    // isCameraSide=false → damp toward solid=1
+    applyWallCameraSide(wallGroup, false, delta);
+  });
+  return anyFading;
+}
 
-    wallGroup.visible = true;
-    wallGroup.traverse((obj) => {
-      if (!obj.isMesh || !obj.material) return;
-      const isWallMesh = obj.name.includes('_wall_');
-      obj.visible = !(isCameraSide && isWallMesh);
-      const opacity = isCameraSide && !isWallMesh ? 0.18 : 1;
-      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-      materials.forEach((material) => setMaterialOpacity(material, opacity));
+const _wallCamPos = new THREE.Vector3();
+const _wallRoomCenter = new THREE.Vector3();
+const _wallToCamera = new THREE.Vector3();
+const _wallBox = new THREE.Box3();
+const _wallWorldOut = new THREE.Vector3();
+
+function wallGroupsFor(room, walls) {
+  let cached = room.userData.twinWallGroups;
+  if (!cached || cached._walls !== walls) {
+    cached = walls.map((wallName) => ({
+      wallName,
+      group: findNodeByName(room, wallName),
+    }));
+    cached._walls = walls;
+    room.userData.twinWallGroups = cached;
+  }
+  return cached;
+}
+
+export function updateWallVisibility(room, walls, camera, delta = 0) {
+  if (!room || !camera || !walls?.length) return;
+
+  camera.getWorldPosition(_wallCamPos);
+  room.worldToLocal(_wallCamPos);
+  _wallBox.setFromObject(room).getCenter(_wallRoomCenter);
+  room.worldToLocal(_wallRoomCenter);
+  _wallToCamera.copy(_wallCamPos).sub(_wallRoomCenter).setY(0);
+  if (_wallToCamera.lengthSq() < 1e-8) return;
+  _wallToCamera.normalize();
+
+  wallGroupsFor(room, walls).forEach(({ wallName, group }) => {
+    if (!group) return;
+    const suffix = wallName.slice(-2);
+    const outward = WALL_OUTWARD[suffix];
+    const isCameraSide = outward && outward.dot(_wallToCamera) > 0;
+    applyWallCameraSide(group, isCameraSide, delta);
+  });
+}
+
+/**
+ * Tour-mode wall culling: one house-wide camera vector so adjacent rooms
+ * flip shared-facing walls together. Always-visible walls stay opaque.
+ */
+export function updateTourWallVisibility(roomEntries, camera, delta = 0) {
+  if (!camera || !roomEntries?.length) return;
+
+  _wallBox.makeEmpty();
+  roomEntries.forEach(({ room }) => {
+    if (room) _wallBox.expandByObject(room);
+  });
+  if (_wallBox.isEmpty()) return;
+
+  _wallBox.getCenter(_wallRoomCenter);
+  camera.getWorldPosition(_wallCamPos);
+  _wallToCamera.copy(_wallCamPos).sub(_wallRoomCenter).setY(0);
+  if (_wallToCamera.lengthSq() < 1e-8) return;
+  _wallToCamera.normalize();
+
+  roomEntries.forEach(({ room, walls }) => {
+    if (!room || !walls?.length) return;
+    wallGroupsFor(room, walls).forEach(({ wallName, group }) => {
+      if (!group) return;
+      if (TOUR_ALWAYS_VISIBLE_WALLS.has(wallName)) {
+        applyWallCameraSide(group, false, delta);
+        return;
+      }
+      const suffix = wallName.slice(-2);
+      const localOut = WALL_OUTWARD[suffix];
+      if (!localOut) return;
+      _wallWorldOut.copy(localOut).transformDirection(room.matrixWorld).setY(0);
+      if (_wallWorldOut.lengthSq() < 1e-8) return;
+      _wallWorldOut.normalize();
+      applyWallCameraSide(group, _wallWorldOut.dot(_wallToCamera) > 0, delta);
     });
   });
 }
