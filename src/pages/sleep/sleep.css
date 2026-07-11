@@ -247,26 +247,6 @@
 .tag.excellent { background: var(--wave-20); color: var(--excellent-text); }
 .tag.danger { background: var(--danger-18); color: var(--danger-strong); }
 
-/* ── Sleep plan card ─────────────────────────────────────────────────────── */
-
-.sleep-plan-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-}
-
-.sleep-plan-metrics .metric {
-  background: var(--wave-10);
-  border: 1px solid var(--wave-20);
-}
-
-.sleep-plan-rationale {
-  margin: 14px 0 0;
-  color: var(--sub);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 .sleep-plan-settings-btn {
   width: 100%;
   height: 40px;

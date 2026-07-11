@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { InsightCard } from '../../components/report/InsightCard';
-import { SleepPlanCard } from './SleepPlanCard';
 import { SleepDailyReport } from './SleepDailyReport';
 import { SleepWeeklyReport } from './SleepWeeklyReport';
 import sleepApi from '../../api/sleepApi';
@@ -12,7 +11,6 @@ import './sleep.css';
 export function SleepPage() {
   const [reportDate, setReportDate] = useState(getToday);
   const [weeklyReport, setWeeklyReport] = useState(null);
-  const [todayPlan, setTodayPlan] = useState(null);
   const [sleepGoalHours, setSleepGoalHours] = useState(7.5);
   const [dailyInsights, setDailyInsights] = useState([]);
   const [weeklyInsights, setWeeklyInsights] = useState([]);
@@ -32,7 +30,6 @@ export function SleepPage() {
       .catch(() => setSleepGoalHours(7.5));
     sleepApi.getInsights({ period: 'daily' }).then(setDailyInsights);
     sleepApi.getInsights({ period: 'weekly' }).then(setWeeklyInsights);
-    sleepApi.getTodayPlan().then(setTodayPlan);
   }, []);
 
   const toggleInsight = async (id) => {
@@ -49,7 +46,6 @@ export function SleepPage() {
 
   return (
     <div className="page-stack sleep-page">
-      <SleepPlanCard plan={todayPlan} />
       <SleepDailyReport onReportDateChange={handleReportDateChange} />
       <SleepWeeklyReport weeklyReport={weeklyReport} sleepGoalHours={sleepGoalHours} />
       {allInsights.length > 0 && (

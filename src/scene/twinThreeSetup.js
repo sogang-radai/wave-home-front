@@ -24,20 +24,30 @@ export function configureTwinThreeRuntime() {
   const originalWarn = THREE.warn?.bind(THREE);
   const originalError = THREE.error?.bind(THREE);
   if (originalWarn) {
-    THREE.warn = (message, ...rest) => {
-      if (typeof message === 'string') {
-        for (const fragment of SUPPRESSED_WARNINGS) {
-          if (message.includes(fragment)) return;
+    try {
+      THREE.warn = (message, ...rest) => {
+        if (typeof message === 'string') {
+          for (const fragment of SUPPRESSED_WARNINGS) {
+            if (message.includes(fragment)) return;
+          }
         }
-      }
-      originalWarn(message, ...rest);
-    };
+        originalWarn(message, ...rest);
+      };
+    } catch {
+      // THREE's module namespace export is read-only in some three.js/bundler
+      // combinations (assigning throws instead of silently no-oping) — skip
+      // suppression rather than crash the whole scene.
+    }
   }
   if (originalError) {
-    THREE.error = (message, ...rest) => {
-      if (shouldSuppressErrorMessage(message)) return;
-      originalError(message, ...rest);
-    };
+    try {
+      THREE.error = (message, ...rest) => {
+        if (shouldSuppressErrorMessage(message)) return;
+        originalError(message, ...rest);
+      };
+    } catch {
+      // see above
+    }
   }
 
   // Some Three builds log context-loss straight to console.error.
