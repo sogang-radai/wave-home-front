@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import iotApi from '../../../api/iotApi';
+import { dispatchTwinDeviceState } from '../../../lib/twinSceneStore';
 import { ColorWheel } from './ColorWheel';
+
+function unwrapState(payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const nested = payload.state;
+  if (nested && typeof nested === 'object' && (nested.on !== undefined || nested.switch !== undefined)) {
+    return nested;
+  }
+  return payload;
+}
 
 const PRESET_COLORS = [
   { r: 255, g: 255, b: 255 },
@@ -34,6 +44,27 @@ function kelvinToRgb(kelvin) {
   return { r: Math.round(r), g: Math.round(g), b: Math.round(b) };
 }
 
+function TemperatureSlider({ value, onChange, onCommit }) {
+  const preview = kelvinToRgb(value);
+  const previewCss = `rgb(${preview.r}, ${preview.g}, ${preview.b})`;
+  return (
+    <div className="temp-slider-wrap">
+      <input
+        type="range"
+        min="2200"
+        max="6500"
+        step="100"
+        value={value}
+        className="temp-slider temp-slider--preview"
+        style={{ '--temp-gradient': TEMP_GRADIENT, '--temp-preview': previewCss }}
+        onChange={(event) => onChange(Number(event.target.value))}
+        onMouseUp={(event) => onCommit(Number(event.target.value))}
+        onTouchEnd={(event) => onCommit(Number(event.target.value))}
+      />
+    </div>
+  );
+}
+
 // philips_wiz_e29_color / _white — on/off/toggle + brightness, plus either
 // RGB color (color variant) or color temperature (white/tunable variant).
 export function LightPanel({ device, onChanged }) {
@@ -43,12 +74,13 @@ export function LightPanel({ device, onChanged }) {
 
   useEffect(() => {
     setState(null);
-    iotApi.getDeviceState(device.id).then(setState);
+    iotApi.getDeviceState(device.id).then((payload) => setState(unwrapState(payload)));
   }, [device.id]);
 
   const invoke = async (name, params) => {
-    const next = await iotApi.invokeDevice(device.id, name, params);
+    const next = unwrapState(await iotApi.invokeDevice(device.id, name, params));
     setState(next);
+    dispatchTwinDeviceState(device.id, next, { deviceName: device.name, action: name });
     onChanged?.();
     return next;
   };
@@ -109,56 +141,45 @@ export function LightPanel({ device, onChanged }) {
       )}
 
       {isColor ? (
-        <div className="light-color-section">
-          <div className="light-color-wheel-col">
-            <ColorWheel color={state.color} onChange={setColorLocal} onCommit={commitColor} />
-            <div className="light-swatch-grid">
-              {PRESET_COLORS.map((c, i) => (
-                <button
-                  key={`${c.r}-${c.g}-${c.b}-${i}`}
-                  type="button"
-                  className="light-swatch"
-                  style={{ background: `rgb(${c.r}, ${c.g}, ${c.b})` }}
-                  onClick={() => setPresetColor(c)}
-                  aria-label={`샘플 색상 rgb(${c.r}, ${c.g}, ${c.b})`}
-                />
+        <div className="light-color-controls">
+          <label className="settings-field light-color-brightness">
+            <span>밝기 {sliderValue}%</span>
+            <input
+              type="range" min="0" max="100" value={sliderValue}
+              onChange={(e) => setDragBrightness(Number(e.target.value))}
+              onMouseUp={(e) => commitBrightness(Number(e.target.value))}
+              onTouchEnd={(e) => commitBrightness(Number(e.target.value))}
+            />
+          </label>
+          <div className="light-color-section">
+            <div className="light-color-wheel-col">
+              <ColorWheel color={state.color} onChange={setColorLocal} onCommit={commitColor} />
+              <div className="light-swatch-grid">
+                {PRESET_COLORS.map((c, i) => (
+                  <button
+                    key={`${c.r}-${c.g}-${c.b}-${i}`}
+                    type="button"
+                    className="light-swatch"
+                    style={{ background: `rgb(${c.r}, ${c.g}, ${c.b})` }}
+                    onClick={() => setPresetColor(c)}
+                    aria-label={`샘플 색상 rgb(${c.r}, ${c.g}, ${c.b})`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="light-rgb-stack">
+              {['r', 'g', 'b'].map((ch) => (
+                <label className="light-rgb-row" key={ch}>
+                  <span>{ch.toUpperCase()}</span>
+                  <input
+                    type="number" min="0" max="255"
+                    value={state.color?.[ch] ?? 0}
+                    onChange={(e) => setColorChannel(ch, Math.max(0, Math.min(255, Number(e.target.value) || 0)))}
+                    onBlur={() => invoke('color', state.color)}
+                  />
+                </label>
               ))}
             </div>
-          </div>
-          <div className="light-rgb-stack">
-            {['r', 'g', 'b'].map((ch) => (
-              <label className="light-rgb-row" key={ch}>
-                <span>{ch.toUpperCase()}</span>
-                <input
-                  type="number" min="0" max="255"
-                  value={state.color?.[ch] ?? 0}
-                  onChange={(e) => setColorChannel(ch, Math.max(0, Math.min(255, Number(e.target.value) || 0)))}
-                  onBlur={() => invoke('color', state.color)}
-                />
-              </label>
-            ))}
-          </div>
-          <div className="light-brightness-temp-col">
-            <label className="settings-field">
-              <span>밝기 {sliderValue}%</span>
-              <input
-                type="range" min="0" max="100" value={sliderValue}
-                onChange={(e) => setDragBrightness(Number(e.target.value))}
-                onMouseUp={(e) => commitBrightness(Number(e.target.value))}
-                onTouchEnd={(e) => commitBrightness(Number(e.target.value))}
-              />
-            </label>
-            <label className="settings-field">
-              <span>색온도 {state.temperature ?? 4000}K</span>
-              <input
-                type="range" min="2200" max="6500" step="100" value={state.temperature ?? 4000}
-                className="temp-slider"
-                style={{ '--temp-gradient': TEMP_GRADIENT }}
-                onChange={(e) => setState((s) => ({ ...s, temperature: Number(e.target.value) }))}
-                onMouseUp={(e) => commitTemperature(Number(e.target.value))}
-                onTouchEnd={(e) => commitTemperature(Number(e.target.value))}
-              />
-            </label>
           </div>
         </div>
       ) : (
@@ -167,13 +188,10 @@ export function LightPanel({ device, onChanged }) {
             <span className="light-temp-swatch" style={{ background: tempPreviewCss }} aria-hidden="true" />
             <span>색온도 {state.temperature}K</span>
           </div>
-          <input
-            type="range" min="2200" max="6500" step="100" value={state.temperature}
-            className="temp-slider temp-slider--preview"
-            style={{ '--temp-gradient': TEMP_GRADIENT, '--temp-preview': tempPreviewCss }}
-            onChange={(e) => setState((s) => ({ ...s, temperature: Number(e.target.value) }))}
-            onMouseUp={(e) => commitTemperature(Number(e.target.value))}
-            onTouchEnd={(e) => commitTemperature(Number(e.target.value))}
+          <TemperatureSlider
+            value={state.temperature}
+            onChange={(value) => setState((s) => ({ ...s, temperature: value }))}
+            onCommit={commitTemperature}
           />
         </div>
       )}

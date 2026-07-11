@@ -24,11 +24,23 @@ const PANEL_COMPONENTS = {
 
 function detailTabsFor(device) {
   const controlLabel = device?.panel === 'radar' ? '제스처 셋' : '제어';
-  return [
+  const tabs = [
     ['control', controlLabel],
-    ['schedule', '예약'],
-    ['log', '로그'],
   ];
+  if (device?.panel === 'radar' && device?.sleepAnalysis)
+    tabs.push(['sleep', '수면 분석']);
+  tabs.push(['schedule', '예약'], ['log', '로그']);
+  return tabs;
+}
+
+function RadarSleepAnalysisPanel() {
+  return (
+    <div className="radar-sleep-analysis-panel">
+      <strong>수면 분석 중</strong>
+      <p>이 레이더가 수면 중 움직임과 활동을 분석하고 있어요.</p>
+      <span>분석 결과는 수면 관리 페이지에서 확인할 수 있습니다.</span>
+    </div>
+  );
 }
 
 function DeviceConnectionLog({ device, events }) {
@@ -347,6 +359,8 @@ export function IotControlTab() {
                 ))}
               </div>
             )}
+
+            {detailTab === 'sleep' && <RadarSleepAnalysisPanel />}
 
             {detailTab === 'log' && (
               isDeviceOffline(selectedDevice) ? (

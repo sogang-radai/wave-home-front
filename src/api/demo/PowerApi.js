@@ -1,14 +1,13 @@
-import { delay, cloneDeep } from '../mock/utils';
+import { delay } from '../mock/utils';
 import { InsightsApi } from '../mock/InsightsApi';
-import { guardDemoWrite } from '../../lib/demoGuard';
+import { PowerApi as RealPowerApi } from '../v1/PowerApi';
 import {
-  DEMO_POWER_PLUGS,
   findDemoPlug,
-  generatePowerComboTrend,
   generatePowerPeriodTrend,
 } from './powerProfiles';
 
 const insightsApi = new InsightsApi();
+const realPowerApi = new RealPowerApi();
 
 class MockApiError extends Error {
   constructor(status, code, message) {
@@ -32,37 +31,20 @@ const REPORT_PERIOD_MAP = { hour: '1h', day: '24h', week: '1w', month: '1mo', ye
 
 export class PowerApi {
   async getPlugs() {
-    await delay();
     requireActiveAccount();
-    return cloneDeep(DEMO_POWER_PLUGS.map((device) => ({
-      id: device.id,
-      name: device.name,
-      room: device.room,
-      summary: device.summary,
-      powerW: device.power_w,
-      voltageV: device.voltage_v,
-      currentMa: device.current_ma,
-      switchOn: device.switch,
-      hourlyCostWon: device.hourlyCost,
-      trend: cloneDeep(device.trend),
-    })));
+    return realPowerApi.getPlugs();
   }
 
-  async getComboTrend({ deviceId, range }) {
-    await delay();
+  async getComboTrend({ deviceId, range, metric = 'w' }) {
     requireActiveAccount();
-    const plug = findDemoPlug(deviceId);
-    if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
-    return generatePowerComboTrend(range, plug.power_w, plug.id);
+    return realPowerApi.getComboTrend({ deviceId, range, metric });
   }
 
   async getPeriodTrend({ deviceId, period, refDate }) {
     await delay();
     requireActiveAccount();
     try {
-      const { PowerApi: RealPowerApi } = await import('../v1/PowerApi');
-      const real = new RealPowerApi();
-      return real.getPeriodTrend({ deviceId, period, refDate });
+      return await realPowerApi.getPeriodTrend({ deviceId, period, refDate });
     } catch {
       const plug = findDemoPlug(deviceId);
       if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
@@ -74,9 +56,7 @@ export class PowerApi {
     await delay();
     requireActiveAccount();
     try {
-      const { PowerApi: RealPowerApi } = await import('../v1/PowerApi');
-      const real = new RealPowerApi();
-      return real.getReport({ deviceId, period, periodStart });
+      return await realPowerApi.getReport({ deviceId, period, periodStart });
     } catch {
       const plug = findDemoPlug(deviceId);
       if (!plug) throw new MockApiError(404, 'NOT_FOUND', '전력 소스를 찾을 수 없습니다.');
@@ -101,7 +81,6 @@ export class PowerApi {
   }
 
   async updateInsight(insightId, { approved }) {
-    if (!guardDemoWrite()) return null;
     await delay();
     requireActiveAccount();
     return insightsApi.updateInsight(insightId, { approved });

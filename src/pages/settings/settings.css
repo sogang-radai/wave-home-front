@@ -152,6 +152,10 @@
   gap: 8px;
 }
 
+.settings-nav-tabs {
+  display: none;
+}
+
 .settings-nav-item {
   width: 100%;
   padding: 14px;
@@ -2130,6 +2134,33 @@
 }
 
 @media (max-width: 760px) {
+  .settings-nav--cards {
+    display: none;
+  }
+
+  .settings-nav-tabs {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .settings-nav-tabs .tabs {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .settings-nav-tabs .tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .settings-layout {
+    gap: 14px;
+  }
+
   .device-flat-row {
     grid-template-columns: 48px minmax(0, 1fr) 34px 46px;
   }

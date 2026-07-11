@@ -15,11 +15,17 @@ function resolveApiMode() {
 export const API_MODE = resolveApiMode();
 export const IS_DEMO_MODE = API_MODE === 'demo';
 
+/** Home Twin 3D tab (site-test + site-demo only). */
+export const SHOW_HOME_TWIN = API_MODE === 'mock' || API_MODE === 'demo';
+
 /** @deprecated Prefer API_MODE === 'mock' */
 export const USE_MOCK_API = API_MODE === 'mock';
 
-/** Client-side power simulation (mock + demo builds). */
-export const USE_CLIENT_POWER_SIM = API_MODE === 'mock' || API_MODE === 'demo';
+/** Client-side power simulation (mock builds only; demo uses backend session meter). */
+export const USE_CLIENT_POWER_SIM = API_MODE === 'mock';
+
+/** Camera panels use a static placeholder instead of live MJPEG/fMP4/WebRTC. */
+export const USE_PLACEHOLDER_CAMERA_STREAM = API_MODE === 'mock' || API_MODE === 'demo';
 
 export const ANCHOR_DATE = process.env.REACT_APP_ANCHOR_DATE || null;
 

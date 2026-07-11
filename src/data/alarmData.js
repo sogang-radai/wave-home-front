@@ -1,5 +1,7 @@
 // Seed alarms for the mock AlarmApi. Device ids match bin/device/device_list.json
 // so the picker/thumbnails resolve against the same iotApi.getDevices() list.
+import { hexId } from '../api/mock/devicesStore';
+
 export const initialAlarms = [
   {
     id: 1,
@@ -7,8 +9,8 @@ export const initialAlarms = [
     timeMinute: 7 * 60, // 07:00
     daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
     smartWake: true,
-    radarDeviceId: '3a7f2c9d10b4e85f', // 침실 하방 레이더
-    deviceId: '5c1e8b6402fda973', // Wave Station
+    radarDeviceId: hexId(1), // 침실 하방 레이더
+    deviceId: hexId(3), // Wave Station
     method: { type: 'tts', speakerId: 0, text: '좋은 아침이에요! 일어날 시간입니다.', repeatCount: 3, intervalSec: 20 },
     enabled: true,
     createdAt: '2026-06-10 08:00:00',
@@ -21,7 +23,7 @@ export const initialAlarms = [
     daysOfWeek: ['sat', 'sun'],
     smartWake: false,
     radarDeviceId: null,
-    deviceId: '5d0a3f8c26b91e74', // 침실 조명 (컬러)
+    deviceId: hexId(11), // 침실 조명
     method: { type: 'light_on', brightness: 70 },
     enabled: true,
     createdAt: '2026-06-12 21:00:00',
@@ -34,7 +36,7 @@ export const initialAlarms = [
     daysOfWeek: [],
     smartWake: false,
     radarDeviceId: null,
-    deviceId: '6b0f3e8a92c47d15', // 플러그1
+    deviceId: hexId(6), // 플러그1
     method: { type: 'plug_toggle' },
     enabled: false,
     createdAt: '2026-06-20 13:00:00',
@@ -47,10 +49,10 @@ export const initialAlarms = [
     daysOfWeek: ['mon', 'wed', 'fri'],
     smartWake: false,
     radarDeviceId: null,
-    deviceId: '27d9a4f3c85b016e', // 거실 카메라 (Reolink)
-    method: { type: 'tts', speakerId: 2, text: '외출 준비할 시간이에요.', repeatCount: 2, intervalSec: 15 },
+    deviceId: hexId(5), // 거실 카메라
+    method: { type: 'camera_snapshot' },
     enabled: true,
-    createdAt: '2026-06-25 07:00:00',
-    updatedAt: '2026-06-25 07:00:00',
+    createdAt: '2026-06-22 07:30:00',
+    updatedAt: '2026-06-22 07:30:00',
   },
 ];

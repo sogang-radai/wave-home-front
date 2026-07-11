@@ -3,19 +3,29 @@ import { Line, LineChart, ResponsiveContainer } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { Metric } from '../components/ui/Metric';
 import { Donut } from '../components/ui/Donut';
-import { PostureScoreGauge } from './posture/PostureScoreGauge';
 import { formatClock12, formatNextFireLabel } from './alarm/alarmUtils';
 import { koreanWeekdayLabels } from '../data/weeklyPlanData';
 import { getNow } from '../lib/demoClock';
-import postureApi from '../api/postureApi';
 import sleepApi from '../api/sleepApi';
 import iotApi from '../api/iotApi';
 import dashboardApi from '../api/dashboardApi';
 import powerApi from '../api/powerApi';
+import chatApi from '../api/chatApi';
 import { findAction } from '../api/mock/deviceClassRegistry';
 import './main.css';
 
 const GESTURES_PER_PAGE = 1;
+const POWER_POLL_MS = 5000;
+
+const SLEEP_RADAR = {
+  name: '침실 하방 레이더',
+  role: '수면 감지',
+  room: '침실',
+};
+const POSTURE_RADAR = {
+  name: '침실 책상 레이더',
+  role: '자세 분석',
+};
 
 function formatOfflineDetail(devices) {
   const offline = devices.filter((device) => !device.connected);
@@ -51,30 +61,58 @@ export function MainPage({
   const todayTodos = todos.filter((t) => t.day === todayLabel);
   const remaining = todayTodos.filter((todo) => !todo.done).length;
 
-  const [postureSummary, setPostureSummary] = useState(null);
   const [sleepSummary, setSleepSummary] = useState(null);
   const [totalPower, setTotalPower] = useState(null);
+  const [powerTrend, setPowerTrend] = useState([]);
   const [dailyMessage, setDailyMessage] = useState(null);
   const [currentState, setCurrentState] = useState(null);
   const [homeSummary, setHomeSummary] = useState(null);
   const [homeDevices, setHomeDevices] = useState([]);
-  const [powerInsight, setPowerInsight] = useState(null);
   const [upcomingAlarms, setUpcomingAlarms] = useState([]);
   const [activeGestureRules, setActiveGestureRules] = useState([]);
   const [gestureSetDefsById, setGestureSetDefsById] = useState({});
   const [gesturePage, setGesturePage] = useState(0);
+  const [recentChats, setRecentChats] = useState([]);
 
   useEffect(() => {
-    postureApi.getTodaySummary().then(setPostureSummary);
-    sleepApi.getTodaySummary().then(setSleepSummary);
-    iotApi.getPowerPlugs().then((plugs) => setTotalPower(plugs.find((device) => device.id === 'all') || plugs[0]));
+    // 데모/실서버 모두 /sleep/today/summary → sleep_session DB 조회.
+    sleepApi.getTodaySummary().then(setSleepSummary).catch(() => setSleepSummary(null));
     dashboardApi.getDailyMessage().then(setDailyMessage);
     dashboardApi.getCurrentState().then(setCurrentState);
     iotApi.getSummary().then(setHomeSummary);
     iotApi.getDevices().then(setHomeDevices);
-    powerApi.getInsights().then((items) => setPowerInsight(items?.[0] || null)).catch(() => setPowerInsight(null));
     dashboardApi.getUpcomingAlarms().then(setUpcomingAlarms);
     dashboardApi.getActiveGestureRules().then(setActiveGestureRules);
+    chatApi.getConversations()
+      .then((items) => setRecentChats((items || []).slice(0, 3)))
+      .catch(() => setRecentChats([]));
+  }, []);
+
+  // 전력 카드: DemoPowerMeter(/power/plugs) + 콤보 트렌드를 주기적으로 갱신.
+  useEffect(() => {
+    let cancelled = false;
+    const loadPower = () => {
+      Promise.all([
+        powerApi.getPlugs(),
+        powerApi.getComboTrend({ deviceId: 'all', range: 'min10', metric: 'w' }).catch(() => []),
+      ]).then(([plugs, trend]) => {
+        if (cancelled) return;
+        const aggregate = (plugs || []).find((device) => device.id === 'all') || plugs?.[0] || null;
+        setTotalPower(aggregate);
+        setPowerTrend(Array.isArray(trend) ? trend : []);
+      }).catch(() => {
+        if (!cancelled) {
+          setTotalPower(null);
+          setPowerTrend([]);
+        }
+      });
+    };
+    loadPower();
+    const timer = setInterval(loadPower, POWER_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
   }, []);
 
   // 활성 제스처 룰이 가리키는 제스처 세트 정의(이름·썸네일)를 세트별로 한 번씩만 가져와 캐시한다.
@@ -95,8 +133,8 @@ export function MainPage({
   }, [activeGestureRules]);
 
   const powerChartData = useMemo(
-    () => totalPower?.trend?.tenSec || totalPower?.trend?.hour || [],
-    [totalPower]
+    () => (powerTrend.length > 0 ? powerTrend : totalPower?.trend?.tenSec || totalPower?.trend?.hour || []),
+    [powerTrend, totalPower]
   );
 
   const deviceConnectionValue = homeSummary
@@ -155,9 +193,10 @@ export function MainPage({
               }
             />
             <Metric
-              label="자세 점수"
-              value={postureSummary ? `${postureSummary.score}점` : '—'}
-              detail={postureSummary ? `거북목 감지 오늘 ${postureSummary.turtleNeckCount}회` : ''}
+              label="에이전트 서비스"
+              value="정상 가동중"
+              detail="IoT·수면·전력 도구 연결됨"
+              dot="online"
             />
             <Metric
               label="연결된 가전 상태"
@@ -202,7 +241,7 @@ export function MainPage({
             {totalPower && (
               <>
                 <span>전력 관리</span>
-                <strong>{totalPower.powerW.toFixed(1)}W</strong>
+                <strong>{Number(totalPower.powerW ?? 0).toFixed(1)}W</strong>
                 <p>전체 콘센트 현재 사용량</p>
                 <div className="dashboard-power-chart" aria-hidden="true">
                   <ResponsiveContainer width="100%" height={96}>
@@ -213,29 +252,55 @@ export function MainPage({
                         stroke="var(--wave)"
                         strokeWidth={2.5}
                         dot={false}
+                        isAnimationActive={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="dashboard-power-meta">
-                  <span>{totalPower.voltageV.toFixed(1)}V</span>
-                  <span>{(totalPower.currentMa / 1000).toFixed(3)}A</span>
-                  <span className="dashboard-power-cost">시간당 약 {totalPower.hourlyCostWon.toFixed(1)}원</span>
+                  <span>{Number(totalPower.voltageV ?? 0).toFixed(1)}V</span>
+                  <span>{(Number(totalPower.currentMa ?? 0) / 1000).toFixed(3)}A</span>
+                  <span className="dashboard-power-cost">시간당 약 {Number(totalPower.hourlyCostWon ?? 0).toFixed(1)}원</span>
                 </div>
               </>
             )}
           </button>
 
-          {powerInsight && (
-            <button
-              type="button"
-              className="feature-tile orange dashboard-power-insight"
-              onClick={() => onOpenChatWithDraft?.(powerInsight.text || '이번 주 전력 사용량을 분석하고 절약 방법을 알려줘')}
-            >
-              <strong>{powerInsight.title}</strong>
-              <span>{powerInsight.text}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="promo-card orange dashboard-power-insight cursor-pointer border-0 text-left"
+            onClick={() => onOpenChatWithDraft?.('오늘 전력 사용량 중에서 줄일 수 있는 부분을 알려줘')}
+          >
+            <strong>전력 절약 팁</strong>
+            <p>오늘 전력 사용량 중 줄일 수 있는 부분을 물어보세요.</p>
+          </button>
+
+          <div className="dashboard-side-card">
+            <Card title="오늘 대화 요약" action={`${recentChats.length}건`} onClick={() => onNavigate('chat')}>
+              <div className="mt-2 flex flex-col gap-2">
+                {recentChats.length === 0 && (
+                  <p className="text-sm" style={{ color: 'var(--sub)' }}>아직 오늘 나눈 대화가 없어요.</p>
+                )}
+                {recentChats.map((chat) => {
+                  const preview = chat.lastMessagePreview
+                    ? (chat.lastMessagePreview.length > 48
+                      ? `${chat.lastMessagePreview.slice(0, 48)}…`
+                      : chat.lastMessagePreview)
+                    : '대화를 이어가 보세요';
+                  return (
+                    <div
+                      key={chat.id}
+                      className="rounded-xl px-3 py-2"
+                      style={{ background: 'var(--wave-05)' }}
+                    >
+                      <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{chat.title}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: 'var(--sub)' }}>{preview}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
         </div>
 
         <div className="dashboard-sleep-column">
@@ -301,41 +366,29 @@ export function MainPage({
             <strong>수면 환경</strong>
             <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
           </button>
+
+          <div className="dashboard-side-card dashboard-sleep-card">
+            <Card title="수면 관리" onClick={() => onNavigate('sleep')}>
+              <div className="mt-2 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="metric-dot online" aria-hidden="true" />
+                  <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>실행 중</p>
+                </div>
+                <div className="rounded-xl px-3 py-2" style={{ background: 'var(--wave-05)' }}>
+                  <p className="text-xs" style={{ color: 'var(--sub)' }}>{SLEEP_RADAR.role}</p>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>
+                    {SLEEP_RADAR.room} · {SLEEP_RADAR.name}
+                  </p>
+                  <p className="mt-1 text-xs" style={{ color: 'var(--sub)' }}>
+                    하방 레이더로 입면·뒤척임·기상 구간을 추적하고 있어요.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
 
         <div className="dashboard-posture-column">
-          {/* 자세 점수 카드는 대시보드에서 알림 목록 / 제스처 인식 카드로 대체됨.
-              소스는 유지하고 렌더링만 비활성화 — 필요 시 {false}를 지우면 복원된다. */}
-          {false && (
-            <div className="dashboard-posture-card">
-              <Card title="자세 점수" onClick={() => onNavigate('posture')}>
-                {postureSummary && (
-                  <>
-                    <PostureScoreGauge score={postureSummary.score} />
-                    <p className="mt-3 text-center text-base font-semibold" style={{ color: 'var(--ink)' }}>
-                      거북목 감지 오늘 <span style={{ color: 'var(--excellent-text)' }}>{postureSummary.turtleNeckCount}회</span>
-                    </p>
-                    <p className="mt-0.5 text-center text-sm" style={{ color: 'var(--sub)' }}>
-                      전주 평균 {postureSummary.turtleNeckLastWeekAverageCount}회 대비 개선
-                    </p>
-                    <div className="mt-3 border-t pt-3" style={{ borderColor: 'var(--wave-10)' }}>
-                      <div className="grid grid-cols-2 gap-2 text-center">
-                        <div>
-                          <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.correctPosturePercent}%</p>
-                          <p className="text-xs" style={{ color: 'var(--sub)' }}>바른 자세</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>{postureSummary.alertAcceptRatePercent}%</p>
-                          <p className="text-xs" style={{ color: 'var(--sub)' }}>알림 수락</p>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </Card>
-            </div>
-          )}
-
           <div className="dashboard-posture-card">
             <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={() => onNavigate('alarm')}>
               <div className="mt-3 flex flex-col gap-2">
@@ -430,6 +483,24 @@ export function MainPage({
               )}
             </Card>
           </div>
+
+          <button
+            type="button"
+            className="promo-card mint dashboard-posture-card cursor-pointer border-0 text-left"
+            onClick={() => onOpenChatWithDraft?.('내일 아침 7시 알람 맞춰주고, 주간 계획에 스트레칭도 추가해줘')}
+          >
+            <strong>일정·알람도 말해보세요</strong>
+            <p>기상 알람 맞추기, 할 일 추가처럼 일정 관리도 채팅으로 할 수 있어요.</p>
+          </button>
+
+          <button
+            type="button"
+            className="promo-card pink dashboard-posture-card cursor-pointer border-0 text-left"
+            onClick={() => onOpenChatWithDraft?.('집에 어떤 장치가 있고 각각 어떤 기능을 제어할 수 있는지 알려줘')}
+          >
+            <strong>장치 제어 가이드</strong>
+            <p>조명·TV·플러그 등 어떤 기기가 있고 무엇을 바꿀 수 있는지 물어보세요.</p>
+          </button>
         </div>
       </section>
     </div>

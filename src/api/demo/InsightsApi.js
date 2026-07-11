@@ -1,7 +1,5 @@
 import { InsightsApi as MockInsightsApi } from '../mock/InsightsApi';
-import { withDemoWriteGuard } from './guardedApi';
 
-export const InsightsApi = withDemoWriteGuard(MockInsightsApi, [
-  'updateInsight',
-  'apply',
-]);
+// Insight decisions are simulated in memory by the demo client and never
+// forwarded to the persistent insights API.
+export class InsightsApi extends MockInsightsApi {}

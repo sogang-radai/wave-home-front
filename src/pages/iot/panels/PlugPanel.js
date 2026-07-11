@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 import iotApi from '../../../api/iotApi';
+import { dispatchTwinDeviceState } from '../../../lib/twinSceneStore';
+
+function unwrapState(payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  if (payload.switch !== undefined || payload.on !== undefined) return payload;
+  const nested = payload.state ?? payload.result;
+  if (nested && typeof nested === 'object') return nested;
+  return payload;
+}
 
 // tuya_ep2h — on/off/toggle (Stateful/Toggle) + voltage/current/power/energy telemetry.
 export function PlugPanel({ device, onChanged }) {
@@ -11,7 +20,7 @@ export function PlugPanel({ device, onChanged }) {
     let cancelled = false;
     const poll = async () => {
       try {
-        const s = await iotApi.queryDevice(device.id, 'status');
+        const s = unwrapState(await iotApi.queryDevice(device.id, 'status'));
         if (!cancelled) {
           setState(s);
           setLoadError('');
@@ -25,15 +34,16 @@ export function PlugPanel({ device, onChanged }) {
     setState(null);
     setLoadError('');
     poll();
-    const timer = setInterval(poll, 10000);
+    const timer = setInterval(poll, 5000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [device.id]);
 
   const invoke = async (name) => {
     setBusy(true);
     try {
-      const next = await iotApi.invokeDevice(device.id, name, {});
+      const next = unwrapState(await iotApi.invokeDevice(device.id, name, {}));
       setState(next);
+      dispatchTwinDeviceState(device.id, next, { deviceName: device.name, action: name });
       onChanged?.();
     } finally {
       setBusy(false);

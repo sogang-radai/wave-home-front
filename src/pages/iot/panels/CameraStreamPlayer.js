@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../../api/config';
+import { API_BASE_URL, USE_PLACEHOLDER_CAMERA_STREAM } from '../../../api/config';
+import { MockCameraPlaceholder } from './MockCameraPlaceholder';
 
 function getAccessToken() {
   return localStorage.getItem('wavehome_access_token');
@@ -35,6 +36,9 @@ export function CameraStreamPlayer({
   }, [onReady, onError]);
 
   useEffect(() => {
+    if (USE_PLACEHOLDER_CAMERA_STREAM)
+      return undefined;
+
     let cancelled = false;
     let objectUrl = null;
     let mediaSource = null;
@@ -163,6 +167,9 @@ export function CameraStreamPlayer({
   }, [deviceId]);
 
   useEffect(() => {
+    if (USE_PLACEHOLDER_CAMERA_STREAM)
+      return undefined;
+
     const video = videoRef.current;
     if (!video || !onMicLevel)
       return undefined;
@@ -211,6 +218,16 @@ export function CameraStreamPlayer({
         micAttachedRef.current = false;
     };
   }, [onMicLevel, micAttachedRef]);
+
+  if (USE_PLACEHOLDER_CAMERA_STREAM) {
+    return (
+      <MockCameraPlaceholder
+        className={className}
+        alt="카메라 스트림"
+        onReady={onReady}
+      />
+    );
+  }
 
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption

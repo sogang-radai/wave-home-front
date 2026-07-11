@@ -22,8 +22,14 @@ export function GestureSetsTab() {
     iotApi.getGestureSetDefinition(selectedSetId).then(setDefinition);
   }, [selectedSetId]);
 
+  const selectedSet = sets.find((s) => s.id === selectedSetId);
+  const gestureSetPath = selectedSet?.path || (selectedSetId ? `gestures/${selectedSetId}/set.json` : null);
+
   const linkedRuleCount = (classId) => rules.filter(
-    (r) => r.trigger?.kind === 'gesture' && r.trigger.gestureSetPath === `gestures/${selectedSetId}/set.json` && r.trigger.classId === classId
+    (r) => r.trigger?.kind === 'gesture'
+      && gestureSetPath
+      && r.trigger.gestureSetPath === gestureSetPath
+      && r.trigger.classId === classId,
   ).length;
 
   return (

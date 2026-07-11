@@ -30,3 +30,7 @@ yarn-error.log*
 .vscode/
 
 API_SPEC.md
+
+# public/models is filled by
+# ../../scripts/copy-twin-model.sh from demo/
+/public/models/

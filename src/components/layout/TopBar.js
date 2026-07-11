@@ -162,7 +162,7 @@ export function TopBar({
               <line x1="12" y1="11" x2="12" y2="16" />
             </svg>
             <span className="demo-mode-badge-text">
-              시연 모드 — 날짜 고정, 변경 사항 미저장
+              시연 모드
             </span>
           </span>
         )}

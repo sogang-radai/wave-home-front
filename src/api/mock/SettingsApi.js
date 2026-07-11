@@ -12,6 +12,7 @@ import {
   removeDeviceAt,
   ROOM_LIVING,
   ROOM_BEDROOM,
+  hexId,
 } from './devicesStore';
 
 class MockApiError extends Error {
@@ -28,13 +29,9 @@ function apiError(status, code, message, extra) {
   return new MockApiError(status, code, message, extra);
 }
 
-function makeHexId() {
-  const random = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).padStart(14, '0');
-  return `${Date.now().toString(16)}${random}`.slice(-16);
-}
-
 let nextAccountId = 3;
 let nextRoomId = 4;
+let nextDeviceId = 14;
 
 function requireName(value, message) {
   const name = value?.trim();
@@ -158,8 +155,8 @@ function persistAiAgentSettings(settings) {
 }
 
 const accountsSeed = [
-  { id: 1, name: '김건강' },
-  { id: 2, name: '박웰빙' },
+  { id: hexId(1), name: '김건강' },
+  { id: hexId(2), name: '박웰빙' },
 ];
 
 const defaultSleepConfig = {
@@ -310,7 +307,7 @@ export class SettingsApi {
 
   async createAccount({ name }) {
     await delay();
-    const account = { id: nextAccountId++, name: requireName(name, '이름을 입력해주세요.') };
+    const account = { id: hexId(nextAccountId++), name: requireName(name, '이름을 입력해주세요.') };
     accounts = [...accounts, account];
     sleepConfigs[account.id] = cloneDeep(defaultSleepConfig);
     generalSettings[account.id] = cloneDeep(defaultGeneralSettings);
@@ -347,7 +344,7 @@ export class SettingsApi {
   async createRoom({ name, description = '' }) {
     await delay();
     const roomName = requireName(name, '방 이름을 입력해주세요.');
-    const room = { id: nextRoomId++, name: roomName, description: description.trim() || roomName };
+    const room = { id: hexId(nextRoomId++), name: roomName, description: description.trim() || roomName };
     addRoom(room);
     return cloneDeep(room);
   }
@@ -400,7 +397,7 @@ export class SettingsApi {
 
     const device = {
       ...cloneDeep(payload),
-      id: payload.id || makeHexId(),
+      id: payload.id || hexId(nextDeviceId++),
       name: deviceName,
       description: payload.description?.trim() || deviceName,
       enabled: payload.enabled ?? true,

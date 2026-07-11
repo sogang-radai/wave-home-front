@@ -2,6 +2,7 @@ import { Fragment, useRef, useState } from 'react';
 import './layout.css';
 import logo from '../../img/logo.png';
 import { pages } from '../../data/appData';
+import { SHOW_HOME_TWIN } from '../../api/config';
 import { WaveAiIcon } from '../icons/WaveAiIcon';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
 
@@ -92,6 +93,26 @@ function SidebarIcon({ name }) {
     );
   }
 
+  if (name === 'homeTwin') {
+    return (
+      <svg {...common}>
+        <path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+        <path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6" />
+      </svg>
+    );
+  }
+
+  if (name === 'remote') {
+    return (
+      <svg {...common}>
+        <rect x="7" y="2" width="10" height="20" rx="2" />
+        <circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none" />
+        <path d="M9 12h6" />
+        <path d="M9 16h6" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...common}>
       <path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
@@ -131,7 +152,11 @@ export function Sidebar({
   const isMobile = useMobileLayout();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
 
-  const visiblePages = isDemoMode ? pages.filter((item) => item.id !== 'posture') : pages;
+  const visiblePages = pages.filter((item) => {
+    if (item.id === 'homeTwin') return SHOW_HOME_TWIN;
+    if (isDemoMode && item.id === 'posture') return false;
+    return true;
+  });
 
   const handleSelect = (id) => {
     onSelect(id);

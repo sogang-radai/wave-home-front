@@ -15,6 +15,7 @@ import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/plan/WeeklyPlanPage';
 import { AlarmPage } from './pages/alarm/AlarmPage';
 import { HomeControlPage } from './pages/iot/HomeControlPage';
+import { HomeTwinPage } from './pages/homeTwin/HomeTwinPage';
 import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
 import {
@@ -24,6 +25,7 @@ import {
 } from './push/browserPush';
 import { getNow } from './lib/demoClock';
 import { IS_DEMO_MODE } from './api/config';
+import { dispatchTwinControlFromToolEvent } from './lib/twinSceneStore';
 import { useMobileLayout } from './hooks/useMobileLayout';
 
 function formatNotificationTime(iso) {
@@ -426,6 +428,9 @@ function App() {
             )
           );
         } else if (evt.type === 'tool_start' || evt.type === 'tool_end') {
+          if (evt.type === 'tool_end' && evt.toolEvent?.name === 'control_device' && evt.toolEvent?.status === 'done') {
+            dispatchTwinControlFromToolEvent(evt.toolEvent);
+          }
           setChatConversations((prev) =>
             prev.map((c) =>
               c.id === evt.conversationId
@@ -638,6 +643,7 @@ function App() {
           )}
           {page === 'alarm' && <AlarmPage />}
           {page === 'power' && <PowerPage />}
+          {page === 'homeTwin' && <HomeTwinPage />}
           {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
           {page === 'setting' && (
             <SettingPage

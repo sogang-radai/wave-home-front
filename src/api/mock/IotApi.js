@@ -1,11 +1,12 @@
 import { delay, cloneDeep, nextNumericId } from './utils';
-import { getAllDevices, getRooms } from './devicesStore';
+import { getAllDevices, getRooms, hexId } from './devicesStore';
 import { getClassInfo, findAction } from './deviceClassRegistry';
 import { ruleSeed } from '../../data/ruleData';
 import { irCommandSeed, validateTimings } from '../../data/irCommandData';
 import { gestureSetRegistry, gestureSetDefinitions } from '../../data/gestureSetData';
 import { smartPlugDevices } from '../../data/homeData';
 import { sortDevicesForControl } from '../../utils/deviceSort';
+import { MOCK_CAMERA_PLACEHOLDER } from '../../lib/mockCameraStream';
 
 class MockApiError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -21,7 +22,7 @@ function apiError(status, code, message, extra) {
   return new MockApiError(status, code, message, extra);
 }
 
-const ACTIVE_ACCOUNT_ID = 1;
+const ACTIVE_ACCOUNT_ID = hexId(1);
 let activeAccountId = ACTIVE_ACCOUNT_ID;
 
 function requireActiveAccount() {
@@ -135,6 +136,7 @@ function toDeviceView(device) {
     class: device.class,
     classLabel: classInfo.label,
     panel: classInfo.panel,
+    sleepAnalysis: device.settings?.sleep === true,
     room: room ? { id: room.id, name: room.name } : null,
     enabled: device.enabled,
     connected: runtime.connected,
@@ -149,21 +151,21 @@ function toDeviceView(device) {
 // ── Event log ────────────────────────────────────────────────────────────────
 // Unified timeline across connection / gesture / execution / schedule / ir.
 let events = [
-  { id: 1, type: 'connection', occurredAt: isoAgo(46 * 60 * 1000), deviceId: '6a1e4b8d3f05c927', deviceName: '부엌 조명', message: '연결 끊김 (응답 없음)', triggeredBy: null, detail: { reason: 'timeout', lastRttMs: 812 } },
-  { id: 2, type: 'gesture', occurredAt: isoAgo(3 * 60 * 1000), deviceId: '3a7f2c9d10b4e85f', deviceName: '침실 하방 레이더', message: '제스처 인식: 오른손 반짝 (classId 7)', triggeredBy: null, detail: { classId: 7, className: '오른손 반짝', confidence: 0.93 } },
-  { id: 3, type: 'execution', occurredAt: isoAgo(3 * 60 * 1000 - 400), deviceId: '5d0a3f8c26b91e74', deviceName: '거실 조명', message: '룰 실행: 책상 반짝 제스처로 조명 켜기 → on', triggeredBy: 'rule:1', detail: { action: 'on', params: {} } },
-  { id: 4, type: 'gesture', occurredAt: isoAgo(9 * 60 * 1000), deviceId: '3a7f2c9d10b4e85f', deviceName: '침실 하방 레이더', message: '제스처 인식: 오른손 시계방향 (classId 10)', triggeredBy: null, detail: { classId: 10, className: '오른손 시계방향', confidence: 0.89 } },
-  { id: 5, type: 'execution', occurredAt: isoAgo(9 * 60 * 1000 - 200), deviceId: '2c9f6a1b4d78e350', deviceName: 'TV', message: '룰 실행: 오른손 시계방향 → TV 볼륨 연속 증가 → volume_up', triggeredBy: 'rule:2', detail: { action: 'volume_up', params: {} } },
-  { id: 6, type: 'ir', occurredAt: isoAgo(20 * 60 * 1000), deviceId: '5c1e8b6402fda973', deviceName: 'Wave Station', message: 'IR 수신: 에어컨 전원', triggeredBy: null, detail: { direction: 'received', commandId: 1 } },
-  { id: 7, type: 'execution', occurredAt: isoAgo(20 * 60 * 1000 - 150), deviceId: '6b0f3e8a92c47d15', deviceName: '플러그1', message: '룰 실행: IR 수신 시 플러그1 토글 → toggle', triggeredBy: 'rule:3', detail: { action: 'toggle', params: {} } },
-  { id: 8, type: 'schedule', occurredAt: isoAgo(60 * 60 * 1000), deviceId: '2c9f6a1b4d78e350', deviceName: 'TV', message: '예약 실행: 30분 뒤 TV 끄기 → off', triggeredBy: 'schedule:6', detail: { action: 'off', params: {} } },
-  { id: 9, type: 'connection', occurredAt: isoAgo(3 * 60 * 60 * 1000), deviceId: '6a1e4b8d3f05c927', deviceName: '부엌 조명', message: '연결됨', triggeredBy: null, detail: { rttMs: 64 } },
-  { id: 10, type: 'execution', occurredAt: isoAgo(5 * 60 * 60 * 1000), deviceId: '1f8c5a2e7b93064d', deviceName: '플러그2', message: '룰 실행: 플러그2 과부하 시 자동 차단 → off', triggeredBy: 'rule:4', detail: { action: 'off', params: {}, power: 1584 } },
+  { id: 1, type: 'connection', occurredAt: isoAgo(46 * 60 * 1000), deviceId: hexId(13), deviceName: '부엌 조명', message: '연결 끊김 (응답 없음)', triggeredBy: null, detail: { reason: 'timeout', lastRttMs: 812 } },
+  { id: 2, type: 'gesture', occurredAt: isoAgo(3 * 60 * 1000), deviceId: hexId(2), deviceName: '침실 책상 레이더', message: '제스처 인식: 오른손 반짝 (classId 7)', triggeredBy: null, detail: { classId: 7, className: '오른손 반짝', confidence: 0.93 } },
+  { id: 3, type: 'execution', occurredAt: isoAgo(3 * 60 * 1000 - 400), deviceId: hexId(11), deviceName: '침실 조명', message: '룰 실행: 책상 반짝 제스처로 조명 켜기 → on', triggeredBy: 'rule:1', detail: { action: 'on', params: {} } },
+  { id: 4, type: 'gesture', occurredAt: isoAgo(9 * 60 * 1000), deviceId: hexId(2), deviceName: '침실 책상 레이더', message: '제스처 인식: 오른손 시계방향 (classId 10)', triggeredBy: null, detail: { classId: 10, className: '오른손 시계방향', confidence: 0.89 } },
+  { id: 5, type: 'execution', occurredAt: isoAgo(9 * 60 * 1000 - 200), deviceId: hexId(10), deviceName: '침실 TV', message: '룰 실행: 오른손 시계방향 → TV 볼륨 연속 증가 → volume_up', triggeredBy: 'rule:2', detail: { action: 'volume_up', params: {} } },
+  { id: 6, type: 'ir', occurredAt: isoAgo(20 * 60 * 1000), deviceId: hexId(3), deviceName: 'Wave Station', message: 'IR 수신: 에어컨 전원', triggeredBy: null, detail: { direction: 'received', commandId: 1 } },
+  { id: 7, type: 'execution', occurredAt: isoAgo(20 * 60 * 1000 - 150), deviceId: hexId(6), deviceName: '플러그1 - 선풍기', message: '룰 실행: IR 수신 시 플러그1 토글 → toggle', triggeredBy: 'rule:3', detail: { action: 'toggle', params: {} } },
+  { id: 8, type: 'schedule', occurredAt: isoAgo(60 * 60 * 1000), deviceId: hexId(10), deviceName: '침실 TV', message: '예약 실행: 30분 뒤 TV 끄기 → off', triggeredBy: 'schedule:6', detail: { action: 'off', params: {} } },
+  { id: 9, type: 'connection', occurredAt: isoAgo(3 * 60 * 60 * 1000), deviceId: hexId(13), deviceName: '부엌 조명', message: '연결됨', triggeredBy: null, detail: { rttMs: 64 } },
+  { id: 10, type: 'execution', occurredAt: isoAgo(5 * 60 * 60 * 1000), deviceId: hexId(7), deviceName: '플러그2 - 컴퓨터', message: '룰 실행: 플러그2 과부하 시 자동 차단 → off', triggeredBy: 'rule:4', detail: { action: 'off', params: {}, power: 1584 } },
   { id: 11, type: 'ir', occurredAt: isoAgo(7 * 60 * 60 * 1000), deviceId: null, deviceName: 'IR 목록', message: '테스트 전송: TV 볼륨 올리기', triggeredBy: null, detail: { direction: 'sent', commandId: 5 } },
-  { id: 12, type: 'schedule', occurredAt: isoAgo(22 * 60 * 60 * 1000), deviceId: '5d0a3f8c26b91e74', deviceName: '거실 조명', message: '예약 실행: 매일 22:30 거실 조명 밝기 낮춤 → brightness(20)', triggeredBy: 'schedule:5', detail: { action: 'brightness', params: { value: 20 } } },
-  { id: 13, type: 'gesture', occurredAt: isoAgo(24 * 60 * 60 * 1000), deviceId: '3a7f2c9d10b4e85f', deviceName: '침실 하방 레이더', message: '제스처 인식: 왼쪽 스와이프 (classId 5)', triggeredBy: null, detail: { classId: 5, className: '왼쪽 스와이프', confidence: 0.81 } },
-  { id: 14, type: 'connection', occurredAt: isoAgo(26 * 60 * 60 * 1000), deviceId: '27d9a4f3c85b016e', deviceName: '거실 카메라', message: '연결됨', triggeredBy: null, detail: { rttMs: 41 } },
-  { id: 15, type: 'execution', occurredAt: isoAgo(30 * 60 * 60 * 1000), deviceId: '6b0f3e8a92c47d15', deviceName: '플러그1', message: '수동 제어: on', triggeredBy: 'manual', detail: { action: 'on', params: {} } },
+  { id: 12, type: 'schedule', occurredAt: isoAgo(22 * 60 * 60 * 1000), deviceId: hexId(12), deviceName: '거실 조명', message: '예약 실행: 매일 22:30 거실 조명 밝기 낮춤 → brightness(20)', triggeredBy: 'schedule:5', detail: { action: 'brightness', params: { value: 20 } } },
+  { id: 13, type: 'gesture', occurredAt: isoAgo(24 * 60 * 60 * 1000), deviceId: hexId(2), deviceName: '침실 책상 레이더', message: '제스처 인식: 왼쪽 스와이프 (classId 5)', triggeredBy: null, detail: { classId: 5, className: '왼쪽 스와이프', confidence: 0.81 } },
+  { id: 14, type: 'connection', occurredAt: isoAgo(26 * 60 * 60 * 1000), deviceId: hexId(5), deviceName: '거실 카메라', message: '연결됨', triggeredBy: null, detail: { rttMs: 41 } },
+  { id: 15, type: 'execution', occurredAt: isoAgo(30 * 60 * 60 * 1000), deviceId: hexId(6), deviceName: '플러그1 - 선풍기', message: '수동 제어: on', triggeredBy: 'manual', detail: { action: 'on', params: {} } },
 ];
 
 let nextEventId = 20;
@@ -414,13 +416,18 @@ export class IotApi {
     await delay(300);
     requireActiveAccount();
     const { device, runtime } = findDeviceOrThrow(deviceId);
-    const mode = device.class === 'droid_cam' ? 'mjpeg' : 'mse';
+    if (isCameraClass(device.class)) {
+      return {
+        status: runtime.state.streaming ? 'streaming' : 'idle',
+        mode: 'placeholder',
+        url: null,
+        placeholder: true,
+      };
+    }
     return {
       status: runtime.state.streaming ? 'streaming' : 'idle',
-      mode,
-      url: runtime.state.streaming && mode === 'mjpeg'
-        ? `/api/v1/iot/devices/${deviceId}/stream/mjpeg`
-        : null,
+      mode: 'mse',
+      url: null,
     };
   }
 
@@ -429,13 +436,18 @@ export class IotApi {
     requireActiveAccount();
     const { device, runtime } = findDeviceOrThrow(deviceId);
     runtime.state.streaming = !!streaming;
-    const mode = device.class === 'droid_cam' ? 'mjpeg' : 'mse';
+    if (isCameraClass(device.class)) {
+      return {
+        status: runtime.state.streaming ? 'streaming' : 'idle',
+        mode: 'placeholder',
+        url: null,
+        placeholder: true,
+      };
+    }
     return {
       status: runtime.state.streaming ? 'streaming' : 'idle',
-      mode,
-      url: runtime.state.streaming && mode === 'mjpeg'
-        ? `/api/v1/iot/devices/${deviceId}/stream/mjpeg`
-        : null,
+      mode: 'mse',
+      url: null,
     };
   }
 
@@ -443,7 +455,10 @@ export class IotApi {
     await delay(200);
     requireActiveAccount();
     findDeviceOrThrow(deviceId);
-    return { occurredAt: new Date().toISOString() };
+    return {
+      occurredAt: new Date().toISOString(),
+      url: MOCK_CAMERA_PLACEHOLDER,
+    };
   }
 
   // ── Radar ↔ gesture set ──────────────────────────────────────────────────
@@ -727,7 +742,7 @@ export class IotApi {
           } catch (err) {
             if (!cancelled && onError) onError(err);
           }
-        }, 1000);
+        }, 3000);
       } catch (err) {
         if (!cancelled && onError) onError(err);
       }

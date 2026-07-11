@@ -56,7 +56,7 @@ export function WaveStationPanel({ device }) {
         {error && <p className="panel-empty panel-empty-inline">{error}</p>}
         <div className="telemetry-tile">
           <span>조도</span>
-          <strong>{formatEnvValue(env?.lux)}<small>lux</small></strong>
+          <strong>{formatEnvValue(env?.lux, 1)}<small>lux</small></strong>
         </div>
         <div className="telemetry-tile">
           <span>온도</span>
@@ -64,7 +64,7 @@ export function WaveStationPanel({ device }) {
         </div>
         <div className="telemetry-tile">
           <span>습도</span>
-          <strong>{formatEnvValue(env?.humidity)}<small>%</small></strong>
+          <strong>{formatEnvValue(env?.humidity, 1)}<small>%</small></strong>
         </div>
       </div>
     </div>

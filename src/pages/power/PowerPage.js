@@ -49,8 +49,6 @@ const METRIC_TABS = [
   { id: 'wh', short: 'Wh', suffix: '누적' },
 ];
 
-// power_report.period 스키마에 정의된 단위만 AI 리포트를 제공한다 (docs/db-schema.md 참고).
-// combo 의 min1/min10/min30 은 너무 짧아 리포트 대상이 아니다.
 const REPORT_PERIOD_MAP = { hour: '1h', day: '24h', week: '1w', month: '1mo', year: '1yr' };
 
 const LS_METRIC = 'powerMetricTab';
@@ -351,7 +349,9 @@ export function PowerPage() {
       }).then(setComboTrend);
     };
     loadTrend();
-    const timer = setInterval(loadTrend, POLL_MS);
+    // 1분 차트는 매초 갱신해 타임라인이 흘러가게 하고, 그 외 콤보는 5초.
+    const pollMs = rangeTab === 'min1' ? 1000 : POLL_MS;
+    const timer = setInterval(loadTrend, pollMs);
     return () => clearInterval(timer);
   }, [selectedPlug?.id, rangeTab, metricTab, isCombo]);
 

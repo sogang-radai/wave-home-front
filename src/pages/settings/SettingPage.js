@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import './settings.css';
 import settingsApi from '../../api/settingsApi';
 import { sortRoomsByLocalOrder } from '../../utils/roomOrder';
+import { Tabs } from '../../components/ui/Tabs';
 import { DeviceRegistrationSettings, RoomZoneSettings } from './DeviceSettings';
 import { AccountSettings } from './AccountSettings';
 import { GeneralSettings } from './GeneralSettings';
@@ -40,11 +41,12 @@ export function SettingPage({
 
   const categories = showDevSettings ? [...settingCategories, devCategory] : settingCategories;
   const activeLabel = categories.find((c) => c.id === category)?.label || '';
+  const tabItems = categories.map((item) => [item.id, item.label]);
 
   return (
     <div className="settings-page">
       <div className="settings-layout">
-        <nav className="settings-nav">
+        <nav className="settings-nav settings-nav--cards" aria-label="설정 분류">
           {categories.map((item) => (
             <button
               key={item.id}
@@ -57,6 +59,10 @@ export function SettingPage({
             </button>
           ))}
         </nav>
+
+        <div className="settings-nav-tabs">
+          <Tabs active={category} onChange={setCategory} items={tabItems} />
+        </div>
 
         <div className="settings-detail">
           {category === 'general' && <GeneralSettings heading={activeLabel} />}

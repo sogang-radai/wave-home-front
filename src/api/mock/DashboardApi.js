@@ -1,5 +1,6 @@
 import { delay, cloneDeep } from './utils';
-import { dailyMessage } from '../../data/overviewData';
+import { listInsights } from './insightsStore';
+import { pickDashboardDailyMessage } from '../../lib/dashboardMessage';
 import { getNow } from '../../lib/demoClock';
 import { AlarmApi } from './AlarmApi';
 import { IotApi } from './IotApi';
@@ -77,7 +78,11 @@ export class DashboardApi {
   async getDailyMessage() {
     await delay();
     requireActiveAccount();
-    return cloneDeep(dailyMessage);
+    const message = pickDashboardDailyMessage(listInsights({ surface: 'dashboard_banner' }));
+    if (!message) {
+      throw apiError(404, 'NOT_FOUND', '대시보드 메시지가 없습니다.');
+    }
+    return cloneDeep(message);
   }
 
   async getCurrentState() {
@@ -112,12 +117,9 @@ export class DashboardApi {
     return rules
       .filter((rule) => rule.enabled && rule.trigger?.kind === 'gesture')
       .map((rule) => {
-        // 실제 automation_rule.actions_json 은 배열이라 백엔드는 actions_json[0] 을 대표
-        // 액션으로 쓴다. mock 의 rule.action 은 이 mock 안에서만 쓰는 단일 액션 표현이라
-        // rule.action === actions_json[0] 과 동일하게 취급한다.
         const primaryAction = rule.action;
         return {
-          id: rule.externalId, // automation_rule.external_id — 공개 룰 id
+          id: rule.externalId,
           gestureSetId: rule.trigger.gestureSetPath ? rule.trigger.gestureSetPath.split('/')[1] : null,
           classId: rule.trigger.classId,
           actionDeviceId: primaryAction.deviceId,
@@ -127,7 +129,6 @@ export class DashboardApi {
       });
   }
 
-  // 테스트에서 activeAccount required 경로를 확인할 때만 사용한다.
   __setActiveAccountForTest(accountId) {
     activeAccountId = accountId;
   }

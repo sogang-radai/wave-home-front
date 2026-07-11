@@ -1,6 +1,7 @@
 import { sleepDailyInsights, sleepWeeklyInsights } from '../../data/sleepData';
 import { postureDailyInsights, postureWeeklyInsights } from '../../data/postureData';
 import { powerInsights } from '../../data/homeData';
+import { dashboardBannerInsights } from '../../data/dashboardInsightData';
 
 // Canonical insight registry for mock APIs. Mirrors `insight` table (`surface`, `kind`, PATCH /insights/{id}).
 
@@ -25,7 +26,22 @@ function toInsight(item, surface, period) {
   };
 }
 
+function toDashboardInsight(item) {
+  return {
+    id: item.id ?? nextInsightId++,
+    surface: item.surface,
+    kind: item.kind,
+    date: item.date,
+    label: item.label,
+    title: item.title,
+    text: item.text,
+    actionable: Boolean(item.actionable),
+    approved: Boolean(item.approved),
+  };
+}
+
 const insights = [
+  ...dashboardBannerInsights.map(toDashboardInsight),
   ...sleepDailyInsights.map((item) => toInsight(item, 'sleep_report', 'daily')),
   ...sleepWeeklyInsights.map((item) => toInsight(item, 'sleep_report', 'weekly')),
   ...postureDailyInsights.map((item) => toInsight(item, 'posture_report', 'daily')),

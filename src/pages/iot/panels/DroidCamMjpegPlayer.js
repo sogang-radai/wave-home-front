@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { API_BASE_URL } from '../../../api/config';
+import { API_BASE_URL, USE_PLACEHOLDER_CAMERA_STREAM } from '../../../api/config';
+import { MockCameraPlaceholder } from './MockCameraPlaceholder';
+
+function clearImageSource(img) {
+  img.removeAttribute('src');
+}
 
 // DroidCam serves native MJPEG; proxy through wave-server instead of go2rtc fMP4.
 export function DroidCamMjpegPlayer({
@@ -18,6 +23,9 @@ export function DroidCamMjpegPlayer({
   }, [onReady, onError]);
 
   useEffect(() => {
+    if (USE_PLACEHOLDER_CAMERA_STREAM)
+      return undefined;
+
     const img = imgRef.current;
     if (!img)
       return undefined;
@@ -34,9 +42,19 @@ export function DroidCamMjpegPlayer({
     return () => {
       img.removeEventListener('load', handleLoad);
       img.removeEventListener('error', handleError);
-      img.src = 'about:blank';
+      clearImageSource(img);
     };
   }, [deviceId]);
+
+  if (USE_PLACEHOLDER_CAMERA_STREAM) {
+    return (
+      <MockCameraPlaceholder
+        className={className}
+        alt="폰 카메라 스트림"
+        onReady={onReady}
+      />
+    );
+  }
 
   return (
     <img
