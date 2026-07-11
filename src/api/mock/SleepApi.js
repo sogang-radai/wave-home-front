@@ -87,6 +87,7 @@ const todayPlanSeed = {
   prepTime: '22:50',
   lightDimTime: '23:00',
   recommendedTemperatureCelsius: 24,
+  rationale: '최근 7일 평균 수면 시간은 7시간 20분이에요. 내일 08:30 일정을 고려해 23:30에 잠자리에 들면 목표 수면 시간을 채울 수 있어요.',
 };
 
 const todayPhoneUsageSeed = {
