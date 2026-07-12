@@ -186,13 +186,10 @@ export function MainPage({
               />
             )}
             <Metric
-              label="수면 점수"
-              value={sleepSummary ? `${sleepSummary.score}점` : '—'}
-              detail={
-                sleepSummary
-                  ? `${sleepSummary.achievedHours.toFixed(1)}h (${sleepSummary.bedTime}–${sleepSummary.wakeTime})`
-                  : ''
-              }
+              label={SLEEP_RADAR.role}
+              value="실행 중"
+              detail={`${SLEEP_RADAR.name}로 입면·뒤척임·기상 구간을 추적하고 있어요.`}
+              dot="online"
             />
             <Metric
               label="에이전트 서비스"
@@ -372,18 +369,16 @@ export function MainPage({
           <div className="dashboard-side-card dashboard-sleep-card">
             <Card title="수면 관리" onClick={() => onNavigate('sleep')}>
               <div className="mt-2 flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="metric-dot online" aria-hidden="true" />
-                  <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>실행 중</p>
-                </div>
-                <div className="rounded-xl px-3 py-2" style={{ background: 'var(--wave-05)' }}>
-                  <p className="text-xs" style={{ color: 'var(--sub)' }}>{SLEEP_RADAR.role}</p>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>
-                    {SLEEP_RADAR.room} · {SLEEP_RADAR.name}
-                  </p>
-                  <p className="mt-1 text-xs" style={{ color: 'var(--sub)' }}>
-                    하방 레이더로 입면·뒤척임·기상 구간을 추적하고 있어요.
-                  </p>
+                <div>
+                  <p className="text-xs" style={{ color: 'var(--sub)' }}>수면 점수</p>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+                    {sleepSummary ? `${sleepSummary.score}점` : '—'}
+                  </span>
+                  {sleepSummary && (
+                    <p className="mt-1 text-xs" style={{ color: 'var(--sub)' }}>
+                      {`${sleepSummary.achievedHours.toFixed(1)}h (${sleepSummary.bedTime}–${sleepSummary.wakeTime})`}
+                    </p>
+                  )}
                 </div>
                 {todayPlan && (
                   <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>

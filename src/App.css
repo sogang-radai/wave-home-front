@@ -28,6 +28,10 @@
   --wave-30: rgba(149, 217, 248, 0.3);
   --wave-35: rgba(149, 217, 248, 0.35);
   --wave-40: rgba(149, 217, 248, 0.4);
+  --wave-60: rgba(149, 217, 248, 0.6);
+  --wave-100: rgba(149, 217, 248, 1.0);
+  --wave-deep: #136f9a;
+  --wave-deepest: #0e4862;
 
   /* Status (sleep score tags, online/idle dots, alerts) */
   --good: #36d399;
@@ -74,6 +78,10 @@
 body {
   background: var(--bg);
   color: var(--ink);
+  /* 한글은 기본적으로 음절 단위로 줄바꿈될 수 있어 단어 중간이 끊겨 보이는 경우가 많다.
+     띄어쓰기 단위(어절)로만 줄바꿈되도록 하고, 끊어질 수 없는 긴 토큰(URL 등)만 예외로 허용한다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 button {

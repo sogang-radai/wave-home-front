@@ -41,7 +41,7 @@ export function HomeControlPage({ tab, setTab }) {
           detail={summary?.devicesStarting ? `초기화 중 (${summary.initializingDeviceCount ?? 0})` : '연결된 기기'}
         />
         <Metric label="오늘 이벤트" value={summary ? `${summary.todayEventCount}건` : '—'} detail="최근 24시간" />
-        <Metric label="활성 룰" value={summary ? `${summary.activeRuleCount}개` : '—'} detail="트리거+예약 합계" />
+        <Metric label="자동화 규칙" value={summary ? `${summary.activeRuleCount}개` : '—'} detail="트리거 + 예약 자동화 합계" />
       </div>
 
       {tab === 'control' && <IotControlTab />}

@@ -46,6 +46,8 @@
   justify-content: space-between;
   gap: 32px;
   min-height: 190px;
+  background: linear-gradient(135deg, var(--wave-05) 0%, var(--wave-40) 100%);
+  border-color: var(--wave-35);
 }
 
 .hero > div:first-child {
