@@ -48,7 +48,7 @@ const cards = [
         ]}
       />
     ),
-    target: { page: "main", chatMode: "popup" },
+    target: { page: "chat" }
   },
 ];
 

@@ -42,6 +42,23 @@
   scroll-margin-top: 88px;
 }
 
+
+/* GSAP's pin-spacer only exists to reserve scroll space for a pinned
+   section — it has no visible content of its own. When a later section is
+   pulled up with a negative margin (`overlapPrevious`) to overlap a pinned
+   section's tail, that empty spacer still sits in front of the overlapping
+   section's real content and silently swallows clicks meant for it.
+   Disabling pointer events on the spacer (and re-enabling them on its
+   actual pinned child) removes it from hit-testing without affecting
+   layout. */
+.landing-page .pin-spacer {
+  pointer-events: none;
+}
+
+.landing-page .pin-spacer > * {
+  pointer-events: auto;
+}
+
 .landing-page ::selection {
   background: #95d9f8;
   color: #05070a;
