@@ -535,12 +535,31 @@ export class SettingsApi {
 
   async getNotifications() {
     await delay();
-    return cloneDeep(notifications);
+    return {
+      items: cloneDeep(notifications),
+      unreadCount: notifications.filter((n) => !n.read).length,
+      hasMore: false,
+    };
   }
 
   async markAllNotificationsRead() {
     await delay();
     notifications = notifications.map((notification) => ({ ...notification, read: true }));
-    return cloneDeep(notifications);
+    return {
+      items: cloneDeep(notifications),
+      unreadCount: 0,
+      hasMore: false,
+    };
+  }
+
+  async markNotificationRead(notificationId) {
+    await delay();
+    const id = Number(notificationId);
+    notifications = notifications.map((notification) => (
+      notification.id === id ? { ...notification, read: true } : notification
+    ));
+    const item = notifications.find((notification) => notification.id === id);
+    if (!item) throw apiError(404, 'NOT_FOUND', '알림을 찾을 수 없습니다.');
+    return cloneDeep(item);
   }
 }

@@ -109,11 +109,15 @@ export class SettingsApi {
     return httpClient.get('/settings/tts-speakers');
   }
 
-  async getNotifications() {
-    return httpClient.get('/notifications');
+  async getNotifications(params = {}) {
+    return httpClient.get('/notifications', params);
   }
 
   async markAllNotificationsRead() {
-    return httpClient.patch('/notifications/read-all');
+    return httpClient.patch('/notifications/read-all', {});
+  }
+
+  async markNotificationRead(notificationId) {
+    return httpClient.patch(`/notifications/${notificationId}/read`, {});
   }
 }

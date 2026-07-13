@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import LandingPage from './landing/LandingPage';
 import { pageTitles } from './data/appData';
@@ -87,13 +87,57 @@ function App() {
   const [homeTab, setHomeTab] = useState('control');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [notificationsHasMore, setNotificationsHasMore] = useState(false);
+  const [notificationsLoadingMore, setNotificationsLoadingMore] = useState(false);
+  const notificationsRef = useRef([]);
+  notificationsRef.current = notifications;
+
+  const NOTIFICATION_PAGE_SIZE = 20;
+
+  const normalizeNotificationPage = (payload) => {
+    if (Array.isArray(payload)) {
+      return {
+        items: payload.map(toViewNotification),
+        unreadCount: payload.filter((item) => !item.read).length,
+        hasMore: false,
+      };
+    }
+    const items = Array.isArray(payload?.items) ? payload.items.map(toViewNotification) : [];
+    return {
+      items,
+      unreadCount: typeof payload?.unreadCount === 'number'
+        ? payload.unreadCount
+        : items.filter((item) => !item.read).length,
+      hasMore: Boolean(payload?.hasMore),
+    };
+  };
+
+  const refreshNotifications = useCallback(async () => {
+    const payload = await settingsApi.getNotifications({ limit: NOTIFICATION_PAGE_SIZE });
+    const pageData = normalizeNotificationPage(payload);
+    setNotifications(pageData.items);
+    setNotificationUnreadCount(pageData.unreadCount);
+    setNotificationsHasMore(pageData.hasMore);
+  }, []);
 
   useEffect(() => {
-    settingsApi
-      .getNotifications()
-      .then((list) => setNotifications(list.map(toViewNotification)))
-      .catch(() => setNotifications([]));
-  }, []);
+    let active = true;
+    const load = () => {
+      refreshNotifications().catch(() => {
+        if (!active) return;
+        setNotifications([]);
+        setNotificationUnreadCount(0);
+        setNotificationsHasMore(false);
+      });
+    };
+    load();
+    const timer = setInterval(load, IS_DEMO_MODE ? 3000 : 15000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [refreshNotifications]);
 
   useEffect(() => {
     settingsApi
@@ -119,9 +163,55 @@ function App() {
   }, []);
 
   const markAllNotificationsRead = async () => {
-    const updated = await settingsApi.markAllNotificationsRead();
-    if (!updated) return;
-    setNotifications(updated.map(toViewNotification));
+    try {
+      const updated = await settingsApi.markAllNotificationsRead();
+      if (!updated) return;
+      const pageData = normalizeNotificationPage(updated);
+      // mark-all returns the full list; keep the first page in the panel.
+      setNotifications(pageData.items.slice(0, NOTIFICATION_PAGE_SIZE));
+      setNotificationUnreadCount(0);
+      setNotificationsHasMore(pageData.items.length > NOTIFICATION_PAGE_SIZE);
+    } catch {
+      // keep current list on failure
+    }
+  };
+
+  const markNotificationRead = async (id) => {
+    try {
+      const updated = await settingsApi.markNotificationRead(id);
+      if (!updated) return;
+      setNotifications((prev) => prev.map((item) => (
+        item.id === id ? { ...item, read: true } : item
+      )));
+      setNotificationUnreadCount((count) => Math.max(0, count - 1));
+    } catch {
+      // ignore
+    }
+  };
+
+  const loadMoreNotifications = async () => {
+    if (notificationsLoadingMore || !notificationsHasMore) return;
+    const last = notificationsRef.current[notificationsRef.current.length - 1];
+    if (!last?.id) return;
+    setNotificationsLoadingMore(true);
+    try {
+      const payload = await settingsApi.getNotifications({
+        limit: NOTIFICATION_PAGE_SIZE,
+        beforeId: last.id,
+      });
+      const pageData = normalizeNotificationPage(payload);
+      setNotifications((prev) => {
+        const seen = new Set(prev.map((item) => item.id));
+        const appended = pageData.items.filter((item) => !seen.has(item.id));
+        return [...prev, ...appended];
+      });
+      setNotificationUnreadCount(pageData.unreadCount);
+      setNotificationsHasMore(pageData.hasMore);
+    } catch {
+      // ignore
+    } finally {
+      setNotificationsLoadingMore(false);
+    }
   };
   const [todos, setTodos] = useState([]);
   const refreshTodos = async () => {
@@ -130,6 +220,10 @@ function App() {
   };
   useEffect(() => {
     refreshTodos().catch(() => setTodos([]));
+    const timer = setInterval(() => {
+      refreshTodos().catch(() => {});
+    }, 2000);
+    return () => clearInterval(timer);
   }, []);
 
   const toggleTodo = async (id) => {
@@ -220,11 +314,24 @@ function App() {
   useEffect(() => {
     chatApi
       .getConversations()
-      .then((list) => setChatConversations(Array.isArray(list) ? list : []))
+      .then((list) => {
+        const items = Array.isArray(list) ? list : [];
+        // Keep first occurrence per id (guards against accidental duplicate payloads).
+        const seen = new Set();
+        const unique = [];
+        for (const item of items) {
+          if (!item || item.id == null || seen.has(item.id)) continue;
+          seen.add(item.id);
+          unique.push(item);
+        }
+        setChatConversations(unique);
+      })
       .catch(() => setChatConversations([]));
   }, []);
   const [waveTransition, setWaveTransition] = useState(false);
   const bubbleAudioCtxRef = useRef(null);
+  const chatSendingRef = useRef(false);
+  const [chatSending, setChatSending] = useState(false);
   const [chatMode, setChatMode] = useState('page'); // 'page' | 'popup' | 'mini'
   const [prevPage, setPrevPage] = useState('main');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -253,47 +360,52 @@ function App() {
 
   const playBubbleTransitionSound = async () => {
     // Read waveAiSound fresh on every call so setting changes apply immediately
-    const aiSettings = await settingsApi.getAiAgentSettings();
-    if (!aiSettings.waveAiSound) return;
-    if (typeof window === 'undefined') return;
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
+    try {
+      const aiSettings = await settingsApi.getAiAgentSettings();
+      if (!aiSettings.waveAiSound) return;
+      if (typeof window === 'undefined') return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
 
-    if (!bubbleAudioCtxRef.current) {
-      bubbleAudioCtxRef.current = new AudioContextClass();
+      if (!bubbleAudioCtxRef.current) {
+        bubbleAudioCtxRef.current = new AudioContextClass();
+      }
+
+      const ctx = bubbleAudioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+      [0, 0.07, 0.16, 0.25, 0.36].forEach((offset, index) => {
+        const start = now + offset;
+        const duration = 0.11 + index * 0.01;
+        const base = 360 + Math.random() * 260 + index * 34;
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(base, start);
+        oscillator.frequency.exponentialRampToValueAtTime(base * 1.65, start + duration * 0.72);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1800, start);
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.034, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        oscillator.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.02);
+      });
+    } catch {
+      // AudioContext can fail when the output device is unavailable — ignore.
+      bubbleAudioCtxRef.current = null;
     }
-
-    const ctx = bubbleAudioCtxRef.current;
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
-    }
-
-    const now = ctx.currentTime;
-    [0, 0.07, 0.16, 0.25, 0.36].forEach((offset, index) => {
-      const start = now + offset;
-      const duration = 0.11 + index * 0.01;
-      const base = 360 + Math.random() * 260 + index * 34;
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(base, start);
-      oscillator.frequency.exponentialRampToValueAtTime(base * 1.65, start + duration * 0.72);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(1800, start);
-
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.034, start + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-      oscillator.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      oscillator.start(start);
-      oscillator.stop(start + duration + 0.02);
-    });
   };
 
   const mergeChatConversation = (conversation) => {
@@ -396,7 +508,14 @@ function App() {
   };
 
   const sendChatMessage = (text) => {
-    if (!text.trim()) return;
+    if (!text.trim() || chatSendingRef.current) return;
+    chatSendingRef.current = true;
+    setChatSending(true);
+
+    const releaseSendLock = () => {
+      chatSendingRef.current = false;
+      setChatSending(false);
+    };
 
     chatApi.sendMessageStreaming(activeChatId, text.trim(), {
       onEvent: (evt) => {
@@ -445,11 +564,27 @@ function App() {
                             ...m,
                             toolEvents: (() => {
                               const existing = m.toolEvents || [];
-                              const idx = existing.findIndex((t) => t.name === evt.toolEvent.name);
-                              if (idx >= 0) {
-                                return existing.map((t, i) => (i === idx ? evt.toolEvent : t));
+                              const next = evt.toolEvent;
+                              const id = next?.id;
+                              if (id) {
+                                const idx = existing.findIndex((t) => t.id === id);
+                                if (idx >= 0) {
+                                  return existing.map((t, i) => (i === idx ? { ...t, ...next } : t));
+                                }
+                                return [...existing, next];
                               }
-                              return [...existing, evt.toolEvent];
+                              // Legacy (no id): never overwrite a finished row on start —
+                              // append. On end, update the first still-running same name.
+                              if (evt.type === 'tool_start') {
+                                return [...existing, next];
+                              }
+                              const idx = existing.findIndex(
+                                (t) => t.name === next.name && t.status === 'running'
+                              );
+                              if (idx >= 0) {
+                                return existing.map((t, i) => (i === idx ? { ...t, ...next } : t));
+                              }
+                              return [...existing, next];
                             })(),
                           }
                         : m
@@ -515,16 +650,19 @@ function App() {
           );
         }
       },
+      onComplete: releaseSendLock,
+      onError: releaseSendLock,
     });
   };
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState(null);
-  const account = accounts.find((item) => item.id === accountId) || accounts[0] || null;
+  const account = accounts.filter(Boolean).find((item) => item.id === accountId) || accounts.filter(Boolean)[0] || null;
 
   useEffect(() => {
     Promise.all([settingsApi.getSession(), settingsApi.getAccounts()]).then(([session, accountList]) => {
-      setAccounts(accountList);
-      setAccountId(session.activeAccount?.id || accountList[0]?.id || null);
+      const list = (Array.isArray(accountList) ? accountList : []).filter(Boolean);
+      setAccounts(list);
+      setAccountId(session.activeAccount?.id || list[0]?.id || null);
     });
   }, []);
 
@@ -534,11 +672,13 @@ function App() {
   };
   const renameAccount = async (id, name) => {
     const updated = await settingsApi.updateAccount(id, { name });
-    setAccounts((current) => current.map((item) => (item.id === id ? updated : item)));
+    if (!updated) return;
+    setAccounts((current) => current.map((item) => (item?.id === id ? updated : item)).filter(Boolean));
   };
   const addAccount = async (name) => {
     const created = await settingsApi.createAccount({ name });
-    setAccounts((current) => [...current, created]);
+    if (!created) return;
+    setAccounts((current) => [...current.filter(Boolean), created]);
   };
 
   const today = useMemo(
@@ -582,6 +722,7 @@ function App() {
           onDeleteConv={deleteChatConversation}
           onRenameConv={renameChatConversation}
           onSendMessage={sendChatMessage}
+          chatSending={chatSending}
           onExpand={handleExpandChat}
           onMini={handleMiniChat}
           onClose={handleClosePopupChat}
@@ -624,7 +765,12 @@ function App() {
           onToggleNotifications={() => setShowNotifications((value) => !value)}
           onCloseNotifications={() => setShowNotifications(false)}
           notifications={notifications}
+          notificationUnreadCount={notificationUnreadCount}
+          notificationsHasMore={notificationsHasMore}
+          notificationsLoadingMore={notificationsLoadingMore}
+          onLoadMoreNotifications={loadMoreNotifications}
           onMarkAllNotificationsRead={markAllNotificationsRead}
+          onMarkNotificationRead={markNotificationRead}
           accounts={accounts}
           account={account}
           onSwitchAccount={switchAccount}
@@ -684,6 +830,7 @@ function App() {
               onDeleteConv={deleteChatConversation}
               onRenameConv={renameChatConversation}
               onSendMessage={sendChatMessage}
+              chatSending={chatSending}
               onShrink={isMobileLayout ? undefined : handleShrinkChat}
               waveTransition={waveTransition}
               sidebarWidth={sidebarCollapsed ? 76 : 263}

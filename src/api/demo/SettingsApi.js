@@ -20,7 +20,6 @@ const GuardedSettingsApi = withDemoWriteGuard(MockSettingsApi, [
   'updateAiAgentSettings',
   'updateSleepConfig',
   'updateGeneralSettings',
-  'markAllNotificationsRead',
 ]);
 
 export class SettingsApi extends GuardedSettingsApi {
@@ -38,5 +37,17 @@ export class SettingsApi extends GuardedSettingsApi {
 
   getSleepConfig() {
     return realSettingsApi.getSleepConfig();
+  }
+
+  getNotifications(params) {
+    return realSettingsApi.getNotifications(params);
+  }
+
+  markAllNotificationsRead() {
+    return realSettingsApi.markAllNotificationsRead();
+  }
+
+  markNotificationRead(notificationId) {
+    return realSettingsApi.markNotificationRead(notificationId);
   }
 }

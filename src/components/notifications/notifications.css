@@ -13,6 +13,24 @@
   animation: notifications-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.notification-read-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.notification-read-link:hover {
+  color: #64748b;
+  text-decoration: underline;
+}
+
 @keyframes notifications-panel-in {
   from { opacity: 0; transform: translateY(-10px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }

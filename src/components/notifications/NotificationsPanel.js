@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from 'react';
 import './notifications.css';
 
 export function CheckCheckIcon() {
@@ -57,8 +58,34 @@ export function NotificationTypeIcon({ type }) {
   );
 }
 
-export function NotificationsPanel({ notifications, onMarkAllRead, onClose }) {
-  const unreadCount = notifications.filter((item) => !item.read).length;
+export function NotificationsPanel({
+  notifications,
+  unreadCount,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  onMarkAllRead,
+  onMarkRead,
+  onClose,
+}) {
+  const listRef = useRef(null);
+  const loadingRef = useRef(false);
+  loadingRef.current = loadingMore;
+
+  const handleScroll = useCallback(() => {
+    const el = listRef.current;
+    if (!el || !hasMore || loadingRef.current) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+      onLoadMore?.();
+    }
+  }, [hasMore, onLoadMore]);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return undefined;
+    el.addEventListener('scroll', handleScroll);
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   return (
     <>
@@ -94,9 +121,9 @@ export function NotificationsPanel({ notifications, onMarkAllRead, onClose }) {
             </button>
           </div>
         </div>
-        <div className="max-h-80 overflow-y-auto">
+        <div className="notifications-list max-h-80 overflow-y-auto" ref={listRef}>
           {notifications.map((item) => (
-            <div className="flex items-start gap-3 border-b py-3 last:border-b-0" style={{ borderColor: 'var(--line)' }} key={item.id}>
+            <div className="notification-card flex items-start gap-3 border-b py-3 last:border-b-0" style={{ borderColor: 'var(--line)' }} key={item.id}>
               <div className="relative mt-0.5 shrink-0">
                 <div
                   className="flex h-8 w-8 items-center justify-center rounded-xl"
@@ -108,14 +135,34 @@ export function NotificationsPanel({ notifications, onMarkAllRead, onClose }) {
                   <div className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full" style={{ background: 'var(--danger)' }} />
                 )}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className={`text-xs leading-snug ${item.read ? '' : 'font-semibold'}`} style={{ color: 'var(--ink)' }}>
                   {item.msg}
                 </p>
-                <p className="mt-0.5 text-[10px]" style={{ color: 'var(--sub)' }}>{item.time}</p>
+                <div className="mt-1 flex items-end justify-between gap-2">
+                  <p className="text-[10px]" style={{ color: 'var(--sub)' }}>{item.time}</p>
+                  {!item.read && (
+                    <button
+                      type="button"
+                      className="notification-read-link"
+                      onClick={() => onMarkRead?.(item.id)}
+                    >
+                      읽기
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
+          {notifications.length === 0 && (
+            <p className="py-6 text-center text-xs" style={{ color: 'var(--sub)' }}>알림이 없습니다.</p>
+          )}
+          {loadingMore && (
+            <p className="py-2 text-center text-[10px]" style={{ color: 'var(--sub)' }}>불러오는 중…</p>
+          )}
+          {!hasMore && notifications.length > 0 && (
+            <p className="py-2 text-center text-[10px]" style={{ color: 'var(--sub)' }}>모든 알림을 불러왔습니다.</p>
+          )}
         </div>
       </div>
     </>
