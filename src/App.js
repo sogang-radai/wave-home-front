@@ -604,7 +604,6 @@ function App() {
         today={today}
         collapsed={sidebarCollapsed}
         onCollapsedChange={setSidebarCollapsed}
-        onUnlockDevMenu={() => setShowDevSettings(true)}
         isDemoMode={IS_DEMO_MODE}
         mobileOpen={mobileNavOpen}
         onMobileClose={() => setMobileNavOpen(false)}
@@ -673,6 +672,7 @@ function App() {
               category={settingCategory}
               setCategory={setSettingCategory}
               showDevSettings={showDevSettings}
+              onUnlockDevMenu={() => setShowDevSettings(true)}
             />
           )}
           {page === 'chat' && chatMode === 'page' && (

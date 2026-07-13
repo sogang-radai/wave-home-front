@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useState } from 'react';
 import './layout.css';
 import logo from '../../img/logo_dark.png';
 import { pages } from '../../data/appData';
@@ -128,7 +128,6 @@ export function Sidebar({
   today,
   collapsed,
   onCollapsedChange,
-  onUnlockDevMenu,
   isDemoMode = false,
   mobileOpen = false,
   onMobileClose,
@@ -136,19 +135,6 @@ export function Sidebar({
   account,
   onSwitchAccount,
 }) {
-  // Five rapid clicks on the logo unlocks the hidden developer menu. State resets on page refresh.
-  const devClickRef = useRef({ count: 0, last: 0 });
-  const handleLogoClick = () => {
-    const now = Date.now();
-    const state = devClickRef.current;
-    state.count = now - state.last < 400 ? state.count + 1 : 1;
-    state.last = now;
-    if (state.count >= 5) {
-      state.count = 0;
-      onUnlockDevMenu?.();
-    }
-  };
-
   const isMobile = useMobileLayout();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
 
@@ -171,9 +157,14 @@ export function Sidebar({
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="brand">
-        <div className="brand-mark dev-unlock-target" onClick={handleLogoClick}>
-          <img src={logo} alt="WaveHome" />
-        </div>
+        <button
+          type="button"
+          className="brand-mark brand-mark--home"
+          aria-label="대시보드로 이동"
+          onClick={() => handleSelect('main')}
+        >
+          <img src={logo} alt="" />
+        </button>
         <div className="brand-text">
           <strong>WaveHome</strong>
           <span>Your Lifestyle Agent</span>
@@ -199,7 +190,12 @@ export function Sidebar({
               title={collapsed ? item.label : undefined}
             >
               <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
-              <span className="nav-label">{item.label}</span>
+              <span className="nav-label">
+                {item.label}
+                {item.id === 'homeTwin' && isDemoMode && (
+                  <span className="nav-demo-tag">demo</span>
+                )}
+              </span>
               {page === item.id && <i />}
             </button>
           </Fragment>
@@ -224,7 +220,7 @@ export function Sidebar({
             </button>
             {showAccountMenu && (
               <div className="sidebar-account-menu">
-                {accounts.map((item) => (
+                {accounts.filter(Boolean).map((item) => (
                   <button
                     type="button"
                     key={item.id}
@@ -235,7 +231,7 @@ export function Sidebar({
                       onMobileClose?.();
                     }}
                   >
-                    <span className="mini-avatar">{item.name.charAt(0)}</span>
+                    <span className="mini-avatar">{item.name?.charAt(0) || '?'}</span>
                     <span className="profile-text">
                       <strong>{item.name}</strong>
                     </span>

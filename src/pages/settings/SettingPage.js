@@ -9,6 +9,8 @@ import { GeneralSettings } from './GeneralSettings';
 import { AiAgentSettings } from './AiAgentSettings';
 import { AboutSettings } from './AboutSettings';
 import { SleepSettings } from './SleepSettings';
+import { DeveloperSettings } from './DeveloperSettings';
+import { API_MODE } from '../../api/config';
 
 const settingCategories = [
   { id: 'general', label: '일반', desc: '기본 UI와 시스템 환경' },
@@ -21,6 +23,7 @@ const settingCategories = [
 ];
 
 const devCategory = { id: 'dev', label: '개발자', desc: '개발자 전용 도구' };
+const IS_REAL_API = API_MODE === 'real';
 
 export function SettingPage({
   accounts,
@@ -32,6 +35,7 @@ export function SettingPage({
   category,
   setCategory,
   showDevSettings = false,
+  onUnlockDevMenu,
 }) {
   const [rooms, setRooms] = useState([]);
 
@@ -81,12 +85,18 @@ export function SettingPage({
           {category === 'rooms' && <RoomZoneSettings heading={activeLabel} rooms={rooms} setRooms={setRooms} accounts={accounts} />}
           {category === 'ai' && <AiAgentSettings heading={activeLabel} />}
           {category === 'sleep' && <SleepSettings />}
-          {category === 'info' && <AboutSettings heading={activeLabel} />}
+          {category === 'info' && (
+            <AboutSettings heading={activeLabel} onUnlockDevMenu={onUnlockDevMenu} />
+          )}
           {category === 'dev' && showDevSettings && (
-            <section className="settings-panel card">
-              <h2 className="settings-tab-heading">{activeLabel}</h2>
-              <p className="settings-panel-desc">개발자 전용 메뉴입니다. 준비 중입니다.</p>
-            </section>
+            IS_REAL_API ? (
+              <DeveloperSettings heading={activeLabel} />
+            ) : (
+              <section className="settings-panel card">
+                <h2 className="settings-tab-heading">{activeLabel}</h2>
+                <p className="settings-panel-desc">개발자 전용 메뉴입니다. 준비 중입니다.</p>
+              </section>
+            )
           )}
         </div>
       </div>

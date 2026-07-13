@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { SettingsPanel, SettingsSection } from './SettingsUI';
 
 // Frontend open-source libraries from package.json dependencies / devDependencies.
@@ -6,6 +7,9 @@ const frontendLibraries = [
   { name: 'React DOM', version: '19.2.7', license: 'MIT' },
   { name: 'Recharts', version: '3.9.0', license: 'MIT' },
   { name: '@iconify/react', version: '6.0.2', license: 'MIT' },
+  { name: 'three', version: '0.185.1', license: 'MIT' },
+  { name: '@react-three/fiber', version: '9.6.1', license: 'MIT' },
+  { name: '@react-three/drei', version: '10.7.7', license: 'MIT' },
   { name: 'web-vitals', version: '2.1.4', license: 'Apache-2.0' },
   { name: 'react-scripts (CRA)', version: '5.0.1', license: 'MIT' },
   { name: 'Tailwind CSS', version: '3.4.19', license: 'MIT' },
@@ -36,6 +40,21 @@ const serverLibraries = [
   { name: 'libopus', version: '1.5.x', license: 'BSD-3-Clause' },
 ];
 
+// Agent server (Python) libraries from wave-home-agent/requirements.txt.
+const agentLibraries = [
+  { name: 'FastAPI', version: '0.115+', license: 'MIT' },
+  { name: 'Uvicorn', version: '0.30+', license: 'BSD-3-Clause' },
+  { name: 'Pydantic', version: '2.8+', license: 'MIT' },
+  { name: 'pydantic-settings', version: '2.4+', license: 'MIT' },
+  { name: 'httpx', version: '0.27+', license: 'BSD-3-Clause' },
+  { name: 'LangGraph', version: '1.0+', license: 'MIT' },
+  { name: 'LangChain Core', version: '1.4+', license: 'MIT' },
+  { name: 'langchain-google-genai', version: '3.1+', license: 'MIT' },
+  { name: 'langchain-openai', version: '1.0+', license: 'MIT' },
+  { name: 'python-dotenv', version: '1.0+', license: 'BSD-3-Clause' },
+  { name: 'urllib3', version: '1.26+', license: 'MIT' },
+];
+
 const termsOfService = [
   '본 약관은 WaveHome 서비스(이하 "서비스")의 이용 조건과 절차, 이용자와 제공자의 권리·의무 및 책임 사항을 규정합니다.',
   '이용자는 서비스를 통해 제공되는 가정 내 장치 제어 및 건강 관리 기능을 개인적·비상업적 목적으로 이용할 수 있습니다.',
@@ -52,12 +71,31 @@ const privacyPolicy = [
   '개인정보는 이용 목적이 달성되거나 이용자가 삭제를 요청한 경우 지체 없이 파기됩니다.',
 ];
 
-export function AboutSettings({ heading }) {
+export function AboutSettings({ heading, onUnlockDevMenu }) {
+  // Five rapid clicks on the Software card unlocks developer settings.
+  // Intentionally looks non-interactive (default cursor, no hover affordance).
+  const devClickRef = useRef({ count: 0, last: 0 });
+
+  const handleSoftwareCardClick = () => {
+    if (!onUnlockDevMenu) return;
+    const now = Date.now();
+    const state = devClickRef.current;
+    state.count = now - state.last < 400 ? state.count + 1 : 1;
+    state.last = now;
+    if (state.count >= 5) {
+      state.count = 0;
+      onUnlockDevMenu();
+    }
+  };
+
   return (
     <SettingsPanel heading={heading} description="소프트웨어 정보와 이용약관, 오픈소스 라이선스를 확인합니다.">
       <SettingsSection title="소프트웨어">
         <div className="device-detail-grid">
-          <div className="device-detail-line">
+          <div
+            className="device-detail-line about-dev-unlock"
+            onClick={handleSoftwareCardClick}
+          >
             <span>소프트웨어</span>
             <strong>WaveHome</strong>
           </div>
@@ -109,6 +147,17 @@ export function AboutSettings({ heading }) {
       <SettingsSection title="오픈소스 라이선스 (백엔드 서버)">
         <div className="about-oss-list">
           {serverLibraries.map((lib) => (
+            <div className="about-oss-row" key={lib.name}>
+              <strong>{lib.name}</strong>
+              <span>v{lib.version} · {lib.license}</span>
+            </div>
+          ))}
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="오픈소스 라이선스 (에이전트 서버)">
+        <div className="about-oss-list">
+          {agentLibraries.map((lib) => (
             <div className="about-oss-row" key={lib.name}>
               <strong>{lib.name}</strong>
               <span>v{lib.version} · {lib.license}</span>
