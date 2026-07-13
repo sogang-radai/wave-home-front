@@ -45,20 +45,6 @@ function addDays(dateValue, days) {
   return formatDate(date);
 }
 
-function isMonday(dateValue) {
-  const date = parseDateParts(dateValue);
-  if (!date) return false;
-  return date.getUTCDay() === 1;
-}
-
-function getMondayOfWeek(dateValue) {
-  const date = parseDateParts(dateValue);
-  const day = date.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setUTCDate(date.getUTCDate() + diff);
-  return formatDate(date);
-}
-
 function validateDateParam(date) {
   if (date !== undefined && !parseDateParts(date)) {
     throw apiError(400, 'INVALID_DATE', 'date는 YYYY-MM-DD 형식이어야 합니다.');

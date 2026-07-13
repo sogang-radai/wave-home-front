@@ -10,7 +10,7 @@
 }
 
 .sleep-report-skeleton {
-  min-height: 280px;
+  min-height: 300px;
   border-radius: 20px;
   background: linear-gradient(
     90deg,
@@ -24,7 +24,7 @@
 
 .sleep-report-skeleton.is-fill {
   height: 100%;
-  min-height: 280px;
+  min-height: 300px;
 }
 
 .sleep-report-viewport.is-locked .sleep-report-skeleton.is-fill {
@@ -38,7 +38,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 280px;
+  min-height: 300px;
   padding: 32px 24px;
   border-radius: 20px;
   border: 1px dashed var(--line);
@@ -287,9 +287,9 @@
   font-style: normal;
 }
 
-.tag.good { background: var(--good-18); color: var(--good-text); }
+.tag.good { background: var(--wave-20); color: var(--excellent-text); }
 .tag.attention { background: var(--warn-20); color: var(--warn-text); }
-.tag.excellent { background: var(--wave-20); color: var(--excellent-text); }
+.tag.excellent { background: var(--good-18); color: var(--good-text); }
 .tag.danger { background: var(--danger-18); color: var(--danger-strong); }
 
 .sleep-plan-settings-btn {
@@ -947,4 +947,15 @@
     margin: 2px 0;
     font-size: 20px;
   }
+}
+
+.sleep-card-title-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sleep-card-title-with-info .info-tooltip-bubble {
+  left: 0;
+  transform: none;
 }
