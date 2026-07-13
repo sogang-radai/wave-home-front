@@ -1,10 +1,8 @@
-import PinnedCategorySection, {
-  CategoryCard,
-} from "@/components/PinnedCategorySection";
-import ChatBubbles from "@/components/mockups/ChatBubbles";
-import ListRows from "@/components/mockups/ListRows";
+import PinnedCategorySection from "../PinnedCategorySection";
+import ChatBubbles from "../mockups/ChatBubbles";
+import ListRows from "../mockups/ListRows";
 
-const cards: CategoryCard[] = [
+const cards = [
   {
     eyebrow: "인사이트 챗",
     title: "오늘 데이터를 바로 물어보는 사이드 패널",
@@ -42,24 +40,25 @@ const cards: CategoryCard[] = [
     media: (
       <ListRows
         rows={[
-          { label: "\"거실 조명 꺼줘\"", meta: "실행됨", tone: "wave" },
-          { label: "\"에어컨 24도로 맞춰줘\"", meta: "실행됨", tone: "wave" },
-          { label: "\"외출 모드 켜줘\"", meta: "실행됨", tone: "wave" },
+          { label: '"거실 조명 꺼줘"', meta: "실행됨", tone: "wave" },
+          { label: '"에어컨 24도로 맞춰줘"', meta: "실행됨", tone: "wave" },
+          { label: '"외출 모드 켜줘"', meta: "실행됨", tone: "wave" },
         ]}
       />
     ),
   },
 ];
 
-export default function WaveAISection() {
+export default function WaveAISection({ onEnter }) {
   return (
     <PinnedCategorySection
       id="waveai"
       index={1}
-      eyebrow="AI Agent"
+      eyebrow="WaveAI"
       title="멀티 에이전트 WaveAI"
       description="사이드 패널에서 오늘의 수면·심박·라이프스타일 데이터를 바로 물어보고, 권장 액션을 승인만 하면 실행까지 이어집니다."
       cards={cards}
+      onEnter={onEnter}
       overlapPrevious
     />
   );

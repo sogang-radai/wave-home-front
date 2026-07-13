@@ -1,37 +1,26 @@
-"use client";
-
 import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { Application, Particle, ParticleContainer, Texture } from "pixi.js";
+import background from "../background.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const LINE1 = "Introducing WaveHome";
 const LINE2 = "Your Personalized Lifestyle AI Agent";
-const LINE3 = "Private. Effortless. Sustainable.";
+const LINE3 = "Private.  Effortless.  Sustainable.";
 
-const SKY_TINT = 0x95d9f8;
 const WHITE_TINT = 0xffffff;
-
-type ParticleRig = {
-  particle: Particle;
-  baseX: number;
-  baseY: number;
-  vx: number;
-  vy: number;
-  vr: number;
-};
 
 // Same bubble motif as the FloatingBubbles used elsewhere on the site (soft
 // tinted body + thin rim + a bright highlight glint), baked once into a
 // small canvas and reused as the single shared particle texture.
-function createBubbleTexture(size = 64): HTMLCanvasElement {
+function createBubbleTexture(size = 64) {
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
   const cx = size / 2;
   const cy = size / 2;
   const r = size / 2 - 3;
@@ -66,41 +55,24 @@ function createBubbleTexture(size = 64): HTMLCanvasElement {
 }
 
 export default function ValuePropSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const line1Ref = useRef<HTMLDivElement>(null);
-  const line2Ref = useRef<HTMLHeadingElement>(null);
-  const line3Ref = useRef<HTMLParagraphElement>(null);
-  const shatterMountRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef(null);
+  const panelRef = useRef(null);
+  const line1Ref = useRef(null);
+  const line2Ref = useRef(null);
+  const line3Ref = useRef(null);
+  const shatterMountRef = useRef(null);
+  const overlayRef = useRef(null);
 
   useGSAP(
     () => {
-      const sectionMaybeNull = sectionRef.current;
-      const panelMaybeNull = panelRef.current;
-      const line1MaybeNull = line1Ref.current;
-      const line2MaybeNull = line2Ref.current;
-      const line3MaybeNull = line3Ref.current;
-      const shatterMountMaybeNull = shatterMountRef.current;
-      const overlayMaybeNull = overlayRef.current;
-      if (
-        !sectionMaybeNull ||
-        !panelMaybeNull ||
-        !line1MaybeNull ||
-        !line2MaybeNull ||
-        !line3MaybeNull ||
-        !shatterMountMaybeNull ||
-        !overlayMaybeNull
-      ) {
-        return;
-      }
-      const section: HTMLElement = sectionMaybeNull;
-      const panel: HTMLDivElement = panelMaybeNull;
-      const line1: HTMLDivElement = line1MaybeNull;
-      const line2: HTMLHeadingElement = line2MaybeNull;
-      const line3: HTMLParagraphElement = line3MaybeNull;
-      const shatterMount: HTMLDivElement = shatterMountMaybeNull;
-      const overlay: HTMLDivElement = overlayMaybeNull;
+      const section = sectionRef.current;
+      const panel = panelRef.current;
+      const line1 = line1Ref.current;
+      const line2 = line2Ref.current;
+      const line3 = line3Ref.current;
+      const shatterMount = shatterMountRef.current;
+      const overlay = overlayRef.current;
+      if (!section || !panel || !line1 || !line2 || !line3 || !shatterMount || !overlay) return;
 
       // Capture the headline's resting geometry before any transform is
       // applied to it, so the particle rig lines up with where the text
@@ -113,8 +85,8 @@ export default function ValuePropSection() {
       gsap.set(line3, { opacity: 0, y: 12 });
 
       const shatterState = { progress: 0 };
-      const rig: ParticleRig[] = [];
-      let app: Application | null = null;
+      const rig = [];
+      let app = null;
       let destroyed = false;
 
       async function buildShatter() {
@@ -185,7 +157,7 @@ export default function ValuePropSection() {
               scaleX: scale,
               scaleY: scale,
               alpha: 1,
-              tint: rig.length % 2 === 0 ? SKY_TINT : WHITE_TINT,
+              tint: WHITE_TINT,
             });
             container.addParticle(particle);
 
@@ -222,15 +194,19 @@ export default function ValuePropSection() {
           trigger: section,
           start: "top top",
           end: "+=70%",
-          // Low smoothing: with a big scrub value the tweened values lag
-          // behind the raw scroll position, so the pin can release (which
-          // is tied to raw scroll distance, not to the tween) before the
-          // animation has actually finished catching up — that gap read as
-          // a blank hold. Keeping this small keeps the two in lockstep.
           scrub: 0.2,
           pin: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          // This section keeps its own z-10 stacking even after the pin
+          // releases, so once it unpins it would otherwise stay on top of
+          // WaveAISection (z-index: auto) while it scrolls itself off —
+          // a full viewport's worth of extra scroll — slowly uncovering
+          // WaveAISection's background from the bottom up instead of
+          // revealing it instantly. Hiding this section the moment it's
+          // left/re-entered makes the swap the instant cut it's meant to be.
+          onLeave: () => gsap.set(section, { autoAlpha: 0 }),
+          onEnterBack: () => gsap.set(section, { autoAlpha: 1 }),
         },
       });
 
@@ -265,14 +241,26 @@ export default function ValuePropSection() {
     <section
       ref={sectionRef}
       id="intro"
-      className="relative h-screen overflow-hidden bg-background"
+      className="relative z-10 h-screen overflow-hidden bg-background"
     >
       <div ref={panelRef} className="absolute inset-0 z-10 flex items-center">
         <div
           className="absolute inset-0"
           style={{
+            backgroundImage: `url(${background})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        {/* Scrim: pulls contrast back toward the copy (left/center) while
+            leaving the artwork bright toward the right edge, and settles
+            the top/bottom into the section's own background color. */}
+        <div
+          className="absolute inset-0"
+          style={{
             background:
-              "radial-gradient(ellipse 100% 85% at 50% 40%, rgba(149,217,248,0.6), rgba(149,217,248,0.16) 55%, transparent 80%), radial-gradient(ellipse 70% 70% at 50% 105%, rgba(14,72,98,0.3), transparent 70%), linear-gradient(160deg, #05070a 0%, #1c3f57 55%, #05070a 100%)",
+              "linear-gradient(to right, rgba(3,10,18,0.75) 0%, rgba(3,10,18,0.55) 38%, rgba(3,10,18,0.18) 62%, rgba(3,10,18,0) 82%)," +
+              "linear-gradient(to bottom, rgba(2,6,12,0.4) 0%, rgba(2,6,12,0) 24%, rgba(2,6,12,0) 76%, rgba(2,6,12,0.5) 100%)",
           }}
         />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -280,19 +268,19 @@ export default function ValuePropSection() {
         <div className="relative z-10 mx-auto w-full max-w-6xl px-6 lg:px-10">
           <div
             ref={line1Ref}
-            className="text-sm font-semibold uppercase tracking-[0.28em] text-white/80 sm:text-base"
+            className="font-geist text-[13px] font-semibold uppercase tracking-[0.2em] text-wave-light"
           >
             {LINE1}
           </div>
           <h2
             ref={line2Ref}
-            className="mt-4 text-[48px] font-semibold leading-[1.02] tracking-tight text-white sm:text-[84px] lg:text-[126px]"
+            className="mt-4 text-[40px] font-semibold leading-[0.98] tracking-tight text-white sm:text-[64px] lg:text-[92px]"
           >
             {LINE2}
           </h2>
           <p
             ref={line3Ref}
-            className="mt-6 max-w-xl text-lg text-white/75 sm:text-xl"
+            className="font-geist tracking-[0.08em] mt-6 max-w-xl text-xl text-white/85 sm:text-2xl"
           >
             {LINE3}
           </p>

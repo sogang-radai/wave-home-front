@@ -1,0 +1,165 @@
+/* Scoped reset for the landing page only. The dashboard app runs Tailwind
+   with corePlugins.preflight disabled, so headings/lists/buttons keep their
+   native browser styling by default — the landing components assume the
+   zeroed-out baseline Tailwind's preflight normally provides. Everything
+   here is wrapped in :where() so it carries zero specificity and never
+   fights a Tailwind utility class applied to the same element. */
+:where(.landing-page) {
+  overflow-x: hidden;
+}
+
+:where(.landing-page) :where(h1, h2, h3, p, ul) {
+  margin: 0;
+  padding: 0;
+}
+
+:where(.landing-page) :where(ul) {
+  list-style: none;
+}
+
+:where(.landing-page) :where(button) {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+:where(.landing-page) :where(a) {
+  text-decoration: none;
+  color: inherit;
+}
+
+:where(.landing-page *),
+:where(.landing-page *::before),
+:where(.landing-page *::after) {
+  box-sizing: border-box;
+}
+
+.landing-page section[id] {
+  scroll-margin-top: 88px;
+}
+
+.landing-page ::selection {
+  background: #95d9f8;
+  color: #05070a;
+}
+
+.landing-page .text-balance {
+  text-wrap: balance;
+}
+
+.landing-page .hero-sparkle {
+  position: absolute;
+  z-index: 2;
+  animation: wh-twinkle 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes wh-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.landing-page .chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: wh-chart-draw 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    wh-chart-pulse 3.8s ease-in-out 1.45s infinite;
+}
+
+.landing-page .chart-area {
+  opacity: 0;
+  animation: wh-chart-area 1.1s ease-out 0.35s forwards;
+}
+
+.landing-page .score-ring {
+  animation: wh-score-fill 1.35s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    wh-score-glow 3.6s ease-in-out 1.35s infinite;
+  stroke-dashoffset: var(--score-length);
+}
+
+@keyframes wh-chart-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes wh-chart-area {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wh-chart-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(149, 217, 248, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(149, 217, 248, 0.36));
+  }
+}
+
+@keyframes wh-score-fill {
+  to {
+    stroke-dashoffset: var(--score-offset);
+  }
+}
+
+@keyframes wh-score-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(149, 217, 248, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(149, 217, 248, 0.42));
+  }
+}
+
+@keyframes wh-float-bubble {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: var(--bubble-opacity-min, 0.3);
+  }
+  25% {
+    transform: translate3d(14px, -26px, 0) scale(1.08);
+    opacity: var(--bubble-opacity-max, 0.55);
+  }
+  50% {
+    transform: translate3d(-6px, -48px, 0) scale(0.96);
+    opacity: var(--bubble-opacity-min, 0.3);
+  }
+  75% {
+    transform: translate3d(-18px, -22px, 0) scale(1.1);
+    opacity: var(--bubble-opacity-max, 0.55);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: var(--bubble-opacity-min, 0.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *,
+  .landing-page *::before,
+  .landing-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

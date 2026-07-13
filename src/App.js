@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
+import LandingPage from './landing/LandingPage';
 import { pageTitles } from './data/appData';
 import chatApi from './api/chatApi';
 import settingsApi from './api/settingsApi';
@@ -80,6 +81,7 @@ function toViewTodo(task) {
 }
 
 function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const [page, setPage] = useState('main');
   const [postureTab, setPostureTab] = useState('current');
   const [homeTab, setHomeTab] = useState('control');
@@ -549,6 +551,10 @@ function App() {
       }).format(getNow()),
     [],
   );
+
+  if (showLanding) {
+    return <LandingPage onEnter={() => setShowLanding(false)} />;
+  }
 
   if (!account) {
     return <div className="app-shell" />;

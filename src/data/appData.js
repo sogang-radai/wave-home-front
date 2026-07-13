@@ -1,13 +1,13 @@
 export const pages = [
   { id: 'main', label: '대시보드', icon: 'dashboard' },
   { id: 'chat', label: 'WaveAI', icon: 'waveai' },
-  { id: 'homeTwin', label: '디지털 트윈홈', icon: 'homeTwin' },
-  { id: 'weeklyPlan', label: '주간 계획', icon: 'calendar' },
-  { id: 'alarm', label: '스마트 알람', icon: 'alarm' },
   { id: 'sleep', label: '수면 관리', icon: 'moon' },
   { id: 'posture', label: '자세 관리', icon: 'posture' },
-  { id: 'power', label: '전력 관리', icon: 'lightning' },
+  { id: 'weeklyPlan', label: '주간 계획', icon: 'calendar' },
+  { id: 'alarm', label: '스마트 알람', icon: 'alarm' },
+  { id: 'homeTwin', label: '디지털 트윈홈', icon: 'homeTwin' },
   { id: 'home', label: '가전 제어', icon: 'remote' },
+  { id: 'power', label: '전력 관리', icon: 'lightning' },
 ];
 
 export const pageTitles = {

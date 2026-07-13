@@ -1,21 +1,11 @@
-"use client";
-
-import { ReactNode, useRef } from "react";
-import { motion, Variants } from "framer-motion";
+import { useRef } from "react";
+import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { ArrowUpRight } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
-
-export type CategoryCard = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  bullets?: string[];
-  media: ReactNode;
-};
 
 const BUBBLES = Array.from({ length: 15 }, (_, i) => {
   const seed = i * 12.9898;
@@ -45,7 +35,7 @@ function FloatingBubbles() {
               border: `1px solid rgba(${tint},0.35)`,
               boxShadow: `inset 0 0 ${Math.max(4, b.size * 0.3)}px rgba(${tint},0.2)`,
               background: `radial-gradient(circle at 30% 26%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 32%), radial-gradient(circle at 50% 50%, rgba(${tint},0.28) 0%, rgba(${tint},0.06) 65%, rgba(${tint},0) 82%)`,
-              animation: `float-bubble ${b.duration}s ease-in-out ${b.delay}s infinite`,
+              animation: `wh-float-bubble ${b.duration}s ease-in-out ${b.delay}s infinite`,
             }}
           />
         );
@@ -61,20 +51,13 @@ export default function PinnedCategorySection({
   title,
   description,
   cards,
+  onEnter,
   overlapPrevious = false,
-}: {
-  id: string;
-  index: number;
-  eyebrow: string;
-  title: string;
-  description: string;
-  cards: CategoryCard[];
-  overlapPrevious?: boolean;
 }) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const copyRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef(null);
+  const trackRef = useRef(null);
+  const copyRef = useRef(null);
+  const stageRef = useRef(null);
 
   useGSAP(
     () => {
@@ -84,9 +67,9 @@ export default function PinnedCategorySection({
       const stage = stageRef.current;
       if (!track || !section || !copy || !stage) return;
 
-      const lines = gsap.utils.toArray<HTMLElement>("[data-reveal]", section);
-      const eyebrowEl = section.querySelector<HTMLElement>("[data-eyebrow]");
-      const descEl = section.querySelector<HTMLElement>("[data-desc]");
+      const lines = gsap.utils.toArray("[data-reveal]", section);
+      const eyebrowEl = section.querySelector("[data-eyebrow]");
+      const descEl = section.querySelector("[data-desc]");
 
       // Whole copy block reveal (eyebrow -> title lines -> description) —
       // same on every breakpoint, independent of the desktop-only pin/scrub
@@ -119,17 +102,20 @@ export default function PinnedCategorySection({
 
       mm.add("(min-width: 1024px)", () => {
         const distance = Math.max(
-          track.scrollWidth - track.parentElement!.clientWidth,
+          track.scrollWidth - track.parentElement.clientWidth,
           0
         );
         if (distance <= 0) return;
 
-        const cards = gsap.utils.toArray<HTMLElement>("[data-card]", section);
+        const cards = gsap.utils.toArray("[data-card]", section);
+        const introHold = 0.32;
+        const slideStart = introHold;
+        const slideEnd = 1;
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
             start: "top top",
-            end: () => `+=${distance + window.innerHeight * 0.9}`,
+            end: () => `+=${distance + window.innerHeight * 1.25}`,
             scrub: 0.75,
             pin: true,
             anticipatePin: 1,
@@ -146,8 +132,9 @@ export default function PinnedCategorySection({
         });
         gsap.set(cards[0], { opacity: 1, scale: 1, rotateY: 0 });
 
-        tl.to(copy, { yPercent: -8, ease: "none" }, 0)
-          .to(track, { x: -distance, ease: "none", duration: 1 }, 0.12)
+        tl.to(copy, { yPercent: -8, ease: "none", duration: 1 }, 0)
+          .to(track, { x: 0, ease: "none", duration: introHold }, 0)
+          .to(track, { x: -distance, ease: "none", duration: slideEnd - slideStart }, slideStart)
           .to(
             cards,
             {
@@ -158,7 +145,7 @@ export default function PinnedCategorySection({
               ease: "power2.out",
               duration: 0.32,
             },
-            0.14
+            slideStart + 0.02
           )
           .to(
             cards,
@@ -170,7 +157,7 @@ export default function PinnedCategorySection({
               ease: "power2.inOut",
               duration: 0.32,
             },
-            0.58
+            slideStart + 0.46
           );
 
         return () => {
@@ -180,7 +167,7 @@ export default function PinnedCategorySection({
       });
 
       mm.add("(max-width: 1023px)", () => {
-        const cards = gsap.utils.toArray<HTMLElement>("[data-card]", section);
+        const cards = gsap.utils.toArray("[data-card]", section);
         gsap.from(cards, {
           y: 34,
           opacity: 0,
@@ -246,7 +233,7 @@ export default function PinnedCategorySection({
             className="flex w-max gap-5 pb-4 lg:pb-0 lg:will-change-transform"
           >
             {cards.map((card) => (
-              <Card key={card.title} card={card} />
+              <Card key={card.title} card={card} onEnter={onEnter} />
             ))}
             <div className="w-1 shrink-0 lg:w-24" aria-hidden />
           </div>
@@ -256,24 +243,24 @@ export default function PinnedCategorySection({
   );
 }
 
-const cardContentVariants: Variants = {
+const cardContentVariants = {
   hidden: {},
   show: {
     transition: { staggerChildren: 0.08, delayChildren: 0.08 },
   },
 };
 
-const itemVariants: Variants = {
+const itemVariants = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
-const bulletVariants: Variants = {
+const bulletVariants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06 } },
 };
 
-function Card({ card }: { card: CategoryCard }) {
+function Card({ card, onEnter }) {
   return (
     <motion.div
       data-card
@@ -317,14 +304,15 @@ function Card({ card }: { card: CategoryCard }) {
             </motion.ul>
           )}
 
-          <motion.a
+          <motion.button
+            type="button"
             variants={itemVariants}
-            href="#signup"
+            onClick={onEnter}
             className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-wave-light hover:underline"
           >
             자세히 보기
             <ArrowUpRight className="h-3.5 w-3.5" />
-          </motion.a>
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>
