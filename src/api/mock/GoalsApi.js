@@ -1,4 +1,4 @@
-import { delay, cloneDeep } from './utils';
+import { delay, coachingDelay, cloneDeep } from './utils';
 import * as goalsStore from './goalsStore';
 
 class MockApiError extends Error {
@@ -21,7 +21,7 @@ export class GoalsApi {
   }
 
   async createGoal({ title, category }) {
-    await delay();
+    await coachingDelay();
     if (!title) throw apiError(400, 'INVALID_REQUEST', 'title 이 필요합니다.');
     return cloneDeep(goalsStore.createGoal({ title, category }));
   }

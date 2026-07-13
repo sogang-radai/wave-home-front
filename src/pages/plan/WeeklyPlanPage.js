@@ -13,6 +13,7 @@ import { useMobileLayout } from '../../hooks/useMobileLayout';
 import { TimeWheelPicker, minutesToPickerState, pickerStateToMinutes } from '../alarm/TimeWheelPicker';
 import '../alarm/alarm.css';
 import '../main.css';
+import './weeklyPlan.css';
 
 const GOAL_CATEGORY_OPTIONS = [
   { value: 'sleep', label: '수면' },
@@ -48,16 +49,36 @@ function formatDateParam(date) {
   return `${year}-${month}-${day}`;
 }
 
-function buildPopupState({ dayLabel, startMin, endMin }) {
+function mapCatToPlanCategory(cat) {
+  if (cat && PLAN_CAT_STYLE[cat]) return cat;
+  if (cat === '식습관') return '일상';
+  return '일정';
+}
+
+function buildPopupState({
+  mode = 'add',
+  dayLabel,
+  startMin,
+  endMin,
+  id,
+  title = '',
+  done = false,
+  cat,
+  selectedDays,
+  repeatWeekly = false,
+}) {
   return {
-    title: '',
+    mode,
+    id: mode === 'edit' ? id : undefined,
+    title,
+    done: !!done,
     startMin,
     endMin,
     startPicker: minutesToPickerState(startMin),
     endPicker: minutesToPickerState(endMin),
-    selectedDays: [dayLabel],
-    repeatWeekly: false,
-    category: '일정',
+    selectedDays: selectedDays?.length ? selectedDays : [dayLabel],
+    repeatWeekly: !!repeatWeekly,
+    category: mapCatToPlanCategory(cat),
   };
 }
 
@@ -127,6 +148,13 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   const [goalFormBusy, setGoalFormBusy] = useState(false);
   const [goalRecBusyId, setGoalRecBusyId] = useState(null);
   const [goalDismissed, setGoalDismissed] = useState(() => new Set());
+  const goalTextareaRef = useRef(null);
+
+  const growGoalTextarea = (el) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight, 42)}px`;
+  };
 
   useEffect(() => {
     goalsApi.getActiveGoal().then((goal) => {
@@ -185,7 +213,6 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
 
   const [dismissed, setDismissed] = useState(() => new Set());
   const [hoverApprovedId, setHoverApprovedId] = useState(null);
-  const [detailTodo, setDetailTodo] = useState(null);
   const [hoveredCol, setHoveredCol] = useState(-1);
   const [hoveredY, setHoveredY] = useState(0);
   const [drag, setDrag] = useState(null);
@@ -227,7 +254,12 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
       const rawEnd = dy > 10 ? yToMin(Math.max(drag.startY, y)) : yToMin(drag.startY) + 60;
       const endMin = snapMin(Math.min(rawEnd, CAL_END_MIN));
       setDrag(null);
-      setPopup(buildPopupState({ dayLabel: weekDates[drag.dayIdx].label, startMin, endMin: Math.max(endMin, startMin + 30) }));
+      setPopup(buildPopupState({
+        mode: 'add',
+        dayLabel: weekDates[drag.dayIdx].label,
+        startMin,
+        endMin: Math.max(endMin, startMin + 30),
+      }));
     };
     document.addEventListener('mouseup', onUp);
     return () => document.removeEventListener('mouseup', onUp);
@@ -328,8 +360,27 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     });
   };
 
+  const popupTimeInvalid = popup != null && popup.endMin <= popup.startMin;
+  const popupCanSubmit = Boolean(
+    popup?.title.trim()
+    && popup.selectedDays.length > 0
+    && !popupTimeInvalid,
+  );
+
   const submitPopup = () => {
-    if (!popup?.title.trim() || popup.selectedDays.length === 0) return;
+    if (!popup || !popupCanSubmit) return;
+    if (popup.mode === 'edit') {
+      onUpdateTodo(popup.id, {
+        title: popup.title.trim(),
+        cat: popup.category,
+        startMin: popup.startMin,
+        endMin: popup.endMin,
+        done: popup.done,
+        day: popup.selectedDays[0],
+      });
+      setPopup(null);
+      return;
+    }
     const eventDates = Object.fromEntries(
       popup.selectedDays.map((label) => {
         const match = weekDates.find((d) => d.label === label);
@@ -531,14 +582,19 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                         onClick={(ev) => {
                           ev.stopPropagation();
                           const startMin = snapMin(yToMin(hoveredY));
-                          setPopup(buildPopupState({ dayLabel: weekDates[hoveredCol].label, startMin, endMin: snapMin(startMin + 60) }));
+                          setPopup(buildPopupState({
+                            mode: 'add',
+                            dayLabel: weekDates[hoveredCol].label,
+                            startMin,
+                            endMin: snapMin(startMin + 60),
+                          }));
                         }}
                         style={{
                           position: 'absolute',
                           left: `${hoveredCol * colW + colW / 2}%`,
                           top: hoveredY,
                           transform: 'translate(-50%, -50%)',
-                          zIndex: 8,
+                          zIndex: 25,
                           width: 26,
                           height: 26,
                           borderRadius: '50%',
@@ -601,7 +657,18 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                               onClick={(ev) => {
                                 if (moveDrag) return;
                                 ev.stopPropagation();
-                                setDetailTodo({ ...todo, resolvedStartMin: startMin, resolvedEndMin: endMin });
+                                setPopup(buildPopupState({
+                                  mode: 'edit',
+                                  id: todo.id,
+                                  title: todo.title,
+                                  done: todo.done,
+                                  cat: todo.cat,
+                                  dayLabel: todo.day,
+                                  startMin,
+                                  endMin,
+                                  selectedDays: todo.days?.length ? todo.days : [todo.day],
+                                  repeatWeekly: todo.repeatWeekly ?? todo.scheduleKind === 'weekly',
+                                }));
                               }}
                             >
                               <p
@@ -778,27 +845,26 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
           <div>
             <h2 className="font-bold text-slate-800 text-sm mb-3">목표 코칭</h2>
             {!activeGoal ? (
-              <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
-                <p className="text-xs text-slate-500">이루고 싶은 목표를 한 줄로 적어보세요. WaveAI가 당신의 목표를 지원해드릴게요.</p>
-                <input
-                  type="text"
+              <div className="goal-coach-card">
+                <p>이루고 싶은 목표를 적어보세요. WaveAI가 당신의 목표를 지원해드릴게요.</p>
+                <textarea
+                  ref={goalTextareaRef}
+                  className="goal-coach-textarea"
+                  rows={1}
                   value={goalTitleInput}
-                  onChange={(e) => setGoalTitleInput(e.target.value)}
-                  placeholder="예) 취침 11시 전에 자기"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white outline-none appearance-none shadow-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  onChange={(e) => {
+                    setGoalTitleInput(e.target.value);
+                    growGoalTextarea(e.target);
+                  }}
+                  placeholder="예: 취침 11시 전에 자기"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="goal-coach-tags">
                   {GOAL_CATEGORY_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
+                      className={`goal-coach-tag${goalCategoryInput === opt.value ? ' is-active' : ''}`}
                       onClick={() => setGoalCategoryInput(opt.value)}
-                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all"
-                      style={
-                        goalCategoryInput === opt.value
-                          ? { background: '#2cb3f1', color: 'white' }
-                          : { background: '#f1f5f9', color: '#64748b' }
-                      }
                     >
                       {opt.label}
                     </button>
@@ -808,10 +874,11 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                   type="button"
                   onClick={submitGoal}
                   disabled={!goalTitleInput.trim() || goalFormBusy}
-                  className="w-full text-xs font-semibold py-2 rounded-xl transition-all"
-                  style={{ background: '#2cb3f1', color: 'white', opacity: !goalTitleInput.trim() || goalFormBusy ? 0.5 : 1 }}
+                  className="goal-coach-submit"
+                  style={{ opacity: !goalTitleInput.trim() || goalFormBusy ? 0.65 : 1 }}
                 >
-                  {goalFormBusy ? '설정 중' : '목표 설정'}
+                  {goalFormBusy && <span className="goal-coach-spinner" aria-hidden="true" />}
+                  {goalFormBusy ? '맞춤 계획 생성 중…' : '목표 설정'}
                 </button>
               </div>
             ) : (
@@ -903,136 +970,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
 
       </div>
 
-      {/* Todo detail / edit popup */}
-      {detailTodo && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.18)' }}
-          onClick={() => setDetailTodo(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl p-5 mx-4"
-            style={{ width: '100%', maxWidth: '360px' }}
-            onClick={(ev) => ev.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-slate-400">{detailTodo.day}요일</p>
-              <button type="button" onClick={() => setDetailTodo(null)} className="p-1 rounded-lg" style={{ color: '#94a3b8' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-
-            <div className="mb-3">
-              <label className="block text-[11px] font-semibold text-slate-500 mb-1">제목</label>
-              <input
-                type="text"
-                value={detailTodo.title}
-                onChange={(ev) => setDetailTodo((prev) => ({ ...prev, title: ev.target.value }))}
-                className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
-                style={{ borderColor: '#e2e8f0' }}
-                onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
-                onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
-              />
-            </div>
-
-            <div className="flex gap-3 mb-3">
-              <div className="flex-1">
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">시작 시간</label>
-                <input
-                  type="time"
-                  value={fmtTime(detailTodo.resolvedStartMin)}
-                  onChange={(ev) => {
-                    const [h, m] = ev.target.value.split(':').map(Number);
-                    setDetailTodo((prev) => ({ ...prev, resolvedStartMin: h * 60 + m }));
-                  }}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
-                  style={{ borderColor: '#e2e8f0' }}
-                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
-                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">종료 시간</label>
-                <input
-                  type="time"
-                  value={fmtTime(detailTodo.resolvedEndMin)}
-                  onChange={(ev) => {
-                    const [h, m] = ev.target.value.split(':').map(Number);
-                    setDetailTodo((prev) => ({ ...prev, resolvedEndMin: h * 60 + m }));
-                  }}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-slate-50 border focus:outline-none"
-                  style={{ borderColor: '#e2e8f0' }}
-                  onFocus={(ev) => { ev.currentTarget.style.borderColor = '#93c5fd'; }}
-                  onBlur={(ev) => { ev.currentTarget.style.borderColor = '#e2e8f0'; }}
-                />
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-[11px] font-semibold text-slate-500 mb-2">카테고리</label>
-              <div className="flex gap-2 flex-wrap">
-                {Object.entries(CAT_STYLE).map(([cat, cs]) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setDetailTodo((prev) => ({ ...prev, cat }))}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                    style={{
-                      background: detailTodo.cat === cat ? cs.bg : '#f8fafc',
-                      color: detailTodo.cat === cat ? cs.text : '#94a3b8',
-                      border: `1.5px solid ${detailTodo.cat === cat ? cs.bg : '#f1f5f9'}`,
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setDetailTodo((prev) => ({ ...prev, done: !prev.done }))}
-              className="w-full py-2 text-sm font-semibold rounded-xl mb-3 transition-colors"
-              style={{
-                background: detailTodo.done ? '#f1f5f9' : CAT_STYLE[detailTodo.cat]?.bg,
-                color: detailTodo.done ? '#64748b' : CAT_STYLE[detailTodo.cat]?.text,
-              }}
-            >
-              {detailTodo.done ? '↩ 완료 취소' : '✓ 완료 표시'}
-            </button>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setDetailTodo(null)}
-                className="flex-1 py-2 text-sm font-semibold rounded-xl"
-                style={{ background: '#f1f5f9', color: '#64748b' }}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onUpdateTodo(detailTodo.id, {
-                    title: detailTodo.title,
-                    cat: detailTodo.cat,
-                    startMin: detailTodo.resolvedStartMin,
-                    endMin: detailTodo.resolvedEndMin,
-                    done: detailTodo.done,
-                  });
-                  setDetailTodo(null);
-                }}
-                className="flex-1 py-2 text-sm font-semibold rounded-xl"
-                style={{ background: CAT_STYLE[detailTodo.cat]?.bg, color: CAT_STYLE[detailTodo.cat]?.text }}
-              >
-                저장
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add plan popup */}
+      {/* Add / edit plan popup */}
       {popup && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center"
@@ -1045,13 +983,18 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
             onClick={(ev) => ev.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-800 text-base">새 계획 추가</h3>
+              <h3 className="font-bold text-slate-800 text-base">
+                {popup.mode === 'edit' ? '계획 수정' : '새 계획 추가'}
+              </h3>
               <button type="button" onClick={() => setPopup(null)} className="p-1 rounded-lg" style={{ color: '#94a3b8' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
             <div className="plan-add-title-wrap mb-4">
+              <div className="plan-add-time-warn" role="status" aria-live="polite">
+                {popupTimeInvalid ? '종료 시간은 시작 시간보다 이후여야 합니다.' : ''}
+              </div>
               <label className="plan-add-label" htmlFor="plan-add-title">제목</label>
               <div className="plan-add-title-row">
                 <input
@@ -1067,9 +1010,9 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 <button
                   type="button"
                   onClick={submitPopup}
-                  disabled={!popup.title.trim()}
+                  disabled={!popupCanSubmit}
                   className="plan-add-submit"
-                  aria-label="계획 추가"
+                  aria-label={popup.mode === 'edit' ? '계획 저장' : '계획 추가'}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
@@ -1091,8 +1034,6 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                         ...prev,
                         startPicker: next,
                         startMin,
-                        endMin: Math.max(prev.endMin, startMin + 30),
-                        endPicker: minutesToPickerState(Math.max(prev.endMin, startMin + 30)),
                       }));
                     }}
                   />
@@ -1105,10 +1046,10 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                     minute={popup.endPicker.minute}
                     meridiem={popup.endPicker.meridiem}
                     onChange={(next) => {
-                      const endMin = Math.max(pickerStateToMinutes(next), popup.startMin + 30);
+                      const endMin = pickerStateToMinutes(next);
                       setPopup((prev) => ({
                         ...prev,
-                        endPicker: minutesToPickerState(endMin),
+                        endPicker: next,
                         endMin,
                       }));
                     }}
@@ -1119,8 +1060,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
 
             <div className="mb-4">
               <label className="plan-add-label">요일</label>
-              <div className="flex items-center gap-4">
-                <div className="flex gap-1.5 flex-1 min-w-0">
+              <div className="plan-add-days-stack">
+                <div className="flex gap-1.5 flex-wrap">
                   {PLAN_WEEKDAYS.map((label) => {
                     const selected = popup.selectedDays.includes(label);
                     const isSunday = label === '일';
@@ -1140,7 +1081,7 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                     );
                   })}
                 </div>
-                <label className="plan-add-repeat shrink-0">
+                <label className="plan-add-repeat">
                   <input
                     type="checkbox"
                     checked={popup.repeatWeekly}
@@ -1171,6 +1112,20 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 ))}
               </div>
             </div>
+
+            {popup.mode === 'edit' && (
+              <button
+                type="button"
+                onClick={() => setPopup((prev) => ({ ...prev, done: !prev.done }))}
+                className="w-full py-2 text-sm font-semibold rounded-xl mt-3 transition-colors"
+                style={{
+                  background: popup.done ? '#f1f5f9' : (PLAN_CAT_STYLE[popup.category]?.bg || '#dbeafe'),
+                  color: popup.done ? '#64748b' : (PLAN_CAT_STYLE[popup.category]?.text || '#1d4ed8'),
+                }}
+              >
+                {popup.done ? '↩ 완료 취소' : '✓ 완료 표시'}
+              </button>
+            )}
           </div>
         </div>
       )}

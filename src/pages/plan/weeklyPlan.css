@@ -1,0 +1,109 @@
+/* Goal coaching card (weekly plan sidebar) */
+
+.goal-coach-card {
+  background: var(--wave-05);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goal-coach-card > p {
+  margin: 0;
+  color: var(--sub);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.goal-coach-textarea {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.goal-coach-textarea::placeholder {
+  color: var(--sub);
+  opacity: 0.85;
+}
+
+.goal-coach-textarea:focus {
+  border-color: var(--wave);
+  box-shadow: 0 0 0 3px var(--wave-15);
+}
+
+.goal-coach-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.goal-coach-tag {
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--surface-muted, #f1f5f9);
+  color: var(--sub);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.goal-coach-tag.is-active {
+  background: var(--wave);
+  color: #fff;
+}
+
+.goal-coach-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--wave);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.goal-coach-submit:disabled {
+  cursor: default;
+}
+
+.goal-coach-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: goal-coach-spin 0.95s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+@keyframes goal-coach-spin {
+  0% { transform: rotate(0deg); animation-timing-function: cubic-bezier(0.4, 0, 0.7, 0.2); }
+  40% { transform: rotate(140deg); animation-timing-function: cubic-bezier(0.2, 0.8, 0.4, 1); }
+  70% { transform: rotate(280deg); animation-timing-function: ease-out; }
+  100% { transform: rotate(360deg); }
+}
