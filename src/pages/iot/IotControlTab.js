@@ -170,7 +170,7 @@ export function IotControlTab() {
   const filteredDevices = useMemo(() => {
     const list = roomFilter === 'all'
       ? devices
-      : devices.filter((d) => d.room?.id === roomFilter);
+      : devices.filter((d) => String(d.room?.id ?? '') === String(roomFilter));
     return sortDevicesForControl(list);
   }, [devices, roomFilter]);
 
@@ -203,6 +203,14 @@ export function IotControlTab() {
     if (!selectedDevice) return;
     refreshDeviceRules(selectedDevice.id);
     iotApi.getEvents({ deviceId: selectedDevice.id }).then(setDeviceEvents);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDevice?.id, detailTab]);
+
+  // One-shot schedules disable themselves after fire; poll so the toggle flips without a remount.
+  useEffect(() => {
+    if (!selectedDevice || detailTab !== 'schedule') return undefined;
+    const timer = setInterval(() => refreshDeviceRules(selectedDevice.id), 4000);
+    return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDevice?.id, detailTab]);
 

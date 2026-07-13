@@ -183,22 +183,30 @@ export function CameraStreamPlayer({
       if (micAttachedRef)
         micAttachedRef.current = true;
 
-      ctx = new AudioContext();
-      audioCtxRef.current = ctx;
-      const source = ctx.createMediaElementSource(video);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        ctx = new AudioContextClass();
+        audioCtxRef.current = ctx;
+        const source = ctx.createMediaElementSource(video);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analyser.connect(ctx.destination);
 
-      const bins = new Uint8Array(analyser.frequencyBinCount);
-      timer = setInterval(() => {
-        analyser.getByteFrequencyData(bins);
-        let sum = 0;
-        for (let i = 0; i < bins.length; i += 1)
-          sum += bins[i];
-        onMicLevel(sum / bins.length / 255);
-      }, 150);
+        const bins = new Uint8Array(analyser.frequencyBinCount);
+        timer = setInterval(() => {
+          analyser.getByteFrequencyData(bins);
+          let sum = 0;
+          for (let i = 0; i < bins.length; i += 1)
+            sum += bins[i];
+          onMicLevel(sum / bins.length / 255);
+        }, 150);
+      } catch {
+        // Output device / double-attach failures — keep playback, skip mic meter.
+        if (micAttachedRef)
+          micAttachedRef.current = false;
+      }
     };
 
     if (video.readyState >= 2)

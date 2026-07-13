@@ -28,7 +28,7 @@ export function HomeControlPage({ tab, setTab }) {
         items={[
           ['control', 'IoT 제어'],
           ['trigger', '트리거'],
-          ['ir', 'IR 목록'],
+          ['ir', '적외선 명령'],
           ['gesture', '제스처 목록'],
           ['log', '로그'],
         ]}

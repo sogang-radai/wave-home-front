@@ -40,7 +40,7 @@ export function ParamsEditor({ schema, values, onChange, irCommands }) {
         if (key === 'commandId') {
           return (
             <label className="settings-field" key={key}>
-              <span>IR 커맨드</span>
+              <span>적외선 명령</span>
               <select className="settings-select" value={values[key] || ''} onChange={(e) => onChange({ ...values, [key]: e.target.value })}>
                 <option value="">선택</option>
                 {irCommands.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

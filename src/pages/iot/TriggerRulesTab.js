@@ -304,7 +304,7 @@ export function TriggerRulesTab() {
 
   return (
     <Card title="트리거" wide>
-      <p className="section-description">기기 상태 변화·제스처·IR 수신을 감지해 다른 기기를 자동으로 제어하는 트리거를 관리합니다.</p>
+      <p className="section-description">기기 상태 변화·제스처·적외선 수신을 감지해 다른 기기를 자동으로 제어하는 트리거를 관리합니다.</p>
 
       <div className="trigger-wizard-root" ref={rootRef}>
         <div className="trigger-wizard-header">

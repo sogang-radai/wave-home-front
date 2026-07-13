@@ -1300,18 +1300,13 @@
   min-width: 0;
 }
 
-/* ── PTZ button pad (replaces the old drag joystick) ─────────────────────── */
+/* ── PTZ button pad (fan / annulus sectors) ──────────────────────────────── */
 
 .ptz-pad-btn {
   position: relative;
   width: 176px;
   height: 176px;
   flex-shrink: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  /* Gaps between clipped wedges show through as sector borders. */
-  background: var(--line);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .ptz-pad-btn.disabled {
@@ -1319,74 +1314,54 @@
   pointer-events: none;
 }
 
-.ptz-wedge {
-  position: absolute;
-  inset: 0;
+.ptz-pad-svg {
+  display: block;
   width: 100%;
   height: 100%;
-  display: flex;
-  border: 0;
-  padding: 0;
-  background: var(--wave-40);
-  color: var(--excellent-text);
+  overflow: visible;
+  user-select: none;
+  touch-action: none;
+}
+
+.ptz-pad-ring {
+  fill: var(--line);
+}
+
+.ptz-wedge {
+  fill: var(--wave-40);
+  stroke: none;
   cursor: pointer;
+  outline: none;
+  transition: fill 0.12s ease;
 }
 
-.ptz-wedge:hover {
-  background: var(--excellent-text);
-  color: #fff;
-}
-
+.ptz-wedge:hover,
 .ptz-wedge:focus-visible {
-  outline: 2px solid var(--wave);
-  outline-offset: -2px;
+  fill: var(--excellent-text);
 }
 
-/*
- * Truncated fan (annulus sector) clip-paths.
- * Inner edge clears the 80px hub (~27% from center); outer sits on the rim.
- * Adjacent wedges leave a thin diagonal gap so --line shows as a border.
- */
-.ptz-wedge--up {
-  clip-path: polygon(32% 32%, 68% 32%, 71% 3%, 29% 3%);
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 14px;
+.ptz-wedge-group:hover .ptz-wedge-chevron,
+.ptz-wedge:focus-visible + .ptz-wedge-chevron,
+.ptz-wedge-group:has(.ptz-wedge:focus-visible) .ptz-wedge-chevron {
+  stroke: #fff;
 }
 
-.ptz-wedge--right {
-  clip-path: polygon(68% 32%, 68% 68%, 97% 71%, 97% 29%);
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 14px;
-}
-
-.ptz-wedge--down {
-  clip-path: polygon(68% 68%, 32% 68%, 29% 97%, 71% 97%);
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 14px;
-}
-
-.ptz-wedge--left {
-  clip-path: polygon(32% 68%, 32% 32%, 3% 29%, 3% 71%);
-  align-items: center;
-  justify-content: flex-start;
-  padding-left: 14px;
+.ptz-wedge-chevron {
+  fill: none;
+  stroke: var(--excellent-text);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+  transition: stroke 0.12s ease;
 }
 
 .ptz-hub {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 80px;
-  height: 80px;
-  margin: -40px 0 0 -40px;
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: 0 0 0 2px var(--line), 0 1px 6px var(--ink-16);
-  z-index: 2;
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1.5;
   pointer-events: none;
+  filter: drop-shadow(0 1px 2px var(--ink-16, rgba(23, 32, 51, 0.16)));
 }
 
 .snapshot-strip {
@@ -2017,6 +1992,12 @@
 
 /* ── IR commands tab ─────────────────────────────────────────────────────── */
 
+.ir-command-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 14px;
+}
+
 .ir-command-list {
   display: flex;
   flex-direction: column;
@@ -2056,6 +2037,13 @@
   margin-top: 2px;
 }
 
+.ir-attr-badge {
+  background: var(--wave);
+  color: #fff;
+  border: 1px solid transparent;
+  font-weight: 800;
+}
+
 .ir-command-actions {
   display: flex;
   gap: 6px;
@@ -2079,6 +2067,17 @@
   text-align: center;
 }
 
+.ir-learn-banner--single {
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ir-learn-banner strong {
   display: block;
   margin-bottom: 4px;
@@ -2089,6 +2088,21 @@
   margin: 0;
   color: var(--sub);
   font-size: 12px;
+}
+
+.ir-field-label-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ir-autogrow-textarea {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  resize: none;
+  field-sizing: content;
 }
 
 /* ── Gesture management (shared with gesture sets tab) ──────────────────── */

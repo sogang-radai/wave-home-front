@@ -1,10 +1,16 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { SettingsModal, ConfirmDialog, GearIcon, TrashIcon } from '../settings/SettingsUI';
+import { InfoTooltip } from '../alarm/InfoTooltip';
 import iotApi from '../../api/iotApi';
 import { parseTimingsText } from '../../data/irCommandData';
+import '../alarm/alarm.css';
 
 const LEARN_TIMEOUT_MS = 10000;
+
+const TIMING_INFO =
+  '타이밍은 리모컨 적외선 신호의 펄스 길이(마이크로초 단위) 목록이에요.\n'
+  + '학습 버튼으로 Wave Station이 신호를 받아 자동으로 채우거나, 측정·제조사 값을 직접 입력할 수 있습니다.';
 
 function emptyForm(waveStations) {
   return {
@@ -14,6 +20,16 @@ function emptyForm(waveStations) {
     deviceId: waveStations[0]?.id || '',
     timingsText: '',
   };
+}
+
+function autoGrowTextarea(el, minRows) {
+  if (!el) return;
+  const styles = window.getComputedStyle(el);
+  const lineHeight = parseFloat(styles.lineHeight) || 20;
+  const pad = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+  const minHeight = lineHeight * minRows + pad;
+  el.style.height = 'auto';
+  el.style.height = `${Math.max(el.scrollHeight, minHeight)}px`;
 }
 
 function IrCommandModal({ command, waveStations, onSave, onClose }) {
@@ -30,8 +46,15 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
   const [learning, setLearning] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const countdownTimer = useRef(null);
+  const timingsRef = useRef(null);
+  const descriptionRef = useRef(null);
 
   useEffect(() => () => clearInterval(countdownTimer.current), []);
+
+  useEffect(() => {
+    autoGrowTextarea(timingsRef.current, 3);
+    autoGrowTextarea(descriptionRef.current, 1);
+  }, [form.timingsText, form.description]);
 
   const { timings, error: parseError } = parseTimingsText(form.timingsText);
   const canSave = !!form.name.trim() && !parseError && !!form.deviceId;
@@ -75,7 +98,7 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
 
   return (
     <SettingsModal
-      title={command ? 'IR 커맨드 수정' : 'IR 커맨드 추가'}
+      title={command ? '적외선 명령 수정' : '적외선 명령 추가'}
       onClose={onClose}
       footer={
         <Fragment>
@@ -93,7 +116,14 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
       </label>
       <label className="settings-field">
         <span>설명</span>
-        <input type="text" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+        <textarea
+          ref={descriptionRef}
+          className="ir-autogrow-textarea"
+          rows={1}
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          placeholder="선택 사항"
+        />
       </label>
       <label className="settings-field">
         <span>장치</span>
@@ -110,9 +140,14 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
         </select>
       </label>
       <label className="settings-field">
-        <span>타이밍</span>
+        <span className="ir-field-label-with-info">
+          타이밍
+          <InfoTooltip text={TIMING_INFO} />
+        </span>
         <textarea
-          rows={4}
+          ref={timingsRef}
+          className="ir-autogrow-textarea"
+          rows={3}
           value={form.timingsText}
           onChange={(e) => setForm((f) => ({ ...f, timingsText: e.target.value }))}
           placeholder="9000, 4500, 560, 560, ..."
@@ -120,9 +155,8 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
       </label>
 
       {learning ? (
-        <div className="ir-learn-banner">
-          <strong>이제 리모컨을 눌러주세요</strong>
-          <p>{countdown}초 남음 — 신호를 기다리는 중…</p>
+        <div className="ir-learn-banner ir-learn-banner--single">
+          이제 장치에 대고 리모컨을 눌러주세요 — {countdown}초 남음
         </div>
       ) : (
         <button type="button" className="settings-btn-ghost ir-learn-btn" onClick={startLearn} disabled={!form.deviceId}>학습</button>
@@ -169,11 +203,12 @@ export function IrCommandsTab() {
   };
 
   return (
-    <Card
-      title="IR 커맨드 목록"
-      wide
-      action={<button type="button" className="settings-add-btn" onClick={() => setModalCommand(null)}>+ 커맨드 추가</button>}
-    >
+    <Card title="적외선 명령" wide>
+      <div className="ir-command-toolbar">
+        <button type="button" className="settings-add-btn" onClick={() => setModalCommand(null)}>
+          명령 추가
+        </button>
+      </div>
       <div className="ir-command-list">
         {commands.map((command) => (
           <article className="ir-command-row" key={command.id}>
@@ -181,8 +216,8 @@ export function IrCommandsTab() {
               <strong>{command.name}</strong>
               <span>{command.description}</span>
               <div className="ir-command-badges">
-                <em className="attr-badge">{command.timings.length}개 타이밍</em>
-                <em className="attr-badge">{command.source === 'learned' ? '학습됨' : '수동 입력'}</em>
+                <em className="attr-badge ir-attr-badge">{command.timings.length}개 타이밍</em>
+                <em className="attr-badge ir-attr-badge">{command.source === 'learned' ? '학습됨' : '수동 입력'}</em>
               </div>
             </div>
             <div className="ir-command-actions">
@@ -196,7 +231,7 @@ export function IrCommandsTab() {
             </div>
           </article>
         ))}
-        {commands.length === 0 && <p className="panel-empty">등록된 IR 커맨드가 없습니다.</p>}
+        {commands.length === 0 && <p className="panel-empty">등록된 적외선 명령이 없습니다.</p>}
       </div>
 
       {modalCommand !== undefined && (
@@ -208,7 +243,7 @@ export function IrCommandsTab() {
         />
       )}
       {confirmDelete && (
-        <ConfirmDialog title="IR 커맨드 삭제" message={`'${confirmDelete.name}' 커맨드를 삭제할까요?`} onConfirm={remove} onCancel={() => setConfirmDelete(null)} />
+        <ConfirmDialog title="적외선 명령 삭제" message={`'${confirmDelete.name}' 명령을 삭제할까요?`} onConfirm={remove} onCancel={() => setConfirmDelete(null)} />
       )}
       {toast && <div className="iot-toast">{toast}</div>}
     </Card>
