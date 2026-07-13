@@ -31,12 +31,14 @@ export const TWIN_ROOMS = [
   },
 ];
 
-/** @typedef {'tv'|'light'|'plug'|'fan'|'induction'|'label'} TwinVisualKind */
+/** @typedef {'tv'|'light'|'plug'|'fan'|'induction'|'microwave'|'label'} TwinVisualKind */
 
 /**
  * labelOffset is a world-space [x, y, z] offset from the GLTF anchor node.
  * cardDescription: 홈 뷰어 호버 안내카드 중간행. 비우면 on/off·대기 상태를 표시.
- * @type {Array<{ deviceId: string, name: string, roomId: string, gltfRoot: string, anchor: string, kind: TwinVisualKind, labelOffset?: number[], cardDescription?: string, shadeNode?: string, pivotNode?: string, glowNode?: string, bladeNode?: string, screenNode?: string, wind?: boolean, windNode?: string, showInTwin?: boolean }>}
+ * pcLeds: 침실 PC 등 — power는 전원 ON 시 고정 점등, blink는 활동 LED(랜덤 show/hide).
+ * glowNode / digitNode: 인덕션·전자레인지 등 전원 ON 시 표시할 메시.
+ * @type {Array<{ deviceId: string, name: string, roomId: string, gltfRoot: string, anchor: string, kind: TwinVisualKind, labelOffset?: number[], cardDescription?: string, shadeNode?: string, pivotNode?: string, glowNode?: string, digitNode?: string, bladeNode?: string, screenNode?: string, wind?: boolean, windNode?: string, pcLeds?: { power: string, blink: string[] }, showInTwin?: boolean }>}
  */
 
 const DEVICE_DESCRIPTIONS = {
@@ -53,6 +55,7 @@ const DEVICE_DESCRIPTIONS = {
   "11": "침실에 있는 RGB색상을 설정 가능한 컬러 조명입니다.",
   "12": "거실에 있는 색 온도 조절이 가능한 화이트 조명입니다.",
   "13": "부엌에 있는 색 온도 조절이 가능한 화이트 조명입니다.",
+  "14": "전자레인지와 연결된 전력 측정이 가능한 스마트 플러그입니다.",
 };
 
 export const TWIN_DEVICES = [
@@ -62,9 +65,32 @@ export const TWIN_DEVICES = [
   { deviceId: '0000000000000004', name: '폰 카메라', roomId: '0000000000000001', gltfRoot: 'living_room', anchor: 'living_cam', labelOffset: [0, 0.45, 0], kind: 'label', showInTwin: false, cardDescription: DEVICE_DESCRIPTIONS['4'] },
   { deviceId: '0000000000000005', name: '거실 카메라', roomId: '0000000000000001', gltfRoot: 'living_room', anchor: 'living_cam', labelOffset: [0, 0.1, 0], kind: 'label', cardDescription: DEVICE_DESCRIPTIONS['5'] },
   { deviceId: '0000000000000006', name: '플러그1 - 선풍기', roomId: '0000000000000001', gltfRoot: 'living_room', anchor: 'living_fan', labelOffset: [0, 0.83, 0], kind: 'fan', pivotNode: 'living_fan_pivot', bladeNode: 'living_fan_blade', cardDescription: DEVICE_DESCRIPTIONS['6'] },
-  { deviceId: '0000000000000007', name: '플러그2 - 컴퓨터', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_pc', labelOffset: [0, 0.6, 0], kind: 'plug', cardDescription: DEVICE_DESCRIPTIONS['7'] },
+  {
+    deviceId: '0000000000000007',
+    name: '플러그2 - 컴퓨터',
+    roomId: '0000000000000002',
+    gltfRoot: 'bed_room',
+    anchor: 'bed_pc',
+    labelOffset: [0, 0.6, 0],
+    kind: 'plug',
+    cardDescription: DEVICE_DESCRIPTIONS['7'],
+    // bed_pc_led1=빨(전원), led2=초·led3=노(활동 깜빡임). GLTF는 bed_pc 하위에 추가 예정.
+    pcLeds: { power: 'bed_pc_led1', blink: ['bed_pc_led2', 'bed_pc_led3'] },
+  },
   { deviceId: '0000000000000008', name: '플러그3 - 에어컨', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_ac', labelOffset: [0, 0.22, 0], kind: 'plug', wind: true, windNode: 'bed_ac_outlet_recess', cardDescription: DEVICE_DESCRIPTIONS["8"] },
   { deviceId: '0000000000000009', name: '플러그4 - 인덕션', roomId: '0000000000000003', gltfRoot: 'kitchen_room', anchor: 'kitchen_induction', labelOffset: [0, 0.35, 0], kind: 'induction', glowNode: 'induction_on', cardDescription: DEVICE_DESCRIPTIONS["9"] },
+  {
+    deviceId: '000000000000000e',
+    name: '플러그5 - 전자레인지',
+    roomId: '0000000000000003',
+    gltfRoot: 'kitchen_room',
+    anchor: 'kitchen_mw',
+    labelOffset: [0, 0.4, 0],
+    kind: 'microwave',
+    glowNode: 'kitchen_mw_screen_on',
+    digitNode: 'kitchen_mw_digit',
+    cardDescription: DEVICE_DESCRIPTIONS['14'],
+  },
   { deviceId: '000000000000000a', name: '침실 TV', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_desk_tv_screen', labelOffset: [0, 0.38, 0], kind: 'tv', screenNode: 'bed_desk_tv_screen', cardDescription: DEVICE_DESCRIPTIONS['10'] },
   { deviceId: '000000000000000b', name: '침실 조명', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade', lightNode: 'bed_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['11'] },
   { deviceId: '000000000000000c', name: '거실 조명', roomId: '0000000000000001', gltfRoot: 'living_room', anchor: 'living_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade.001', lightNode: 'living_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['12'] },

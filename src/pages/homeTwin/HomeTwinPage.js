@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ModelHouseScene } from '../../scene/ModelHouseScene';
 import { useTwinDeviceState } from './useTwinDeviceState';
+import { useSpeechOverlays } from './useSpeechOverlays';
 import { twinRoomByGltfRoot } from '../../data/twinSceneConfig';
 import './homeTwin.css';
 
@@ -14,6 +15,7 @@ function BackIcon() {
 
 export function HomeTwinPage() {
   const { viewModels } = useTwinDeviceState();
+  const speechOverlays = useSpeechOverlays(true);
   const [mode, setMode] = useState('overview');
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [hoveredRoom, setHoveredRoom] = useState(null);
@@ -69,6 +71,7 @@ export function HomeTwinPage() {
         onRoomSelect={handleRoomSelect}
         viewModels={viewModels}
         showLabels={showLabels}
+        speechOverlays={speechOverlays}
         cameraMode="ortho"
       />
     </div>

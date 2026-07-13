@@ -181,4 +181,8 @@ export class IotApi {
     // @deprecated powerApi.getPlugs() 사용. 하위 호환용.
     return httpClient.get('/power/plugs');
   }
+  async getSpeechOverlays() {
+    return httpClient.get('/iot/speech-overlays');
+  }
+
 }

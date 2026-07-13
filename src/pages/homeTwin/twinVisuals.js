@@ -217,6 +217,8 @@ export function applyDeviceVisuals(scene, viewModels) {
 
   const fanBlades = [];
   const windEmitters = [];
+  const pcActivityLeds = [];
+  const microwaveShimmers = [];
 
   viewModels.forEach((vm) => {
     const anchor = findNodeByName(scene, vm.anchor);
@@ -269,9 +271,14 @@ export function applyDeviceVisuals(scene, viewModels) {
     }
 
     if (vm.kind === 'plug') {
+      const pcLedNames = vm.pcLeds
+        ? new Set([vm.pcLeds.power, ...(vm.pcLeds.blink || [])].filter(Boolean))
+        : null;
       anchor.traverse((obj) => {
         if (!obj.isMesh || !obj.material) return;
         if (!/led/i.test(obj.name)) return;
+        // PC activity LEDs are driven by visibility (show/hide), not emissive alone.
+        if (pcLedNames?.has(obj.name)) return;
         const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
         mats.forEach((mat) => {
           if (mat.userData.twinBaseEmissive === undefined) {
@@ -289,11 +296,76 @@ export function applyDeviceVisuals(scene, viewModels) {
           mat.needsUpdate = true;
         });
       });
+
+      if (vm.pcLeds) {
+        const active = !!(vm.on && vm.connected);
+        const powerLed = findNodeByName(anchor, vm.pcLeds.power) || findNodeByName(scene, vm.pcLeds.power);
+        if (powerLed) powerLed.visible = active;
+
+        const blinkNodes = (vm.pcLeds.blink || [])
+          .map((name) => findNodeByName(anchor, name) || findNodeByName(scene, name))
+          .filter(Boolean);
+        blinkNodes.forEach((node) => {
+          if (!active) node.visible = false;
+        });
+        if (active && blinkNodes.length) {
+          pcActivityLeds.push({
+            leds: blinkNodes.map((node) => ({
+              node,
+              timer: Math.random() * 0.35,
+            })),
+          });
+        }
+      }
     }
 
     if (vm.kind === 'induction') {
       const glow = vm.glowNode ? findNodeByName(scene, vm.glowNode) : null;
       if (glow) glow.visible = vm.on && vm.connected;
+    }
+
+    if (vm.kind === 'microwave') {
+      const active = !!(vm.on && vm.connected);
+      const screen = vm.glowNode ? findNodeByName(scene, vm.glowNode) : null;
+      const digit = vm.digitNode ? findNodeByName(scene, vm.digitNode) : null;
+      if (screen) {
+        screen.visible = active;
+        if (active) {
+          screen.traverse((obj) => {
+            if (!obj.isMesh || !obj.material) return;
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach((mat) => {
+              if (mat.userData.twinMwBaseEmissive === undefined) {
+                mat.userData.twinMwBaseEmissive =
+                  mat.emissive?.clone?.() || new THREE.Color(1.0, 0.72, 0.35);
+                mat.userData.twinMwBaseEmissiveIntensity = Math.max(mat.emissiveIntensity ?? 0, 0.55);
+                if (mat.emissive && mat.emissive.r + mat.emissive.g + mat.emissive.b < 0.05)
+                  mat.emissive.copy(mat.userData.twinMwBaseEmissive);
+              }
+              microwaveShimmers.push({ mat, phase: Math.random() * Math.PI * 2 });
+            });
+          });
+        }
+      }
+      if (digit) {
+        digit.visible = active;
+        if (active) {
+          digit.traverse((obj) => {
+            if (!obj.isMesh || !obj.material) return;
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach((mat) => {
+              if (mat.userData.twinMwDigitEmissive === undefined) {
+                mat.userData.twinMwDigitEmissive =
+                  mat.emissive?.clone?.() || new THREE.Color(0.05, 0.95, 0.12);
+                mat.userData.twinMwDigitEmissiveIntensity = Math.max(mat.emissiveIntensity ?? 0, 0.85);
+                if (mat.emissive)
+                  mat.emissive.copy(mat.userData.twinMwDigitEmissive);
+                mat.emissiveIntensity = mat.userData.twinMwDigitEmissiveIntensity;
+              }
+            });
+          });
+        }
+      }
     }
 
     if (vm.kind === 'fan') {
@@ -332,7 +404,50 @@ export function applyDeviceVisuals(scene, viewModels) {
 
   scene.userData.twinFanBlades = fanBlades;
   scene.userData.twinWindEmitters = windEmitters;
+  scene.userData.twinPcActivityLeds = pcActivityLeds;
+  scene.userData.twinMicrowaveShimmers = microwaveShimmers;
   return true;
+}
+
+/** Random net/disk-style blink for PC activity LEDs (green/yellow). */
+export function updatePcActivityLeds(scene, delta) {
+  const sets = scene?.userData?.twinPcActivityLeds;
+  if (!sets?.length) return;
+  const dt = Math.min(delta, 0.1);
+  sets.forEach((set) => {
+    set.leds.forEach((led) => {
+      led.timer -= dt;
+      if (led.timer > 0) return;
+      led.node.visible = !led.node.visible;
+      if (led.node.visible) {
+        // Short lit burst
+        led.timer = 0.04 + Math.random() * 0.14;
+      } else if (Math.random() < 0.4) {
+        // Rapid chatter (still "busy")
+        led.timer = 0.03 + Math.random() * 0.09;
+      } else {
+        // Longer idle gap
+        led.timer = 0.12 + Math.random() * 0.55;
+      }
+    });
+  });
+}
+
+/** Soft warm shimmer on microwave cavity light when powered on. */
+export function updateMicrowaveShimmer(scene, delta) {
+  const items = scene?.userData?.twinMicrowaveShimmers;
+  if (!items?.length) return;
+  const dt = Math.min(delta, 0.1);
+  items.forEach((item) => {
+    item.phase += dt * 2.4;
+    const pulse = 0.55 + 0.35 * (0.5 + 0.5 * Math.sin(item.phase));
+    const mat = item.mat;
+    const base = mat.userData.twinMwBaseEmissiveIntensity || 0.55;
+    if (mat.emissive && mat.userData.twinMwBaseEmissive)
+      mat.emissive.copy(mat.userData.twinMwBaseEmissive);
+    mat.emissiveIntensity = base * pulse;
+    mat.needsUpdate = true;
+  });
 }
 
 function updateFanBlade(obj, delta) {

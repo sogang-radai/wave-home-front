@@ -220,4 +220,9 @@ export class IotApi extends MockIotApi {
   subscribeWaveStationTelemetry(deviceId, handlers = {}) {
     return super.subscribeWaveStationTelemetry(deviceId, handlers);
   }
+
+  async getSpeechOverlays() {
+    return preferReal(() => realIotApi.getSpeechOverlays(), async () => ({}));
+  }
+
 }

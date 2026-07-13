@@ -11,6 +11,8 @@ import {
   setRoomOpacity,
   updateAirconWind,
   updateFanSpin,
+  updateMicrowaveShimmer,
+  updatePcActivityLeds,
   updateTourWallVisibility,
   updateWallVisibility,
 } from '../pages/homeTwin/twinVisuals';
@@ -32,7 +34,7 @@ function disposeObject3D(root) {
   });
 }
 
-function DeviceLabel({ vm, onHover }) {
+function DeviceLabel({ vm, onHover, speechText }) {
   // 점 색상은 전원 on/off가 아니라 장치가 정상적으로 작동(연결)되고 있는지를 나타낸다.
   const dotClass = vm.connected ? 'twin-dot-on' : 'twin-dot-off';
   return (
@@ -42,24 +44,31 @@ function DeviceLabel({ vm, onHover }) {
       zIndexRange={[100, 0]}
     >
       <div
-        className="twin-device-label"
+        className="twin-device-label-wrap"
         onMouseEnter={() => onHover?.(vm)}
         onMouseLeave={() => onHover?.(null)}
       >
-        <span className={`twin-status-dot ${dotClass}`} />
-        <span>{vm.name}</span>
+        {speechText ? (
+          <div className="twin-speech-bubble" role="status" aria-live="polite">
+            {speechText}
+          </div>
+        ) : null}
+        <div className="twin-device-label">
+          <span className={`twin-status-dot ${dotClass}`} />
+          <span>{vm.name}</span>
+        </div>
       </div>
     </Html>
   );
 }
 
-function WorldLabelAnchor({ scene, anchorName, vm, onHover }) {
+function WorldLabelAnchor({ scene, anchorName, vm, onHover, speechText }) {
   const groupRef = useRef();
   const anchorRef = useRef(null);
-  const offset = useMemo(() => {
-    const [x = 0, y = 0.45, z = 0] = vm.labelOffset || [];
-    return new THREE.Vector3(x, y, z);
-  }, [vm.labelOffset?.[0], vm.labelOffset?.[1], vm.labelOffset?.[2]]);
+  const ox = vm.labelOffset?.[0] ?? 0;
+  const oy = vm.labelOffset?.[1] ?? 0.45;
+  const oz = vm.labelOffset?.[2] ?? 0;
+  const offset = useMemo(() => new THREE.Vector3(ox, oy, oz), [ox, oy, oz]);
   const scratch = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
@@ -74,26 +83,35 @@ function WorldLabelAnchor({ scene, anchorName, vm, onHover }) {
   });
   return (
     <group ref={groupRef}>
-      <DeviceLabel vm={vm} onHover={onHover} />
+      <DeviceLabel vm={vm} onHover={onHover} speechText={speechText} />
     </group>
   );
 }
 
-function LabelAnchors({ scene, viewModels, selectedRoom, showLabels, onDeviceHover }) {
+function LabelAnchors({ scene, viewModels, selectedRoom, showLabels, onDeviceHover, speechOverlays }) {
   if (!scene || !showLabels) return null;
   const devices = selectedRoom
     ? viewModels.filter((vm) => vm.gltfRoot === selectedRoom)
     : viewModels;
 
-  return devices.map((vm) => (
-    <WorldLabelAnchor
-      key={vm.deviceId}
-      scene={scene}
-      anchorName={vm.anchor}
-      vm={vm}
-      onHover={onDeviceHover}
-    />
-  ));
+  return devices.map((vm) => {
+    const overlay = speechOverlays?.[vm.deviceId];
+    const expiresAt = Number(overlay?.expiresAtMs) || 0;
+    const voice = String(overlay?.voiceLabel || '').trim() || 'TTS';
+    const text = String(overlay?.text || '').trim();
+    const speechText =
+      overlay && expiresAt > Date.now() && text ? `${voice} - ${text}` : null;
+    return (
+      <WorldLabelAnchor
+        key={vm.deviceId}
+        scene={scene}
+        anchorName={vm.anchor}
+        vm={vm}
+        onHover={onDeviceHover}
+        speechText={speechText}
+      />
+    );
+  });
 }
 
 function HouseModel({
@@ -108,6 +126,7 @@ function HouseModel({
   onDeviceHover,
   onSceneReady,
   cameraTransitioning = false,
+  speechOverlays = {},
 }) {
   const { scene } = useGLTF(TWIN_MODEL_URL);
   const cloned = useMemo(() => {
@@ -117,6 +136,11 @@ function HouseModel({
       obj.material = Array.isArray(obj.material)
         ? obj.material.map((material) => material.clone())
         : obj.material.clone();
+    });
+    // Microwave on-state meshes stay hidden until the plug reports switch=on.
+    ['kitchen_mw_screen_on', 'kitchen_mw_digit'].forEach((name) => {
+      const node = findNodeByName(next, name);
+      if (node) node.visible = false;
     });
     captureRoomMaterialBases(next);
     return next;
@@ -187,6 +211,8 @@ function HouseModel({
   useFrame((_, delta) => {
     updateFanSpin(cloned, delta);
     updateAirconWind(cloned, delta);
+    updatePcActivityLeds(cloned, delta);
+    updateMicrowaveShimmer(cloned, delta);
 
     TWIN_ROOMS.forEach((roomDef) => {
       const group = roomRefs.current[roomDef.gltfRoot];
@@ -271,6 +297,7 @@ function HouseModel({
         selectedRoom={mode === 'room' ? selectedRoom : null}
         showLabels={showLabels && (mode === 'room' || mode === 'tour') && !cameraTransitioning}
         onDeviceHover={onDeviceHover}
+        speechOverlays={speechOverlays}
       />
     </>
   );
@@ -313,6 +340,7 @@ export function ModelHouseScene({
   className,
   cameraMode = 'ortho',
   povConfig = null,
+  speechOverlays = {},
   children,
 }) {
   const [tooltip, setTooltip] = useState(null);
@@ -419,6 +447,7 @@ export function ModelHouseScene({
             hideNodes={hideNodes}
             showLabels={showLabels}
             cameraTransitioning={cameraTransitioning}
+            speechOverlays={speechOverlays}
             onDeviceHover={(vm) => {
               setTooltip(vm);
               onDeviceHover?.(vm);

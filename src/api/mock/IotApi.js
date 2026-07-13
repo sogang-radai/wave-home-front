@@ -759,4 +759,8 @@ export class IotApi {
   __setActiveAccountForTest(accountId) {
     activeAccountId = accountId;
   }
+  async getSpeechOverlays() {
+    return {};
+  }
+
 }
