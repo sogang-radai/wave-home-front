@@ -41,12 +41,13 @@ export default function DashboardSection({ onEnter }) {
   return (
     <PinnedCategorySection
       id="dashboard"
-      index={5}
+      index={1}
       eyebrow="대시보드"
       title="집안의 모든 건강 신호를 한 화면에"
       description="수면, 심박, 활동량, 오늘의 할 일까지, 흩어져 있던 지표를 하나의 화면으로 통합했습니다."
       cards={cards}
       onEnter={onEnter}
+      overlapPrevious
     />
   );
 }

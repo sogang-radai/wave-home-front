@@ -7,7 +7,7 @@ import background from "../background.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const LINE1 = "Introducing WaveHome";
+const LINE1 = "WaveHome을 소개합니다";
 const LINE2 = "Your Personalized Lifestyle AI Agent";
 const LINE3 = "Private.  Effortless.  Sustainable.";
 
@@ -200,9 +200,9 @@ export default function ValuePropSection() {
           invalidateOnRefresh: true,
           // This section keeps its own z-10 stacking even after the pin
           // releases, so once it unpins it would otherwise stay on top of
-          // WaveAISection (z-index: auto) while it scrolls itself off —
+          // the next section (z-index: auto) while it scrolls itself off —
           // a full viewport's worth of extra scroll — slowly uncovering
-          // WaveAISection's background from the bottom up instead of
+          // that section's background from the bottom up instead of
           // revealing it instantly. Hiding this section the moment it's
           // left/re-entered makes the swap the instant cut it's meant to be.
           onLeave: () => gsap.set(section, { autoAlpha: 0 }),
@@ -213,10 +213,10 @@ export default function ValuePropSection() {
       // Text reveals over the first third of the pinned scroll, then the
       // shatter runs to completion. A solid cover fades in right at the
       // very end (masking any last-instant flicker at the handoff) —
-      // WaveAISection is pulled up to overlap this section's tail via its
-      // own `overlapPrevious` margin, so it's already pinned in place by
-      // the time this section releases; the cover (part of this section)
-      // scrolls away with it in that same instant, revealing WaveAISection
+      // the next section is pulled up to overlap this section's tail via
+      // its own `overlapPrevious` margin, so it's already pinned in place
+      // by the time this section releases; the cover (part of this section)
+      // scrolls away with it in that same instant, revealing that section
       // already sitting there instead of sliding up from below.
       tl.to(line1, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0)
         .to(line2, { opacity: 1, xPercent: 0, duration: 0.16, ease: "power2.out" }, 0.08)
@@ -268,13 +268,13 @@ export default function ValuePropSection() {
         <div className="relative z-10 mx-auto w-full max-w-6xl px-6 lg:px-10">
           <div
             ref={line1Ref}
-            className="font-geist text-[13px] font-semibold uppercase tracking-[0.2em] text-wave-light"
+            className="font-plex-kr text-base font-normal text-white/78 drop-shadow sm:text-lg"
           >
             {LINE1}
           </div>
           <h2
             ref={line2Ref}
-            className="mt-4 text-[40px] font-semibold leading-[0.98] tracking-tight text-white sm:text-[64px] lg:text-[92px]"
+            className="font-geist text-[40px] font-semibold leading-[0.98] tracking-tight text-white sm:text-[64px] lg:text-[92px]"
           >
             {LINE2}
           </h2>

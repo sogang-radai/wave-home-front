@@ -2,6 +2,7 @@ import PinnedCategorySection from "../PinnedCategorySection";
 import BarLanes from "../mockups/BarLanes";
 import AreaChart from "../mockups/AreaChart";
 import ScoreRing from "../mockups/ScoreRing";
+import ListRows from "../mockups/ListRows";
 
 const cards = [
   {
@@ -49,15 +50,15 @@ const cards = [
       description:
         "입면이 감지되면 에어컨 온도를 낮추고 조명을 서서히 끄며, 설정한 시각에 알람 대신 조명으로 부드럽게 깨웁니다.",
       bullets: ["입면 감지 시 에어컨·조명 자동 조절", "빛 알람으로 자연스러운 기상", "가구원별 자동화 규칙 분리"],
-      // media: (
-      //   <ListRows
-      //     rows={[
-      //       { label: "취침 시 에어컨 24°C", meta: "켜짐", tone: "wave" },
-      //       { label: "취침 시 조명 서서히 소등", meta: "켜짐", tone: "wave" },
-      //       { label: "기상 시 빛 알람 07:00", meta: "설정됨", tone: "mist" },
-      //     ]}
-      //   />
-      // ),
+      media: (
+        <ListRows
+          rows={[
+            { label: "취침 시 에어컨 24°C", meta: "켜짐", tone: "wave" },
+            { label: "취침 시 조명 서서히 소등", meta: "켜짐", tone: "wave" },
+            { label: "기상 시 빛 알람 07:00", meta: "설정됨", tone: "mist" },
+          ]}
+        />
+      ),
     }
 ];
 
@@ -65,7 +66,7 @@ export default function SleepSection({ onEnter }) {
   return (
     <PinnedCategorySection
       id="sleep"
-      index={2}
+      index={3}
       eyebrow="수면 관리"
       title="레이더로 측정되는            수면 분석"
       description="기기 착용 없이도 수면 단계, 호흡, 혈중 산소를 감지하고 매일 아침 원인까지 짚어주는 AI 리포트를 받아보세요."

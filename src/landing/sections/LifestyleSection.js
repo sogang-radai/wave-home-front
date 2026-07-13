@@ -3,14 +3,13 @@ import ListRows from "../mockups/ListRows";
 
 const cards = [
   {
-    eyebrow: "스케줄 관리",
-    title: "일정까지 챙겨주는 목표 달성 코치",
+    eyebrow: "주간 계획",
+    title: "지속가능한 스케줄을 관리해주는 목표 달성 코치",
     description:
-      "목표를 등록하면 이를 지킬 수 있도록 하루 일정을 자동으로 짜드립니다. 진행 상황에 맞춰 일정을 조정하고, 놓친 항목은 다음 날로 자연스럽게 넘겨드려요.",
+      "목표를 등록하면 이를 지킬 수 있도록 하루 일정을 자동으로 짜드립니다. 진행 상황에 맞춰 일정을 조정해드려요.",
     bullets: [
       "목표 기반 일일 일정 자동 구성",
       "진행 상황에 따라 일정 실시간 조정",
-      "놓친 일정은 다음 날로 자동 이월",
     ],
     media: (
       <ListRows
@@ -51,7 +50,7 @@ export default function LifestyleSection({ onEnter }) {
       index={4}
       eyebrow="라이프스타일 관리"
       title="일상의 흐름까지 함께 관리하는 라이프스타일 케어"
-      description="목표 달성을 위한 일정 관리부터 가구원별 맞춤 알람까지 — 하루의 리듬을 자연스럽게 챙겨드립니다."
+      description="목표 달성을 위한 일정 관리부터 가구원별 맞춤 알람까지 하루의 리듬을 자연스럽게 챙겨드립니다."
       cards={cards}
       onEnter={onEnter}
     />

@@ -54,11 +54,11 @@ export default function LandingPage({ onEnter }) {
       <main className="flex-1">
         <Hero />
         <ValuePropSection />
+        <DashboardSection onEnter={onEnter} />
         <WaveAISection onEnter={onEnter} />
         <SleepSection onEnter={onEnter} />
-        <SmartHomeSection onEnter={onEnter} />
         <LifestyleSection onEnter={onEnter} />
-        <DashboardSection onEnter={onEnter} />
+        <SmartHomeSection onEnter={onEnter} />
       </main>
     </div>
   );

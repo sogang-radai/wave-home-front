@@ -1,9 +1,23 @@
 import PinnedCategorySection from "../PinnedCategorySection";
 import GestureGrid from "../mockups/GestureGrid";
-import ListRows from "../mockups/ListRows";
 import AreaChart from "../mockups/AreaChart";
+import ListRows from "../mockups/ListRows";
+import twinHome from "../twin_home.png";
 
 const cards = [
+  {
+    eyebrow: "디지털 트윈홈",
+    title: "가상의 집을 만들어 관리하세요",
+    description:"현실과 연결된 가상의 집에서 다양한 상황에서의 기기를 제어해보세요.",
+    bullets: ["IoT 기기 제어"],
+    media: (
+      <img
+        src={twinHome}
+        alt="가상의 집을 만들어 관리하세요"
+        className="aspect-[2419/1464] w-full rounded-xl object-cover"
+      />
+    ),
+  },
   {
     eyebrow: "가전 제어",
     title: "손짓을 기기 동작으로 매핑",
@@ -53,7 +67,7 @@ export default function SmartHomeSection({ onEnter }) {
   return (
     <PinnedCategorySection
       id="smarthome"
-      index={3}
+      index={5}
       eyebrow="스마트홈 제어"
       title="손짓 하나로 움직이는 침실"
       description="제스처로 조명과 가전을 제어하고, 수면 데이터에 맞춰 에어컨과 조명을 자동으로 조절하세요."

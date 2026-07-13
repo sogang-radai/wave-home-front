@@ -53,13 +53,12 @@ export default function WaveAISection({ onEnter }) {
   return (
     <PinnedCategorySection
       id="waveai"
-      index={1}
+      index={2}
       eyebrow="WaveAI"
       title="멀티 에이전트 WaveAI"
       description="사이드 패널에서 오늘의 수면·심박·라이프스타일 데이터를 바로 물어보고, 권장 액션을 승인만 하면 실행까지 이어집니다."
       cards={cards}
       onEnter={onEnter}
-      overlapPrevious
     />
   );
 }
