@@ -167,10 +167,55 @@
 /* ── Sleep score hero ────────────────────────────────────────────────────── */
 
 .sleep-score-hero {
+  position: relative;
   padding: 24px 28px;
   border-radius: 20px;
   background: linear-gradient(160deg, var(--good-18), var(--wave-08));
   border: 1px solid var(--line);
+}
+
+/* Hover-reveal prev/next session arrows — swipe the whole daily report
+   (hero → 수면 단계 → 코골이/심박/호흡) via the same slide transition used
+   for date navigation. Hidden by default so they don't compete with the score. */
+.sleep-hero-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--wave-deep);
+  box-shadow: 0 4px 14px var(--shadow);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.sleep-hero-nav.prev {
+  left: -14px;
+}
+
+.sleep-hero-nav.next {
+  right: -14px;
+}
+
+.sleep-score-hero:hover .sleep-hero-nav:not(:disabled) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sleep-hero-nav:hover:not(:disabled) {
+  box-shadow: 0 6px 18px var(--wave-30);
+}
+
+.sleep-hero-nav:disabled {
+  cursor: default;
 }
 
 .sleep-score-hero.excellent {
@@ -446,18 +491,15 @@
 .sleep-factor-tag.danger { color: var(--danger-strong); }
 
 .sleep-factor-scroll {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
 }
 
 .sleep-factor-card.compact {
-  flex: 0 0 auto;
-  min-width: 118px;
   min-height: 72px;
   padding: 10px 12px;
+  background: transparent;
 }
 
 .sleep-factor-card.compact strong {
@@ -467,40 +509,6 @@
 .sleep-factor-card.compact .sleep-factor-tag {
   margin-top: 4px;
   font-size: 11px;
-}
-
-.sleep-session-picker {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  margin-bottom: 4px;
-  padding-bottom: 2px;
-}
-
-.sleep-session-chip {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.sleep-session-chip span {
-  color: var(--sub);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.sleep-session-chip.active {
-  border-color: var(--wave-40);
-  background: var(--wave-10);
 }
 
 .sleep-hypnogram {

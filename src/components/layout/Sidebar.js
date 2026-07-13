@@ -1,6 +1,6 @@
 import { Fragment, useRef, useState } from 'react';
 import './layout.css';
-import logo from '../../img/logo.png';
+import logo from '../../img/logo_dark.png';
 import { pages } from '../../data/appData';
 import { SHOW_HOME_TWIN } from '../../api/config';
 import { WaveAiIcon } from '../icons/WaveAiIcon';
@@ -176,7 +176,7 @@ export function Sidebar({
         </div>
         <div className="brand-text">
           <strong>WaveHome</strong>
-          <span>Your Health Agent</span>
+          <span>Your Lifestyle Agent</span>
         </div>
         <button className="collapse-button" aria-label="collapse sidebar" onClick={() => onCollapsedChange((value) => !value)}>
           {collapsed ? '›' : '‹'}

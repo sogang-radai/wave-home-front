@@ -2,8 +2,6 @@
 
 .power-page {
   --power-green: #22c55e;
-  --power-blue: #7fa8e0;
-  --power-blue-hover: #5d91d4;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -175,8 +173,7 @@
 }
 
 .power-tab.active {
-  background: #2cb3f1;
-  color: #fff;
+  background: var(--wave-60);
   display: flex;
 }
 
@@ -212,7 +209,7 @@
 }
 
 .power-combo-wrap.active {
-  background: #2cb3f1;
+  background: var(--wave-100);
 }
 
 /* Clicking the label selects the remembered interval directly; the caret
@@ -229,7 +226,7 @@
 }
 
 .power-combo-wrap.active .power-combo-label {
-  color: #fff;
+  color: #0e4862;
 }
 
 .power-combo-caret-btn {
@@ -243,7 +240,7 @@
 }
 
 .power-combo-wrap.active .power-combo-caret-btn {
-  color: #fff;
+  color: #0e4862;
 }
 
 .power-combo-menu {
@@ -280,7 +277,7 @@
 
 .power-combo-menu-item.active {
   background: var(--wave-10);
-  color: #2cb3f1;
+  color: var(--wave-deep);
   font-weight: 700;
 }
 
@@ -305,8 +302,8 @@
   gap: 12px;
   padding: 16px 20px;
   border-radius: 14px;
-  background: var(--surface);
-  border: 1px solid var(--wave-15);
+  background: linear-gradient(135deg, var(--wave-05) 0%, var(--wave-40) 100%);
+  border: 1px solid var(--wave-35);
   min-height: 184px;
 }
 
@@ -317,9 +314,10 @@
 
 .power-report-header {
   margin: 0 0 6px;
-  font-size: 13px;
+  font-size: 20px;
+  line-height: 1.3;
   font-weight: 700;
-  color: #2cb3f1;
+  color: var(--wave-deep);
   letter-spacing: -0.01em;
 }
 
@@ -351,23 +349,14 @@
 }
 
 .power-report-icon {
-  color: var(--wave);
-  font-size: 17px;
-  line-height: 1.6;
+  color: var(--wave-deep);
+  font-size: 20px;
+  line-height: 1.3;
   flex-shrink: 0;
 }
 
 .power-report-banner.unsupported {
   border-style: dashed;
-  border-color: var(--line);
-}
-
-.power-report-banner.unsupported p {
-  color: var(--sub);
-}
-
-.power-report-banner.unsupported .power-report-icon {
-  color: var(--sub);
 }
 
 /* ── 전력 소스 heading ───────────────────────────────────────────────────── */

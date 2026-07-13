@@ -43,10 +43,10 @@ const COMBO_IDS = COMBO_OPTIONS.map((o) => o.id);
 // Short label shown always; `suffix` is appended only while the tab is active,
 // e.g. "W" -> "W 실시간" once selected.
 const METRIC_TABS = [
-  { id: 'w', short: 'W', suffix: '실시간' },
-  { id: 'v', short: 'V', suffix: '실시간' },
-  { id: 'a', short: 'A', suffix: '실시간' },
-  { id: 'wh', short: 'Wh', suffix: '누적' },
+  { id: 'w', short: 'W', suffix: '(실시간)' },
+  { id: 'v', short: 'V', suffix: '(실시간)' },
+  { id: 'a', short: 'A', suffix: '(실시간)' },
+  { id: 'wh', short: 'Wh', suffix: '(누적)' },
 ];
 
 const REPORT_PERIOD_MAP = { hour: '1h', day: '24h', week: '1w', month: '1mo', year: '1yr' };
@@ -383,7 +383,7 @@ export function PowerPage() {
       setReportHeader(`${m}월 ${d}일 기준 1시간 리포트`);
       setPowerReport({
         supported: false,
-        text: '선택한 시간 간격은 너무 짧아 AI 리포트를 제공하지 않아요. 1시간 이상 단위(1시간·일간·주간·월간·연간)를 선택하면 리포트를 볼 수 있어요.',
+        text: '1분처럼 짧은 시간 간격에서는 데이터가 충분히 쌓이지 않아 의미 있는 소비 패턴을 분석하기 어려워요. 그래서 지금은 AI 리포트를 보여드리지 않고 있어요. 하단에서 1시간·일간·주간·월간·연간 중 하나를 선택하시면, 그 기간의 사용 패턴과 눈에 띄는 변화를 짚어주는 리포트를 확인하실 수 있어요.',
       });
       return undefined;
     }
@@ -707,10 +707,10 @@ const VOLTAGE_DOMAIN = minSpanDomain(50);
 const CURRENT_DOMAIN = minSpanDomain(0.3);
 
 function barFillColor(index, { selectedBarIndex, hoveredBarIndex, barSelectable }) {
-  if (!barSelectable) return 'var(--power-blue)';
-  if (selectedBarIndex === index) return 'var(--wave)';
-  if (hoveredBarIndex === index) return 'var(--power-blue-hover)';
-  return 'var(--power-blue)';
+  if (!barSelectable) return 'var(--wave-60)';
+  if (selectedBarIndex === index) return 'var(--wave-40)';
+  if (hoveredBarIndex === index) return 'var(--wave-deep)';
+  return 'var(--wave-60)';
 }
 
 // Line-chart grid only — vertical lines align with every sample; labels are

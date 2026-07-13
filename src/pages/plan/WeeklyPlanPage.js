@@ -784,8 +784,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                   type="text"
                   value={goalTitleInput}
                   onChange={(e) => setGoalTitleInput(e.target.value)}
-                  placeholder="예: 취침 11시 전에 자기"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  placeholder="예) 취침 11시 전에 자기"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white outline-none appearance-none shadow-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
                 <div className="flex flex-wrap gap-1.5">
                   {GOAL_CATEGORY_OPTIONS.map((opt) => (

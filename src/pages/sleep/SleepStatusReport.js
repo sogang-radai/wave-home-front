@@ -15,6 +15,15 @@ import { getToday, isSameDay, normalizeDate } from '../../components/calendar/ca
 import sleepApi from '../../api/sleepApi';
 import './sleep.css';
 
+function HeroNavChevron({ direction }) {
+  const points = direction === 'prev' ? '15 18 9 12 15 6' : '9 18 15 12 9 6';
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points={points} />
+    </svg>
+  );
+}
+
 const STAGE_COLORS = {
   awake: 'var(--accent-stage-awake)',
   rem: 'var(--accent-plum)',
@@ -251,6 +260,8 @@ export function SleepStatusReport({ onReportDateChange }) {
   const prevNightDateRef = useRef(toReportDateParam(getToday()));
   const hasLoadedSessionsRef = useRef(false);
   const pendingDateRef = useRef(null);
+  const pendingSessionRef = useRef(null);
+  const pendingKindRef = useRef('date');
   const transitionRef = useRef(transition);
   const viewportRef = useRef(null);
   const [viewportMinH, setViewportMinH] = useState(0);
@@ -275,6 +286,7 @@ export function SleepStatusReport({ onReportDateChange }) {
 
     const dir = normalized.getTime() > reportDate.getTime() ? 1 : -1;
     pendingDateRef.current = normalized;
+    pendingKindRef.current = 'date';
     setTransition({
       phase: 'exit',
       dir,
@@ -289,11 +301,57 @@ export function SleepStatusReport({ onReportDateChange }) {
     navigateToDate(next);
   };
 
+  // 세션(주 수면/낮잠) 전환 — 날짜 전환과 같은 슬라이드 트랜지션을 재사용해
+  // sleep-score-hero부터 수면 단계·코골이·심박·호흡 카드까지 전체가 스와핑되게 한다.
+  const navigateToSession = (nextSessionId) => {
+    if (nextSessionId === sessionId) return;
+    if (transition.phase !== 'idle') return;
+    const fromIndex = sessions.findIndex((s) => s.sessionId === sessionId);
+    const toIndex = sessions.findIndex((s) => s.sessionId === nextSessionId);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    if (viewportRef.current && currentKind === 'report') {
+      setViewportMinH(viewportRef.current.offsetHeight);
+    }
+
+    pendingSessionRef.current = nextSessionId;
+    pendingKindRef.current = 'session';
+    setTransition({
+      phase: 'exit',
+      dir: toIndex > fromIndex ? 1 : -1,
+      leavingKind: currentKind,
+      enteringKind: currentKind,
+    });
+  };
+
+  const shiftSession = (delta) => {
+    const index = sessions.findIndex((s) => s.sessionId === sessionId);
+    if (index === -1) return;
+    const next = sessions[index + delta];
+    if (!next) return;
+    navigateToSession(next.sessionId);
+  };
+
   const handleTransitionEnd = (event) => {
     if (event.target !== event.currentTarget) return;
 
     const current = transitionRef.current;
     if (current.phase === 'exit') {
+      if (pendingKindRef.current === 'session') {
+        const nextSessionId = pendingSessionRef.current;
+        pendingSessionRef.current = null;
+        setReport(null);
+        setReportError(null);
+        setSessionId(nextSessionId);
+        setTransition({
+          phase: 'loading',
+          dir: current.dir,
+          leavingKind: current.leavingKind,
+          enteringKind: 'empty',
+        });
+        return;
+      }
+
       const next = pendingDateRef.current;
       pendingDateRef.current = null;
       setSessions([]);
@@ -403,6 +461,28 @@ export function SleepStatusReport({ onReportDateChange }) {
     return (
       <>
         <section className={`sleep-score-hero ${cls}`}>
+          {sessions.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="sleep-hero-nav prev"
+                aria-label="이전 수면 세션"
+                onClick={() => shiftSession(-1)}
+                disabled={sessions.findIndex((s) => s.sessionId === sessionId) <= 0}
+              >
+                <HeroNavChevron direction="prev" />
+              </button>
+              <button
+                type="button"
+                className="sleep-hero-nav next"
+                aria-label="다음 수면 세션"
+                onClick={() => shiftSession(1)}
+                disabled={sessions.findIndex((s) => s.sessionId === sessionId) >= sessions.length - 1}
+              >
+                <HeroNavChevron direction="next" />
+              </button>
+            </>
+          )}
           <div className="sleep-score-hero-top">
             <div className="sleep-score-hero-number">
               {report.score}<span className={`tag ${cls}`}>{label}</span>
@@ -431,16 +511,6 @@ export function SleepStatusReport({ onReportDateChange }) {
             </div>
           </div>
         </section>
-
-        {report.analysis.some((item) => item.description?.trim()) && (
-          <Card title="WaveAI 수면 리포트">
-            <p className="report-summary-only">
-              {report.analysis.find((item) => item.label === 'AI 분석')?.description
-                || report.analysis[0]?.description
-                || '리포트 준비 중입니다.'}
-            </p>
-          </Card>
-        )}
 
         <Card title="수면 단계">
           <SleepHypnogram
@@ -556,22 +626,6 @@ export function SleepStatusReport({ onReportDateChange }) {
             ].filter(Boolean).join(' ')}
             onAnimationEnd={handleTransitionEnd}
           >
-            {sessions.length > 1 && (
-              <div className="sleep-session-picker">
-                {sessions.map((session) => (
-                  <button
-                    key={session.sessionId}
-                    type="button"
-                    className={`sleep-session-chip${session.sessionId === sessionId ? ' active' : ''}`}
-                    onClick={() => setSessionId(session.sessionId)}
-                  >
-                    {session.label}
-                    <span>{session.score}점</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
             {reportError && !report && (
               <SleepReportEmpty message={reportError} />
             )}
