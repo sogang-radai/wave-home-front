@@ -74,6 +74,9 @@ export class AlarmApi {
       name: (payload.name || '').trim() || '알람',
       timeMinute: payload.timeMinute,
       daysOfWeek: payload.daysOfWeek || [],
+      repeatWeekly: typeof payload.repeatWeekly === 'boolean'
+        ? payload.repeatWeekly
+        : (payload.daysOfWeek || []).length > 0,
       smartWake: !!payload.smartWake,
       radarDeviceId: payload.smartWake ? payload.radarDeviceId || null : null,
       deviceId: payload.deviceId || null,

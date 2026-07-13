@@ -4,6 +4,16 @@ export { DAY_OF_WEEK_LABELS };
 
 export const DAYS_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
+/** Virtual app device — maps to null deviceId on the wire. */
+export const WAVEHOME_DEVICE_ID = 'wavehome';
+export const WAVEHOME_DEVICE_CLASS = 'wavehome_app';
+export const WAVEHOME_DEVICE = {
+  id: WAVEHOME_DEVICE_ID,
+  name: 'WaveHome',
+  class: WAVEHOME_DEVICE_CLASS,
+  connected: true,
+};
+
 const JS_DAY_TO_KEY = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export function todayDayKey(now = new Date()) {
@@ -12,12 +22,17 @@ export function todayDayKey(now = new Date()) {
 
 // device.class → 알람 방법 그룹. 이 매핑에 없는 class는 알람 장치로 선택할 수 없다.
 export const ALARM_METHOD_GROUP = {
+  [WAVEHOME_DEVICE_CLASS]: 'app_notify',
   philips_wiz_e29_color: 'light',
   philips_wiz_e29_white: 'light',
   tuya_ep2h: 'plug',
   wave_station: 'tts',
   reolink_e1_pro: 'tts',
 };
+
+export function isWaveHomeDeviceId(deviceId) {
+  return !deviceId || deviceId === WAVEHOME_DEVICE_ID;
+}
 
 export function isAlarmEligibleDevice(device) {
   return Boolean(ALARM_METHOD_GROUP[device?.class]);
@@ -28,10 +43,31 @@ export function methodGroupFor(device) {
 }
 
 export function defaultMethodFor(group) {
+  if (group === 'app_notify') return { type: 'notification' };
   if (group === 'light') return { type: 'light_on', brightness: 80 };
   if (group === 'plug') return { type: 'plug_toggle' };
   if (group === 'tts') return { type: 'tts', speakerId: null, text: '', repeatCount: 3, intervalSec: 10 };
   return null;
+}
+
+/** UI view of API alarm — empty device falls back to WaveHome + notification. */
+export function normalizeAlarmDeviceId(deviceId) {
+  return isWaveHomeDeviceId(deviceId) ? WAVEHOME_DEVICE_ID : deviceId;
+}
+
+export function normalizeAlarmMethod(method, deviceId) {
+  if (method && typeof method === 'object' && method.type) return method;
+  if (isWaveHomeDeviceId(deviceId)) return defaultMethodFor('app_notify');
+  return method || null;
+}
+
+/** Wire payload: WaveHome → null deviceId (backend has no such device row). */
+export function toApiAlarmDeviceId(deviceId) {
+  return isWaveHomeDeviceId(deviceId) ? null : deviceId;
+}
+
+export function withWaveHomeDevice(devices = []) {
+  return [WAVEHOME_DEVICE, ...devices.filter((d) => d.id !== WAVEHOME_DEVICE_ID)];
 }
 
 // ── 12시간 시계 <-> 자정 기준 분(timeMinute) 변환 ──────────────────────────
@@ -120,7 +156,11 @@ export function sortAlarmsByTime(alarms) {
 
 export function validateAlarmDraft(draft) {
   if (!draft.name.trim()) return '알람 이름을 입력하세요.';
-  if (draft.repeatWeekly && draft.daysOfWeek.length === 0) return '반복할 요일을 선택하세요.';
+  if (draft.repeatWeekly) {
+    if (draft.daysOfWeek.length === 0) return '반복할 요일을 최소 하나 선택하세요.';
+  } else if (draft.daysOfWeek.length !== 1) {
+    return '하루만 울릴 요일을 하나 선택하세요.';
+  }
   if (!draft.deviceId) return '알람 장치를 선택하세요.';
   if (draft.smartWake && !draft.radarDeviceId) return '기상 맞춤 알람에 사용할 레이더를 선택하세요.';
   const method = draft.method;
@@ -129,5 +169,6 @@ export function validateAlarmDraft(draft) {
     if (!method.speakerId && method.speakerId !== 0) return 'TTS 목소리를 선택하세요.';
     if (!method.text || !method.text.trim()) return '재생할 문구를 입력하세요.';
   }
+  // notification / light / plug need no extra fields
   return '';
 }

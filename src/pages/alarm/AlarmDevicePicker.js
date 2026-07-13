@@ -1,4 +1,16 @@
+import logo from '../../img/logo.png';
 import { deviceThumbnails } from '../iot/iotUtils';
+import { WAVEHOME_DEVICE_CLASS, WAVEHOME_DEVICE_ID } from './alarmUtils';
+
+function DeviceThumb({ device }) {
+  if (device.class === WAVEHOME_DEVICE_CLASS || device.id === WAVEHOME_DEVICE_ID) {
+    return <img src={logo} alt="" className="alarm-device-thumb-logo" />;
+  }
+  if (deviceThumbnails[device.class]) {
+    return <img src={deviceThumbnails[device.class]} alt="" />;
+  }
+  return <span className="alarm-device-thumb-fallback">⌁</span>;
+}
 
 // Single-select device picker with thumbnails — same visual idea as
 // TriggerDevicePicker (pages/iot/TriggerRulesTab.js) but scoped to the alarm
@@ -17,11 +29,7 @@ export function AlarmDevicePicker({ devices, value, onChange }) {
           onClick={() => onChange(d.id)}
         >
           <span className="alarm-device-thumb" aria-hidden="true">
-            {deviceThumbnails[d.class] ? (
-              <img src={deviceThumbnails[d.class]} alt="" />
-            ) : (
-              <span className="alarm-device-thumb-fallback">⌁</span>
-            )}
+            <DeviceThumb device={d} />
           </span>
           <span className="alarm-device-name">{d.name}</span>
         </button>

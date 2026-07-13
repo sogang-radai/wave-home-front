@@ -7,6 +7,8 @@ import { InfoTooltip } from './InfoTooltip';
 import {
   DAYS_ORDER, DAY_OF_WEEK_LABELS, todayDayKey, methodGroupFor, defaultMethodFor,
   formatClock12, timeMinuteFrom, validateAlarmDraft,
+  WAVEHOME_DEVICE_ID, WAVEHOME_DEVICE, normalizeAlarmDeviceId, normalizeAlarmMethod,
+  toApiAlarmDeviceId,
 } from './alarmUtils';
 
 function emptyDraft() {
@@ -15,26 +17,31 @@ function emptyDraft() {
     hour12: 7,
     minute: 0,
     meridiem: 'AM',
-    daysOfWeek: [],
+    daysOfWeek: [todayDayKey()],
     repeatWeekly: false,
     smartWake: false,
     radarDeviceId: '',
-    deviceId: '',
-    method: null,
+    deviceId: WAVEHOME_DEVICE_ID,
+    method: defaultMethodFor('app_notify'),
     enabled: true,
   };
 }
 
 function draftFromAlarm(alarm) {
+  const deviceId = normalizeAlarmDeviceId(alarm.deviceId);
+  const days = alarm.daysOfWeek || [];
+  const repeatWeekly = typeof alarm.repeatWeekly === 'boolean'
+    ? alarm.repeatWeekly
+    : days.length > 0;
   return {
     name: alarm.name,
     ...formatClock12(alarm.timeMinute),
-    daysOfWeek: alarm.daysOfWeek || [],
-    repeatWeekly: (alarm.daysOfWeek || []).length > 0,
+    daysOfWeek: days.length > 0 ? days : (repeatWeekly ? [] : [todayDayKey()]),
+    repeatWeekly,
     smartWake: alarm.smartWake,
     radarDeviceId: alarm.radarDeviceId || '',
-    deviceId: alarm.deviceId || '',
-    method: alarm.method,
+    deviceId,
+    method: normalizeAlarmMethod(alarm.method, alarm.deviceId),
     enabled: alarm.enabled,
   };
 }
@@ -48,17 +55,18 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
     setSubmitError('');
   }, [alarm]);
 
-  const selectedDevice = devices.find((d) => d.id === draft.deviceId) || null;
+  const selectedDevice = draft.deviceId === WAVEHOME_DEVICE_ID
+    ? WAVEHOME_DEVICE
+    : (devices.find((d) => d.id === draft.deviceId) || null);
 
   const toggleDay = (day) => {
-    if (!draft.repeatWeekly) return;
+    if (!draft.repeatWeekly) {
+      setDraft((d) => ({ ...d, daysOfWeek: [day] }));
+      return;
+    }
     const next = draft.daysOfWeek.includes(day)
       ? draft.daysOfWeek.filter((d) => d !== day)
       : [...draft.daysOfWeek, day];
-    if (next.length === 0) {
-      setDraft((d) => ({ ...d, daysOfWeek: [], repeatWeekly: false }));
-      return;
-    }
     setDraft((d) => ({ ...d, daysOfWeek: next }));
   };
 
@@ -71,11 +79,17 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
       }));
       return;
     }
-    setDraft((d) => ({ ...d, repeatWeekly: false, daysOfWeek: [] }));
+    setDraft((d) => ({
+      ...d,
+      repeatWeekly: false,
+      daysOfWeek: d.daysOfWeek.length > 0 ? [d.daysOfWeek[0]] : [todayDayKey()],
+    }));
   };
 
   const setDevice = (deviceId) => {
-    const device = devices.find((d) => d.id === deviceId) || null;
+    const device = deviceId === WAVEHOME_DEVICE_ID
+      ? WAVEHOME_DEVICE
+      : (devices.find((d) => d.id === deviceId) || null);
     const group = methodGroupFor(device);
     setDraft((d) => ({ ...d, deviceId, method: defaultMethodFor(group) }));
   };
@@ -92,10 +106,11 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
     const payload = {
       name: draft.name,
       timeMinute: timeMinuteFrom(draft.hour12, draft.minute, draft.meridiem),
-      daysOfWeek: draft.repeatWeekly ? draft.daysOfWeek : [],
+      daysOfWeek: draft.daysOfWeek,
+      repeatWeekly: draft.repeatWeekly,
       smartWake: draft.smartWake,
       radarDeviceId: draft.smartWake ? draft.radarDeviceId || null : null,
-      deviceId: draft.deviceId,
+      deviceId: toApiAlarmDeviceId(draft.deviceId),
       method: draft.method,
       enabled: draft.enabled,
     };
@@ -149,7 +164,6 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
                     type="button"
                     className={[draft.daysOfWeek.includes(day) && 'active', day === 'sun' && 'is-sunday'].filter(Boolean).join(' ')}
                     onClick={() => toggleDay(day)}
-                    disabled={!draft.repeatWeekly}
                     aria-pressed={draft.daysOfWeek.includes(day)}
                   >
                     {DAY_OF_WEEK_LABELS[day]}

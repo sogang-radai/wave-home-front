@@ -5,7 +5,7 @@ import iotApi from '../../api/iotApi';
 import { getNow } from '../../lib/demoClock';
 import { AlarmEditor } from './AlarmEditor';
 import { AlarmCard } from './AlarmCard';
-import { isAlarmEligibleDevice, computeNextFireDate, formatCountdownLabel, sortAlarmsByTime } from './alarmUtils';
+import { isAlarmEligibleDevice, computeNextFireDate, formatCountdownLabel, sortAlarmsByTime, withWaveHomeDevice } from './alarmUtils';
 import './alarm.css';
 
 export function AlarmPage() {
@@ -40,7 +40,10 @@ export function AlarmPage() {
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, [selectedAlarmId]);
 
-  const eligibleDevices = useMemo(() => devices.filter(isAlarmEligibleDevice), [devices]);
+  const eligibleDevices = useMemo(
+    () => withWaveHomeDevice(devices.filter(isAlarmEligibleDevice)),
+    [devices],
+  );
   const radarDevices = useMemo(() => devices.filter((d) => d.class === 'srs_r4sn'), [devices]);
   const selectedAlarm = alarms.find((a) => a.id === selectedAlarmId) || null;
 

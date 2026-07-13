@@ -1,6 +1,27 @@
 import { useEffect, useState } from 'react';
 import settingsApi from '../../api/settingsApi';
+import { BellIcon } from '../../components/layout/TopBar';
 import { methodGroupFor } from './alarmUtils';
+
+function AppNotifyMethodPanel({ method, onChange }) {
+  // Only one method for WaveHome — keep selection explicit for wizard clarity.
+  const active = !method?.type || method.type === 'notification';
+  return (
+    <div className="alarm-method-panel">
+      <div className="alarm-method-buttons-col">
+        <button
+          type="button"
+          className={`alarm-method-notify-btn${active ? ' active' : ''}`}
+          onClick={() => onChange({ type: 'notification' })}
+        >
+          <BellIcon />
+          <span>알림</span>
+        </button>
+      </div>
+      <p className="alarm-method-hint">앱 헤더 알림으로 알람을 받습니다.</p>
+    </div>
+  );
+}
 
 function LightMethodPanel({ method, onChange }) {
   const kind = method?.type === 'light_blink' ? 'light_blink' : 'light_on';
@@ -127,6 +148,7 @@ export function AlarmMethodPanel({ device, method, onChange }) {
     return <p className="panel-empty">알람 장치를 먼저 선택하세요.</p>;
   }
   const group = methodGroupFor(device);
+  if (group === 'app_notify') return <AppNotifyMethodPanel method={method} onChange={onChange} />;
   if (group === 'light') return <LightMethodPanel method={method} onChange={onChange} />;
   if (group === 'plug') return <PlugMethodPanel method={method} onChange={onChange} />;
   if (group === 'tts') return <TtsMethodPanel method={method} onChange={onChange} />;

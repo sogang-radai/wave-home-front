@@ -198,6 +198,8 @@ const WheelColumn = forwardRef(function WheelColumn({
 
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
+    // moveOneStep is stable for this mount (reads refs); rebind when itemHeight changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemHeight]);
 
   useEffect(() => () => {
