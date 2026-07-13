@@ -1,12 +1,12 @@
 export const insightSuggestions = [
   '오늘 수면 인사이트 알려줘',
-  '자세 점수가 왜 낮아졌어?',
+  '이번 주 전력 사용량 어때?',
   '오늘 심박수 어때?',
 ];
 
 export const CHAT_SUGGESTION_POOL = [
   { icon: '🌙', label: '수면 분석', prompt: '어젯밤 수면 점수를 분석해줘' },
-  { icon: '🧘', label: '자세 교정', prompt: '거북목 개선 스트레칭 루틴 추천해줘' },
+  { icon: '⚡', label: '전력 점검', prompt: '지금 집 전체 전력 사용량 알려줘' },
   { icon: '❤️', label: '심박 트렌드', prompt: '오늘 심박수가 평소와 다른 이유가 뭐야?' },
   { icon: '🏠', label: '가전 자동화', prompt: '취침 전 가전 자동화 설정 도와줘' },
   { icon: '📋', label: '헬스 루틴', prompt: '이번 주 건강 목표를 세워줘' },
@@ -57,27 +57,6 @@ export const initialChatConversations = [
   },
   {
     id: 3,
-    title: '거북목 알림이 많았어',
-    messages: [
-      { role: 'user', text: '오늘 자세 알림이 유난히 많던데, 뭐가 달랐어?' },
-      {
-        role: 'assistant',
-        text: '침실 책상 레이더 기준 거북목이 9회 감지됐어요. 전주 같은 요일 평균은 5회였고, 특히 14:00~17:30 구간에 2시간 넘게 고개가 15° 이상 기울어진 상태가 이어졌습니다.',
-      },
-      { role: 'user', text: '그 시간에 화상회의가 길었거든. 바로 할 수 있는 스트레칭 있어?' },
-      {
-        role: 'assistant',
-        text: '자리에 앉은 채로 해보세요.\n\n1. 턱 당기기 — 10초씩 5회\n2. 어깨를 뒤로 당기며 가슴 펴기 — 15초 × 3회\n3. 목 좌우 기울이기 — 각 20초\n\n회의 중 50분마다 2분만 해도 거북목 빈도가 눈에 띄게 줄어요.',
-      },
-      { role: 'user', text: '이거 주간 계획에 평일 오후 스트레칭으로 넣어줄래?' },
-      {
-        role: 'assistant',
-        text: '주간 계획에 "평일 15:00 스트레칭 5분"을 추가했어요. 월~금 반복, 카테고리는 자세로 넣어뒀습니다.',
-      },
-    ],
-  },
-  {
-    id: 4,
     title: '이번 주 전기 사용량',
     messages: [
       { role: 'user', text: '이번 주 전기 사용량이 평소보다 많은 것 같은데, 뭐가 많이 썼어?' },
@@ -98,7 +77,7 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 5,
+    id: 4,
     title: '스마트 기상 알람',
     messages: [
       { role: 'user', text: '요즘 알람 맞고 일어나도 개운하지 않아. 스마트 기상이 뭐 하는 거야?' },
@@ -116,7 +95,7 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 6,
+    id: 5,
     title: '새벽에 자꾸 깨',
     messages: [
       { role: 'user', text: '요즘 새벽 3시쯤마다 깨는데, 수면 데이터에 뭐 보여?' },
@@ -142,18 +121,18 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 7,
+    id: 6,
     title: '오늘 전반 컨디션',
     messages: [
       { role: 'user', text: '오늘 전체적으로 컨디션 어때?' },
       {
         role: 'assistant',
-        text: '수면 7시간 12분(점수 81), 자세 점수 74, 심박 평균 66bpm으로 전반적으로 안정적이에요. 어제 대비 수면은 +34분, 거북목은 2회 줄었습니다.',
+        text: '수면 7시간 12분(점수 81), 심박 평균 66bpm으로 전반적으로 안정적이에요. 어제 대비 수면은 +34분이었고, 수면 효율도 평소 수준을 회복했습니다.',
       },
       { role: 'user', text: '오후에 신경 쓸 부분 있어?' },
       {
         role: 'assistant',
-        text: '14:00 화상회의가 주간 계획에 있어요. 지난번처럼 2시간 넘게 앉으면 거북목이 다시 늘 수 있어서, 15:00 스트레칭 알림이 울리면 잠깐만 일어나 주세요.',
+        text: '14:00 화상회의가 주간 계획에 있어요. 오래 앉아 있으면 피로가 쌓일 수 있어서, 15:00쯤 짧게 일어나 스트레칭하는 걸 권해요.',
       },
       { role: 'user', text: '오케이. 수면은 오늘 밤 뭐 신경 쓰면 돼?' },
       {
@@ -163,7 +142,7 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 8,
+    id: 7,
     title: '주간 수면 비교',
     messages: [
       { role: 'user', text: '이번 주 수면을 지난주랑 비교해줘' },
@@ -184,7 +163,7 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 9,
+    id: 8,
     title: '거실 더워서 선풍기',
     messages: [
       { role: 'user', text: '거실이 답답한데 선풍기 켜줘' },
@@ -199,23 +178,23 @@ export const initialChatConversations = [
     ],
   },
   {
-    id: 10,
+    id: 9,
     title: '출근 전 점검',
     messages: [
       { role: 'user', text: '출근 전에 오늘 상태랑 할 일 정리해줘' },
       {
         role: 'assistant',
-        text: '수면 6시간 52분, 스마트 기상이 06:22에 작동했어요(설정 06:30). 자세 점수 71, 심박은 기상 직후 68bpm에서 지금 62bpm으로 안정됐습니다.',
+        text: '수면 6시간 52분, 스마트 기상이 06:22에 작동했어요(설정 06:30). 심박은 기상 직후 68bpm에서 지금 62bpm으로 안정됐습니다.',
       },
       { role: 'user', text: '오늘 일정 중에 건강 관련으로 챙길 거 있어?' },
       {
         role: 'assistant',
-        text: '주간 계획에 14:00 회의, 18:30 "저녁 산책 20분", 21:00 "수면 준비"가 있어요. 어제 거북목이 많았던 만큼 오후 스트레칭 알림도 15:00에 울릴 예정입니다.',
+        text: '주간 계획에 14:00 회의, 18:30 "저녁 산책 20분", 21:00 "수면 준비"가 있어요. 퇴근 후 산책만 지키면 수면 리듬에도 도움이 됩니다.',
       },
       { role: 'user', text: '집 나가기 전에 침실 에어컨이랑 조명 꺼줘' },
       { role: 'assistant', text: '플러그3(에어컨)과 침실 조명을 껐어요. 퇴근 후 취침 전 루틴은 그대로 유지돼 있습니다.' },
       { role: 'user', text: '좋아, 이따 봐' },
-      { role: 'assistant', text: '좋은 하루 보내세요. 오후 컨디션 떨어지면 잠깐 일어나서 스트레칭하는 것만 기억해 주세요.' },
+      { role: 'assistant', text: '좋은 하루 보내세요. 오후에 피곤하면 잠깐 일어나 걷는 것만 기억해 주세요.' },
     ],
   },
 ];
@@ -225,20 +204,14 @@ export function getInsightReply(question) {
   if (q.includes('수면') || q.includes('잠')) {
     return '어젯밤 수면 시간은 7.0시간으로 7일 평균(7.2시간)과 비슷했지만 일일 목표인 7.5시간에는 살짝 못 미쳤어요. 입면은 23:42, 기상은 06:42였어요.';
   }
-  if (q.includes('자세') || q.includes('거북목')) {
-    return '오늘 자세 점수는 68점/100으로 다소 주의가 필요해요. 거북목이 4회 감지되었지만 전주 평균 7.3회보다는 개선된 편이에요.';
+  if (q.includes('전력') || q.includes('전기') || q.includes('watt') || q.includes('w')) {
+    return '지난 7일 집 전체 사용량은 약 18.4kWh예요. 에어컨 비중이 가장 크고, 그다음이 컴퓨터·선풍기 순입니다.';
   }
   if (q.includes('심박') || q.includes('맥박') || q.includes('bpm')) {
     return '오늘 심박수는 평균 69bpm이고 최저 54bpm·최고 82bpm을 기록했어요. 현재 측정값은 62bpm으로 안정적인 범위예요.';
   }
   if (q.includes('레이더') || q.includes('연결')) {
-    return '침실 하방 레이더는 정상적으로 연결되어 있어요. 기기등록 설정에서 구역별 연결 상태를 확인할 수 있어요.';
+    return '침실 하방 레이더와 책상 레이더는 모두 정상 연결되어 있어요.';
   }
-  if (q.includes('전기') || q.includes('전력')) {
-    return '이번 주 집 전체 전력은 18.4kWh예요. 에어컨이 41%, 컴퓨터가 24%로 가장 많이 썼습니다.';
-  }
-  if (q.includes('알람') || q.includes('기상')) {
-    return '평일 06:30 기상 알람이 켜져 있고 스마트 기상도 활성화돼 있어요. 주말은 08:00 알람이 따로 설정돼 있습니다.';
-  }
-  return '수면, 자세, 심박, 전력, 가전 제어에 대해 물어보시면 오늘 데이터를 바탕으로 알려드릴게요.';
+  return '관련 데이터를 확인했어요. 수면·전력·심박 중 궁금한 항목을 구체적으로 물어봐 주시면 더 자세히 알려드릴게요.';
 }

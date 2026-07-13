@@ -54,6 +54,7 @@ export function ChatPage({
   onDeleteConv,
   onRenameConv,
   onSendMessage,
+  chatSending = false,
   onShrink,
   waveTransition,
   initialDraft,
@@ -151,7 +152,9 @@ export function ChatPage({
           isNewChat={isNewChat}
           chatEntered={chatEntered}
           onSend={onSendMessage}
+          sending={chatSending}
           compact={false}
+          conversationKey={activeConvId || 'new'}
           topbarLeft={topbarLeft}
           topbarRight={topbarRight}
           waveTransition={waveTransition}

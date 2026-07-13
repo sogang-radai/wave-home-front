@@ -88,6 +88,7 @@ export function ChatPopup({
   onDeleteConv,
   onRenameConv,
   onSendMessage,
+  chatSending = false,
   onExpand,
   onMini,
   onClose,
@@ -392,7 +393,9 @@ export function ChatPopup({
             isNewChat={isNewChat}
             chatEntered={true}
             onSend={onSendMessage}
+            sending={chatSending}
             compact={true}
+            conversationKey={activeConvId || 'new'}
           />
         )
       )}
