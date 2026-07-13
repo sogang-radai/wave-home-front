@@ -552,8 +552,17 @@ function App() {
     [],
   );
 
+  const enterAppAt = (target) => {
+    setShowLanding(false);
+    if (!target) return;
+    const spec = typeof target === 'string' ? { page: target } : target;
+    if (spec.chatMode) setChatMode(spec.chatMode);
+    if (spec.homeTab) setHomeTab(spec.homeTab);
+    if (spec.page) setPage(spec.page);
+  };
+
   if (showLanding) {
-    return <LandingPage onEnter={() => setShowLanding(false)} />;
+    return <LandingPage onEnter={enterAppAt} />;
   }
 
   if (!account) {

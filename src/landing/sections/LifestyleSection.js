@@ -20,6 +20,7 @@ const cards = [
         ]}
       />
     ),
+    target: "weeklyPlan",
   },
   {
     eyebrow: "스마트 알람",
@@ -40,6 +41,7 @@ const cards = [
         ]}
       />
     ),
+    target: "alarm",
   },
 ];
 

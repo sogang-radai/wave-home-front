@@ -307,7 +307,7 @@ function Card({ card, onEnter }) {
           <motion.button
             type="button"
             variants={itemVariants}
-            onClick={onEnter}
+            onClick={() => onEnter(card.target)}
             className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-wave-light hover:underline"
           >
             자세히 보기

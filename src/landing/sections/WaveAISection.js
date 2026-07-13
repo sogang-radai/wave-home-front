@@ -5,11 +5,12 @@ import ListRows from "../mockups/ListRows";
 const cards = [
   {
     eyebrow: "인사이트 챗",
-    title: "오늘 데이터를 바로 물어보는 사이드 패널",
+    title: "오늘 데이터를 바로 물어보는 팝업창",
     description:
       "화면 어디서든 열 수 있는 채팅 패널에서 오늘의 수면·심박·라이프스타일 데이터에 대해 자연어로 질문하고 즉시 답을 받으세요.",
     bullets: ["오늘 데이터 기반 즉답", "화면 어디서든 열리는 패널", "질문에서 바로 자동화 제안"],
     media: <ChatBubbles />,
+    target: { page: "main", chatMode: "popup" },
   },
   {
     eyebrow: "권장 액션",
@@ -26,6 +27,7 @@ const cards = [
         ]}
       />
     ),
+    target: "weeklyPlan",
   },
   {
     eyebrow: "기기 제어",
@@ -46,6 +48,7 @@ const cards = [
         ]}
       />
     ),
+    target: { page: "main", chatMode: "popup" },
   },
 ];
 
@@ -56,7 +59,7 @@ export default function WaveAISection({ onEnter }) {
       index={2}
       eyebrow="WaveAI"
       title="멀티 에이전트 WaveAI"
-      description="사이드 패널에서 오늘의 수면·심박·라이프스타일 데이터를 바로 물어보고, 권장 액션을 승인만 하면 실행까지 이어집니다."
+      description="팝업창에서 오늘의 수면·심박·라이프스타일 데이터를 바로 물어보고, 권장 액션을 승인만 하면 실행까지 이어집니다."
       cards={cards}
       onEnter={onEnter}
     />

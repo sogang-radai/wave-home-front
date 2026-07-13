@@ -14,6 +14,7 @@ const cards = [
       "가장 먼저 처리할 일 하나를 상단에 고정",
     ],
     media: <StatGrid />,
+    target: "main",
   },
   {
     eyebrow: "빠른 이동",
@@ -34,6 +35,7 @@ const cards = [
         ]}
       />
     ),
+    target: "main",
   },
 ];
 

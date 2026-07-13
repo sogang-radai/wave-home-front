@@ -17,6 +17,7 @@ const cards = [
         className="aspect-[2419/1464] w-full rounded-xl object-cover"
       />
     ),
+    target: "homeTwin",
   },
   {
     eyebrow: "가전 제어",
@@ -25,6 +26,7 @@ const cards = [
       "레이더가 인식한 제스처를 원하는 IoT 기기 동작에 자유롭게 연결합니다. 손을 흔들어 조명을 끄고, 스와이프해서 에어컨을 조절하세요.",
     bullets: ["제스처-기기 매핑 자유롭게 설정", "인식 기록으로 오탐 확인", "침실별 제스처 세트 분리"],
     media: <GestureGrid />,
+    target: { page: "home", homeTab: "gesture" },
   },
   {
     eyebrow: "제스처 세트 관리",
@@ -41,6 +43,7 @@ const cards = [
         ]}
       />
     ),
+    target: { page: "home", homeTab: "gesture" },
   },
   {
     eyebrow: "전력 관리",
@@ -60,6 +63,7 @@ const cards = [
         color="#22c55e"
       />
     ),
+    target: "power",
   },
 ];
 
