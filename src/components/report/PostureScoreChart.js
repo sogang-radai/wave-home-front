@@ -39,8 +39,14 @@ export function PostureScoreChart({ data, xKey, valueKey = 'value', noteKey }) {
         <XAxis dataKey={xKey} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
         <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
         <Tooltip content={<PostureScoreTooltip xKey={xKey} valueKey={valueKey} noteKey={noteKey} />} cursor={{ fill: 'var(--wave-10)' }} />
-        <Bar dataKey={valueKey} radius={[8, 8, 0, 0]} maxBarSize={36}>
-          <LabelList dataKey={valueKey} position="top" formatter={(value) => `${value}점`} style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }} />
+        <Bar dataKey={valueKey} radius={[8, 8, 0, 0]} maxBarSize={36} isAnimationActive={false}>
+          <LabelList
+            dataKey={valueKey}
+            position="top"
+            formatter={(value) => `${value}점`}
+            style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }}
+            isAnimationActive={false}
+          />
           {data.map((d) => (
             <Cell key={d[xKey]} fill={postureScoreColor(d[valueKey])} />
           ))}

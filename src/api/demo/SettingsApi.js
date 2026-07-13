@@ -17,7 +17,6 @@ const GuardedSettingsApi = withDemoWriteGuard(MockSettingsApi, [
   'deleteDevice',
   'assignDeviceToRoom',
   'unassignDeviceFromRoom',
-  'updateAiAgentSettings',
   'updateSleepConfig',
   'updateGeneralSettings',
 ]);
@@ -31,12 +30,32 @@ export class SettingsApi extends GuardedSettingsApi {
     return realSettingsApi.getAccounts();
   }
 
+  getRooms() {
+    return realSettingsApi.getRooms();
+  }
+
+  getRoomMembers(roomId) {
+    return realSettingsApi.getRoomMembers(roomId);
+  }
+
+  getDevices() {
+    return realSettingsApi.getDevices();
+  }
+
   switchActiveAccount(accountId) {
     return realSettingsApi.switchActiveAccount(accountId);
   }
 
   getSleepConfig() {
     return realSettingsApi.getSleepConfig();
+  }
+
+  getAiAgentSettings() {
+    return realSettingsApi.getAiAgentSettings();
+  }
+
+  updateAiAgentSettings(payload) {
+    return realSettingsApi.updateAiAgentSettings(payload);
   }
 
   getNotifications(params) {

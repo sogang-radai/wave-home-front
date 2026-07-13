@@ -632,6 +632,21 @@
   background: #1d4ed8;
 }
 
+.plan-add-time-warn {
+  min-height: 18px;
+  margin-bottom: 6px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.plan-add-days-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .plan-add-repeat {
   display: flex;
   align-items: center;

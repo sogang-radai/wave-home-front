@@ -471,8 +471,8 @@ export class SettingsApi {
   async updateAiAgentSettings({ personalPrompt, selectedModelId, ctrlEnterSend, waveAiSound }) {
     await delay();
     if (personalPrompt !== undefined) {
-      if (personalPrompt.length > 1000) {
-        throw apiError(400, 'PROMPT_TOO_LONG', '개인 프롬프트는 1000자 이하여야 합니다.', { field: 'personalPrompt' });
+      if (personalPrompt.length > 10000) {
+        throw apiError(400, 'PROMPT_TOO_LONG', '개인 프롬프트는 10000자 이하여야 합니다.', { field: 'personalPrompt' });
       }
       aiAgentSettings.personalPrompt = personalPrompt;
     }

@@ -82,6 +82,10 @@ export class IotApi extends MockIotApi {
     );
   }
 
+  async getRooms() {
+    return preferReal(() => realIotApi.getRooms(), () => super.getRooms());
+  }
+
   async getDeviceState(deviceId) {
     // Demo device state must stay on the server session. Falling back to the
     // mock store would reset brightness/color to seed values (e.g. 70).
@@ -159,6 +163,10 @@ export class IotApi extends MockIotApi {
     return preferReal(() => realIotApi.getRules(), () => super.getRules());
   }
 
+  async getSpeechOverlays() {
+    return preferReal(() => realIotApi.getSpeechOverlays(), async () => ({}));
+  }
+
   async getRulesForDevice(deviceId) {
     return preferReal(
       () => realIotApi.getRulesForDevice(deviceId),
@@ -220,9 +228,4 @@ export class IotApi extends MockIotApi {
   subscribeWaveStationTelemetry(deviceId, handlers = {}) {
     return super.subscribeWaveStationTelemetry(deviceId, handlers);
   }
-
-  async getSpeechOverlays() {
-    return preferReal(() => realIotApi.getSpeechOverlays(), async () => ({}));
-  }
-
 }

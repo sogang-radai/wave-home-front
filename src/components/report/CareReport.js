@@ -19,7 +19,7 @@ export function weeklyScoreStatus(value) {
 }
 
 export function weeklyHoursColor(hours) {
-  return hours >= 7 ? 'var(--wave)' : hours >= 6 ? 'var(--wave-40)' : 'var(--wave-20)';
+  return hours >= 7 ? '#2f9e64' : hours >= 6 ? '#6bcb8a' : '#b7dfc4';
 }
 
 export function WeeklyTrendSummary({
@@ -134,12 +134,13 @@ export function CareReport({
                   content={<WeeklyTrendTooltip valueKey={trendValueKey} unit={trendUnit} valueLabel={trendTooltipLabel} />}
                   cursor={{ fill: 'var(--wave-10)' }}
                 />
-                <Bar dataKey={trendValueKey} radius={[8, 8, 0, 0]} maxBarSize={36}>
+                <Bar dataKey={trendValueKey} radius={[8, 8, 0, 0]} maxBarSize={36} isAnimationActive={false}>
                   <LabelList
                     dataKey={trendValueKey}
                     position="top"
                     formatter={(value) => `${value}${trendUnit}`}
                     style={{ fill: 'var(--ink)', fontSize: 12, fontWeight: 700 }}
+                    isAnimationActive={false}
                   />
                   {trendData.map((d) => (
                     <Cell key={d.day} fill={trendColorFn(d[trendValueKey])} />

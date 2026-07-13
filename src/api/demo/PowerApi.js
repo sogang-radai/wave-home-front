@@ -1,6 +1,7 @@
 import { delay } from '../mock/utils';
 import { InsightsApi } from '../mock/InsightsApi';
 import { PowerApi as RealPowerApi } from '../v1/PowerApi';
+import { guardDemoWrite } from '../../lib/demoGuard';
 import {
   findDemoPlug,
   generatePowerPeriodTrend,
@@ -81,6 +82,7 @@ export class PowerApi {
   }
 
   async updateInsight(insightId, { approved }) {
+    if (!guardDemoWrite()) return null;
     await delay();
     requireActiveAccount();
     return insightsApi.updateInsight(insightId, { approved });

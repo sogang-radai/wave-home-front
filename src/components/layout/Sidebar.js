@@ -131,6 +131,7 @@ export function Sidebar({
   isDemoMode = false,
   mobileOpen = false,
   onMobileClose,
+  onShowLanding,
   accounts = [],
   account,
   onSwitchAccount,
@@ -154,14 +155,19 @@ export function Sidebar({
     onMobileClose?.();
   };
 
+  const handleShowLanding = () => {
+    onShowLanding?.();
+    onMobileClose?.();
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="brand">
         <button
           type="button"
           className="brand-mark brand-mark--home"
-          aria-label="대시보드로 이동"
-          onClick={() => handleSelect('main')}
+          aria-label="랜딩 페이지로 이동"
+          onClick={handleShowLanding}
         >
           <img src={logo} alt="" />
         </button>

@@ -6,12 +6,13 @@ import iconGemma from '../../img/logo/icon_gemma.png';
 import iconOpenAI from '../../img/logo/icon_openai.png';
 import iconNomic from '../../img/logo/icon_nomic.png';
 
-const PROMPT_LIMIT = 1000;
+const PROMPT_LIMIT = 10000;
 
 // Map model id/name/vendor to a vendor icon image.
 function getVendorIcon(model) {
-  const name = model.name.toLowerCase();
-  const id = model.id.toLowerCase();
+  if (!model) return null;
+  const name = String(model.name || '').toLowerCase();
+  const id = String(model.id || '').toLowerCase();
   if (name.startsWith('gemma') || id.startsWith('gemma')) return iconGemma;
   if (name.startsWith('gemini') || id.startsWith('gemini')) return iconGemini;
   if (model.vendor === 'openai' || name.startsWith('gpt') || id.startsWith('gpt')) return iconOpenAI;
@@ -29,13 +30,14 @@ export function AiAgentSettings({ heading }) {
   const [settings, setSettings] = useState(null);
   const [models, setModels] = useState([]);
   const [prompt, setPrompt] = useState('');
+  const [promptError, setPromptError] = useState('');
   const textareaRef = useRef(null);
 
   useEffect(() => {
     Promise.all([settingsApi.getAiAgentSettings(), settingsApi.getAiModels()])
       .then(([cfg, mdls]) => {
         setSettings(cfg);
-        setPrompt(cfg.personalPrompt);
+        setPrompt(typeof cfg.personalPrompt === 'string' ? cfg.personalPrompt : '');
         setModels(mdls);
       });
   }, []);
@@ -50,12 +52,22 @@ export function AiAgentSettings({ heading }) {
 
   const savePrompt = async () => {
     if (!settings || prompt === settings.personalPrompt) return;
-    const saved = await settingsApi.updateAiAgentSettings({ personalPrompt: prompt });
-    setSettings(saved);
+    try {
+      const saved = await settingsApi.updateAiAgentSettings({ personalPrompt: prompt });
+      if (saved) {
+        setSettings(saved);
+        setPrompt(typeof saved.personalPrompt === 'string' ? saved.personalPrompt : '');
+        setPromptError('');
+      }
+    } catch (err) {
+      const message = err?.message || err?.error?.message || '프롬프트를 저장하지 못했습니다.';
+      setPromptError(message);
+    }
   };
 
   const handlePromptChange = (event) => {
     setPrompt(event.target.value);
+    if (promptError) setPromptError('');
     const el = event.target;
     el.style.height = 'auto';
     el.style.height = `${Math.max(el.scrollHeight, 120)}px`;
@@ -64,18 +76,42 @@ export function AiAgentSettings({ heading }) {
   // Optimistic selection: update UI immediately, then sync with API response.
   const selectModel = (modelId) => {
     setSettings((current) => (current ? { ...current, selectedModelId: modelId } : current));
-    settingsApi.updateAiAgentSettings({ selectedModelId: modelId })
-      .then(setSettings)
+    const payload = { selectedModelId: modelId };
+    // Persist any in-progress prompt draft with the model change so a partial
+    // PUT cannot resurrect the previous personalPrompt from the server copy.
+    if (settings && prompt !== settings.personalPrompt) {
+      payload.personalPrompt = prompt;
+    }
+    settingsApi.updateAiAgentSettings(payload)
+      .then((saved) => {
+        if (!saved) return;
+        setSettings(saved);
+        if (typeof saved.personalPrompt === 'string') setPrompt(saved.personalPrompt);
+      })
       .catch(() => {
         // Revert to server state on API failure.
-        settingsApi.getAiAgentSettings().then(setSettings);
+        settingsApi.getAiAgentSettings().then((cfg) => {
+          setSettings(cfg);
+          setPrompt(typeof cfg?.personalPrompt === 'string' ? cfg.personalPrompt : '');
+        });
       });
   };
 
   const patchSettings = (patch) => {
-    setSettings((current) => (current ? { ...current, ...patch } : current));
-    settingsApi.updateAiAgentSettings(patch).then(setSettings).catch(() => {
-      settingsApi.getAiAgentSettings().then(setSettings);
+    const payload = { ...patch };
+    if (settings && prompt !== settings.personalPrompt) {
+      payload.personalPrompt = prompt;
+    }
+    setSettings((current) => (current ? { ...current, ...payload } : current));
+    settingsApi.updateAiAgentSettings(payload).then((saved) => {
+      if (!saved) return;
+      setSettings(saved);
+      if (typeof saved.personalPrompt === 'string') setPrompt(saved.personalPrompt);
+    }).catch(() => {
+      settingsApi.getAiAgentSettings().then((cfg) => {
+        setSettings(cfg);
+        setPrompt(typeof cfg?.personalPrompt === 'string' ? cfg.personalPrompt : '');
+      });
     });
   };
 
@@ -99,6 +135,7 @@ export function AiAgentSettings({ heading }) {
             onBlur={savePrompt}
           />
           <span className="prompt-counter">{prompt.length}/{PROMPT_LIMIT}</span>
+          {promptError && <span className="prompt-error">{promptError}</span>}
         </div>
       </SettingsSection>
 

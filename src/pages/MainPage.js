@@ -22,10 +22,6 @@ const SLEEP_RADAR = {
   role: '수면 감지',
   room: '침실',
 };
-const POSTURE_RADAR = {
-  name: '침실 책상 레이더',
-  role: '자세 분석',
-};
 
 function formatOfflineDetail(devices) {
   const offline = devices.filter((device) => !device.connected);

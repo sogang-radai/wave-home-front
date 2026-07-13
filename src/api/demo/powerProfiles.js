@@ -52,7 +52,7 @@ const PLUG_PC = plugProfile({
   name: '플러그2 - 컴퓨터',
   room: '침실',
   summary: '업무 시간대에 일정한 소비 전력이 관측됩니다.',
-  powerW: 100,
+  powerW: 350,
   switchOn: true,
 });
 
@@ -74,6 +74,15 @@ const PLUG_INDUCTION = plugProfile({
   switchOn: false,
 });
 
+const PLUG_MICROWAVE = plugProfile({
+  id: hexId(14),
+  name: '플러그5 - 전자레인지',
+  room: '부엌',
+  summary: '짧은 가열 구간에서 약 1100W가 관측됩니다.',
+  powerW: 1100,
+  switchOn: false,
+});
+
 const ACTIVE_PLUGS = [PLUG_AC, PLUG_PC, PLUG_FAN];
 
 const ALL_POWER_W = ACTIVE_PLUGS.reduce((sum, plug) => sum + plug.power_w, 0);
@@ -91,6 +100,7 @@ export const DEMO_POWER_PLUGS = [
   PLUG_PC,
   PLUG_AC,
   PLUG_INDUCTION,
+  PLUG_MICROWAVE,
 ];
 
 /** Live W with light noise around the profile base. */

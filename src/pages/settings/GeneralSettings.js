@@ -106,7 +106,7 @@ export function GeneralSettings({ heading }) {
     const next = { ...config, ...patch };
     setConfig(next);
     const saved = await settingsApi.updateGeneralSettings(next);
-    setConfig(saved);
+    if (saved) setConfig(saved);
   };
 
   if (!config) {

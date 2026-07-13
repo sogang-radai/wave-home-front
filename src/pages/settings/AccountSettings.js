@@ -27,14 +27,14 @@ export function AccountSettings({ heading, accounts, accountId, account, onSwitc
         }
       >
         <div className="household-list">
-          {accounts.map((item) => (
+          {(accounts || []).filter(Boolean).map((item) => (
             <button
               type="button"
               key={item.id}
               className={`household-row ${item.id === accountId ? 'active' : ''}`}
               onClick={() => onSwitchAccount(item.id)}
             >
-              <span className="mini-avatar">{item.name.charAt(0)}</span>
+              <span className="mini-avatar">{item.name?.charAt(0) || '?'}</span>
               <strong>{item.name}</strong>
               {item.id === accountId && <em>현재 사용 중</em>}
             </button>
@@ -43,26 +43,30 @@ export function AccountSettings({ heading, accounts, accountId, account, onSwitc
       </SettingsSection>
 
       <SettingsSection title="프로필 편집">
-        <div className="account-profile">
-          <div className="account-profile-avatar">
-            {account.name.charAt(0)}
-            {/* Dummy: avatar image upload is not yet supported. */}
-            <button type="button" className="account-avatar-edit" title="사진 변경 (준비 중)" aria-label="사진 변경">
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true">
-                <path d="M9 5v15M1 12h15" />
-              </svg>
-            </button>
+        {account ? (
+          <div className="account-profile">
+            <div className="account-profile-avatar">
+              {account.name?.charAt(0) || '?'}
+              {/* Dummy: avatar image upload is not yet supported. */}
+              <button type="button" className="account-avatar-edit" title="사진 변경 (준비 중)" aria-label="사진 변경">
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+                  <path d="M9 5v15M1 12h15" />
+                </svg>
+              </button>
+            </div>
+            <label className="account-profile-name">
+              <span>이름</span>
+              <InlineEditableText
+                key={account.id}
+                value={account.name}
+                ariaLabel="내 이름"
+                onCommit={(name) => onRenameAccount(account.id, name)}
+              />
+            </label>
           </div>
-          <label className="account-profile-name">
-            <span>이름</span>
-            <InlineEditableText
-              key={account.id}
-              value={account.name}
-              ariaLabel="내 이름"
-              onCommit={(name) => onRenameAccount(account.id, name)}
-            />
-          </label>
-        </div>
+        ) : (
+          <p className="room-detail-empty">선택된 계정이 없습니다.</p>
+        )}
       </SettingsSection>
 
       {addOpen && (

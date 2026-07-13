@@ -29,6 +29,7 @@ const deviceClassLabels = {
 // Flattens the nested Device structure (interface/settings) into a flat view model.
 // Uses `enabled` as a proxy for connection status since the API has no live status concept.
 function toViewDevice(device) {
+  if (!device) return null;
   const iface = device.interface || {};
   return {
     ...device,
@@ -165,7 +166,7 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
   useEffect(() => {
     // 등록된 전체 장치를 연결 상태와 무관하게 표시한다.
     settingsApi.getDevices().then(({ input_devices, output_devices }) => {
-      setDevices([...input_devices, ...output_devices].map(toViewDevice));
+      setDevices([...input_devices, ...output_devices].map(toViewDevice).filter(Boolean));
     });
   }, []);
 
@@ -173,7 +174,9 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
   const enabledCount = devices.filter((device) => device.enabled).length;
 
   const applyUpdate = (updated) => {
+    if (!updated) return;
     const view = toViewDevice(updated);
+    if (!view) return;
     setDevices((current) => current.map((device) => (device.id === view.id ? view : device)));
     setSelectedDevice((current) => (current?.id === view.id ? view : current));
   };
@@ -277,8 +280,10 @@ function RoomAddModal({ onConfirm, onClose }) {
 }
 
 function RoomMembersPanel({ accounts, members, onChange }) {
-  const memberAccounts = accounts.filter((account) => members.includes(account.id));
-  const candidates = accounts.filter((account) => !members.includes(account.id));
+  const safeAccounts = (accounts || []).filter(Boolean);
+  const memberIds = (members || []).map((id) => String(id));
+  const memberAccounts = safeAccounts.filter((account) => memberIds.includes(String(account.id)));
+  const candidates = safeAccounts.filter((account) => !memberIds.includes(String(account.id)));
 
   return (
     <div className="room-detail-panel">
@@ -287,12 +292,12 @@ function RoomMembersPanel({ accounts, members, onChange }) {
         {memberAccounts.length === 0 && <p className="room-detail-empty">배정된 구성원이 없습니다.</p>}
         {memberAccounts.map((account) => (
           <span className="room-chip" key={account.id}>
-            <span className="mini-avatar">{account.name.charAt(0)}</span>
+            <span className="mini-avatar">{account.name?.charAt(0) || '?'}</span>
             {account.name}
             <button
               type="button"
               aria-label={`${account.name} 제외`}
-              onClick={() => onChange(members.filter((id) => id !== account.id))}
+              onClick={() => onChange(members.filter((id) => String(id) !== String(account.id)))}
             >×</button>
           </span>
         ))}
@@ -301,7 +306,11 @@ function RoomMembersPanel({ accounts, members, onChange }) {
         <select
           className="settings-select room-add-select"
           value=""
-          onChange={(event) => onChange([...members, event.target.value])}
+          onChange={(event) => {
+            const raw = event.target.value;
+            const matched = safeAccounts.find((a) => String(a.id) === String(raw));
+            onChange([...members, matched ? matched.id : raw]);
+          }}
         >
           <option value="" disabled>구성원 추가…</option>
           {candidates.map((account) => (
@@ -379,7 +388,7 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
 
   const loadDevices = () => {
     settingsApi.getDevices().then(({ input_devices, output_devices }) => {
-      setDevices([...input_devices, ...output_devices].map(toViewDevice));
+      setDevices([...input_devices, ...output_devices].map(toViewDevice).filter(Boolean));
     });
   };
 
@@ -402,13 +411,15 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
 
   const addRoom = async ({ name, description }) => {
     const room = await settingsApi.createRoom({ name, description });
-    setRooms((current) => [...current, room]);
+    if (!room) return;
+    setRooms((current) => [...current.filter(Boolean), room]);
     setAddOpen(false);
   };
 
   const patchRoom = async (roomId, patch) => {
     const updated = await settingsApi.updateRoom(roomId, patch);
-    setRooms((current) => current.map((room) => (room.id === roomId ? updated : room)));
+    if (!updated) return;
+    setRooms((current) => current.map((room) => (room?.id === roomId ? updated : room)).filter(Boolean));
   };
 
   const deleteRoom = async (roomId) => {

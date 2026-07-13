@@ -449,6 +449,18 @@
   word-break: break-word;
 }
 
+/* Looks inert; 5 rapid clicks unlock developer settings */
+.device-detail-line.about-dev-unlock {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.device-detail-line.about-dev-unlock:active {
+  /* no pressed affordance */
+  transform: none;
+}
+
 .mic-level-block {
   margin-top: 12px;
   padding: 12px;
@@ -1967,6 +1979,14 @@
   font-weight: 700;
 }
 
+.prompt-error {
+  display: block;
+  margin-top: 8px;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .ai-model-list {
   display: flex;
   flex-direction: column;
@@ -2131,9 +2151,8 @@
   .settings-layout {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 760px) {
+  /* Detail already stacks under nav at this width — switch cards → tabs here */
   .settings-nav--cards {
     display: none;
   }
@@ -2156,7 +2175,9 @@
     padding: 8px 12px;
     font-size: 13px;
   }
+}
 
+@media (max-width: 760px) {
   .settings-layout {
     gap: 14px;
   }

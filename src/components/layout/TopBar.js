@@ -35,14 +35,14 @@ function ProfileMenu({ accounts, activeId, onSelect }) {
       <div className="profile-menu-head">
         <strong>계정 전환</strong>
       </div>
-      {accounts.map((item) => (
+      {accounts.filter(Boolean).map((item) => (
         <button
           type="button"
           key={item.id}
           className={`profile-menu-item ${item.id === activeId ? 'active' : ''}`}
           onClick={() => onSelect(item.id)}
         >
-          <span className="mini-avatar">{item.name.charAt(0)}</span>
+          <span className="mini-avatar">{item.name?.charAt(0) || '?'}</span>
           <span className="profile-text">
             <strong>{item.name}</strong>
           </span>
@@ -59,7 +59,12 @@ export function TopActionsCluster({
   onToggleNotifications,
   onCloseNotifications,
   notifications,
+  notificationUnreadCount,
+  notificationsHasMore,
+  notificationsLoadingMore,
+  onLoadMoreNotifications,
   onMarkAllNotificationsRead,
+  onMarkNotificationRead,
   accounts,
   account,
   onSwitchAccount,
@@ -68,7 +73,9 @@ export function TopActionsCluster({
 }) {
   const isMobile = useMobileLayout();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const unreadCount = notifications.filter((item) => !item.read).length;
+  const unreadCount = typeof notificationUnreadCount === 'number'
+    ? notificationUnreadCount
+    : notifications.filter((item) => !item.read).length;
 
   return (
     <div className={`top-actions top-actions-${variant}`}>
@@ -91,7 +98,12 @@ export function TopActionsCluster({
       {showNotifications && (
         <NotificationsPanel
           notifications={notifications}
+          unreadCount={unreadCount}
+          hasMore={notificationsHasMore}
+          loadingMore={notificationsLoadingMore}
+          onLoadMore={onLoadMoreNotifications}
           onMarkAllRead={onMarkAllNotificationsRead}
+          onMarkRead={onMarkNotificationRead}
           onClose={onCloseNotifications}
         />
       )}
@@ -141,14 +153,13 @@ export function TopBar({
         >
           <MenuIcon />
         </button>
-        <h1 className="topbar-title">{title}</h1>
-        {isDemoMode && (
+        {/* isDemoMode && (
           <span
             className="demo-mode-badge"
             role="status"
             title="시연 모드 — 날짜는 고정되며 변경 사항은 저장되지 않습니다."
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="8.01" />
               <line x1="12" y1="11" x2="12" y2="16" />
@@ -157,7 +168,8 @@ export function TopBar({
               시연 모드
             </span>
           </span>
-        )}
+        ) */}
+        <h1 className="topbar-title">{title}</h1>
       </div>
       <TopActionsCluster variant="desktop" {...actionProps} />
       {showChatConvToggle ? (

@@ -353,7 +353,7 @@ export function PowerPage() {
     const pollMs = rangeTab === 'min1' ? 1000 : POLL_MS;
     const timer = setInterval(loadTrend, pollMs);
     return () => clearInterval(timer);
-  }, [selectedPlug?.id, rangeTab, metricTab, isCombo]);
+  }, [selectedPlug, selectedPlug?.id, rangeTab, metricTab, isCombo]);
 
   // Keep hook order stable across renders (e.g. before `plugs` loads) via a safe fallback.
   const trendPlug = selectedPlug || { id: 'none', powerW: 0, voltageV: 0, currentMa: 0 };
