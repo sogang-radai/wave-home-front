@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 
-// Tuned constants ported from the ocean-hero-webgl.html reference build.
+// Fully procedural ocean. There is no source video anymore: the water is
+// generated in the fragment shader, so it stays sharp at any resolution and
+// the old watermark-crop hack (videoTopCrop) is gone with it.
 const CONFIG = {
+  // Interactive ripple sim (unchanged behaviour).
   simScale: 0.24,
   damping: 0.988,
   waveEvery: 2,
@@ -11,12 +14,17 @@ const CONFIG = {
   refraction: 1.3,
   specular: 0.2,
   strokeForce: 2,
-  playbackRate: 0.6,
-  // The source clip has a "CapCut AI" watermark burned into the top-left
-  // corner. Cropping this fraction off the top (before the cover-fit math
-  // runs) keeps it out of frame everywhere, including right behind the
-  // fixed header where the crop is tightest.
-  videoTopCrop: 0.12,
+
+  // Procedural water.
+  waterScale: 2.6, // higher = smaller caustic cells
+  flowSpeed: 0.6, // overall drift/animation rate (was playbackRate)
+  foam: 0.85, // 0 disables the white foam breakup
+  glint: 0.1, // sun sparkle intensity
+
+  // Render resolution multiplier. The shader is fill-rate heavy; drop to
+  // ~0.75 if you need headroom on low-end GPUs.
+  renderScale: 1,
+  maxDpr: 1.75,
 };
 
 const VERTEX_SHADER = `#version 300 es
@@ -31,14 +39,91 @@ void main(){
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 in vec2 vUv;
-uniform sampler2D uVideo;
 uniform sampler2D uHeight;
 uniform vec2  uSim;
-uniform vec2  uVidScale;
-uniform vec2  uVidOffset;
+uniform vec2  uAspect;
+uniform float uTime;
 uniform float uRefr;
 uniform float uSpec;
+uniform float uScale;
+uniform float uFoam;
+uniform float uGlint;
 out vec4 frag;
+
+float hash(vec2 p){
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+float noise(vec2 p){
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash(i);
+  float b = hash(i + vec2(1.0, 0.0));
+  float c = hash(i + vec2(0.0, 1.0));
+  float d = hash(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+const mat2 ROT = mat2(1.6, 1.2, -1.2, 1.6);
+
+// 3-octave: cheap, used for the domain-warp offsets.
+float fbm3(vec2 p){
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 3; i++){ v += a * noise(p); p = ROT * p; a *= 0.5; }
+  return v;
+}
+
+// 4-octave: the surface itself.
+float fbm4(vec2 p){
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 4; i++){ v += a * noise(p); p = ROT * p; a *= 0.5; }
+  return v;
+}
+
+vec3 ocean(vec2 uv, float t){
+  vec2 p = uv * uAspect * uScale;
+  p += vec2(t * 0.020, -t * 0.035);
+
+  // Two rounds of domain warping: this is what turns plain noise into the
+  // rounded, interlocking caustic cells you get on shallow water.
+  vec2 q = vec2(
+    fbm3(p + t * 0.05),
+    fbm3(p + vec2(5.2, 1.3) - t * 0.04)
+  );
+  vec2 r = vec2(
+    fbm3(p + 3.4 * q + vec2(1.7, 9.2) + t * 0.09),
+    fbm3(p + 3.4 * q + vec2(8.3, 2.8) - t * 0.07)
+  );
+  float f = fbm4(p + 3.0 * r);
+
+  // Large, slow depth variation so the field never reads as a flat tile.
+  float depth = fbm3(p * 0.32 - t * 0.012);
+
+  vec3 deep    = vec3(0.03, 0.33, 0.50);
+  vec3 mid     = vec3(0.13, 0.66, 0.79);
+  vec3 shallow = vec3(0.26, 0.50, 0.58);
+
+  vec3 col = mix(deep, mid, smoothstep(0.20, 0.62, f));
+  col = mix(col, shallow, smoothstep(0.60, 0.95, f));
+  col = mix(col, deep * 0.72, smoothstep(0.58, 0.14, depth) * 0.38);
+
+  // Bright rims where cells meet.
+  float web = clamp(1.0 - abs(f - 0.52) * 3.2, 0.0, 1.0);
+  col += pow(web, 3.0) * 0.35 * vec3(0.50, 0.78, 0.85);
+
+  // Sun glints: sparse because of the high exponent.
+  float g = pow(fbm3(p * 4.0 + t * 0.45), 6.0);
+  col += g * uGlint * vec3(1.0, 1.0, 0.98);
+
+  // Foam breaking on the brightest crests.
+  float foam = smoothstep(0.76, 0.96, f) * smoothstep(0.35, 0.82, noise(p * 7.0 + t * 0.30));
+  col = mix(col, vec3(0.72, 0.84, 0.90), foam * uFoam);
+
+  return col;
+}
 
 void main(){
   vec2 t = 1.0 / uSim;
@@ -50,14 +135,12 @@ void main(){
   float gx = hl - hr;
   float gy = hu - hd;
 
+  // Refraction: the ripple field displaces where we evaluate the water.
   vec2 uv = vUv + vec2(gx, gy) * uRefr * t;
-
-  vec2 vuv = uv * uVidScale + uVidOffset;
-  vuv = clamp(vuv, vec2(0.0), vec2(1.0));
-  vec3 col = texture(uVideo, vuv).rgb;
+  vec3 col = ocean(uv, uTime);
 
   float light = (gx * 0.7 - gy * 0.7) * uSpec / 255.0;
-  col += max(light, 0.0) * vec3(0.86, 0.96, 1.0);
+  col += max(light, 0.0) * vec3(0.62, 0.78, 0.88);
   col += min(light, 0.0) * vec3(0.30, 0.20, 0.10);
 
   frag = vec4(col, 1.0);
@@ -66,28 +149,24 @@ void main(){
 export default function WaveCanvas() {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  const videoRef = useRef(null);
 
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
-    const video = videoRef.current;
-    if (!container || !canvas || !video) return;
+    if (!container || !canvas) return;
 
     const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 
-    // No WebGL2: fall back to a plain covering video, no ripple simulation.
-    // Scaling up from the bottom edge pushes the watermarked top strip
-    // (see CONFIG.videoTopCrop) out through the container's clipped edge,
-    // matching what the WebGL path does via its shader-side crop.
+    // No WebGL2: a static gradient in the water's own palette. Nothing else
+    // to fall back to now that the video is gone.
     if (!gl) {
       canvas.style.display = "none";
-      video.className = "absolute inset-0 h-full w-full object-cover opacity-100";
-      video.style.transformOrigin = "50% 100%";
-      video.style.transform = `scaleY(${1 / (1 - CONFIG.videoTopCrop)})`;
-      video.play().catch(() => {});
+      container.style.background =
+        "linear-gradient(160deg, #94e4ea 0%, #2aa7c0 45%, #0a5478 100%)";
       return;
     }
+
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
     function compile(type, src) {
       const shader = gl.createShader(type);
@@ -112,29 +191,25 @@ export default function WaveCanvas() {
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-    const uniformNames = ["uVideo", "uHeight", "uSim", "uVidScale", "uVidOffset", "uRefr", "uSpec"];
+    const uniformNames = [
+      "uHeight", "uSim", "uAspect", "uTime", "uRefr", "uSpec", "uScale", "uFoam", "uGlint",
+    ];
     const U = Object.fromEntries(
       uniformNames.map((name) => [name, gl.getUniformLocation(prog, name)])
     );
 
-    const texVideo = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texVideo);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-    gl.uniform1i(U.uVideo, 0);
+    gl.uniform1f(U.uScale, CONFIG.waterScale);
+    gl.uniform1f(U.uFoam, CONFIG.foam);
+    gl.uniform1f(U.uGlint, CONFIG.glint);
 
     const texHeight = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE1);
+    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texHeight);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.uniform1i(U.uHeight, 1);
+    gl.uniform1i(U.uHeight, 0);
 
     // CPU ripple sim, low-res: prev/curr are the wave field, height is the
     // per-frame composite (ripples + ambient swell) uploaded to the GPU.
@@ -150,32 +225,17 @@ export default function WaveCanvas() {
     for (let i = 0; i < 1024; i++) SIN[i] = Math.sin((i / 1024) * Math.PI * 2);
     const sinLut = (t) => SIN[(t | 0) & 1023];
 
-    function updateCover() {
-      const vw = video.videoWidth || 1;
-      const vh = video.videoHeight || 1;
-      const cropTop = CONFIG.videoTopCrop;
-      // Cover-fit as if the video's height were only the part below the
-      // watermark, then remap that fit back into the real [cropTop, 1]
-      // texture range so the top slice can never be sampled.
-      const effVh = vh * (1 - cropTop);
-      const cr = canvas.width / canvas.height;
-      const vr = vw / effVh;
-      let sx = 1;
-      let sy = 1;
-      if (vr > cr) sx = cr / vr;
-      else sy = vr / cr;
-      const offY = (1 - sy) / 2;
-      gl.uniform2f(U.uVidScale, sx, sy * (1 - cropTop));
-      gl.uniform2f(U.uVidOffset, (1 - sx) / 2, cropTop + offY * (1 - cropTop));
-    }
-
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, CONFIG.maxDpr) * CONFIG.renderScale;
       const w = container.clientWidth;
       const h = container.clientHeight;
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
+
+      // Keep the noise isotropic regardless of the container's aspect ratio.
+      const aspect = canvas.width / Math.max(1, canvas.height);
+      gl.uniform2f(U.uAspect, aspect, 1);
 
       W = Math.max(64, Math.round(w * CONFIG.simScale));
       H = Math.max(48, Math.round(h * CONFIG.simScale));
@@ -188,7 +248,6 @@ export default function WaveCanvas() {
         persp[y] = 0.12 + t * t * 1.6;
       }
       gl.uniform2f(U.uSim, W, H);
-      updateCover();
     }
 
     function disturb(cx, cy, r, force) {
@@ -287,33 +346,20 @@ export default function WaveCanvas() {
       }
     }
 
-    // preload="auto" can finish loading before this effect attaches its
-    // listener, so seed readiness from the current state too.
-    let videoReady = video.readyState >= 2;
     let raf = 0;
-
-    function onLoadedData() {
-      videoReady = true;
-      updateCover();
-    }
-    video.addEventListener("loadeddata", onLoadedData);
-    video.playbackRate = CONFIG.playbackRate;
-    video.play().catch(() => {});
 
     function frame(ms) {
       raf = requestAnimationFrame(frame);
       if (!W) return;
-      stepWater(ms * 0.001);
 
-      if (videoReady && video.readyState >= 2) {
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texVideo);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-      }
-      gl.activeTexture(gl.TEXTURE1);
+      const time = ms * 0.001;
+      stepWater(time);
+
+      gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texHeight);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, W, H, 0, gl.RED, gl.FLOAT, height);
 
+      gl.uniform1f(U.uTime, reduceMotion ? 0 : time * CONFIG.flowSpeed);
       gl.uniform1f(U.uRefr, CONFIG.refraction);
       gl.uniform1f(U.uSpec, CONFIG.specular * 22);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -340,8 +386,6 @@ export default function WaveCanvas() {
       window.removeEventListener("pointerleave", onPointerLeave);
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("resize", onResize);
-      video.removeEventListener("loadeddata", onLoadedData);
-      gl.deleteTexture(texVideo);
       gl.deleteTexture(texHeight);
       gl.deleteProgram(prog);
     };
@@ -349,17 +393,6 @@ export default function WaveCanvas() {
 
   return (
     <div ref={containerRef} className="absolute inset-0 h-full w-full overflow-hidden" aria-hidden>
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        className="pointer-events-none absolute h-px w-px opacity-0"
-      >
-        <source src="/water-crossfade.mp4" type="video/mp4" />
-      </video>
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>
   );
