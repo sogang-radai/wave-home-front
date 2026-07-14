@@ -107,7 +107,7 @@ export default function PinnedCategorySection({
         );
         if (distance <= 0) return;
 
-        const cards = gsap.utils.toArray("[data-card]", section);
+        const cardCopies = gsap.utils.toArray("[data-card-copy]", section);
         const introHold = 0.32;
         const slideStart = introHold;
         const slideEnd = 1;
@@ -123,61 +123,31 @@ export default function PinnedCategorySection({
           },
         });
 
-        gsap.set(cards, {
-          opacity: 0.42,
-          scale: 0.86,
-          rotateY: -8,
-          transformPerspective: 1200,
-          transformOrigin: "50% 50%",
-        });
-        gsap.set(cards[0], { opacity: 1, scale: 1, rotateY: 0 });
-
+        // Cards sit fully visible from the start — nothing to "wait" for.
+        // Scrolling only slides the track and gives each card's text a
+        // quick, playful bob as it passes through, instead of the old
+        // fade/scale-in reveal that read as slow rendering to some users.
         tl.to(copy, { yPercent: -8, ease: "none", duration: 1 }, 0)
           .to(track, { x: 0, ease: "none", duration: introHold }, 0)
           .to(track, { x: -distance, ease: "none", duration: slideEnd - slideStart }, slideStart)
           .to(
-            cards,
+            cardCopies,
             {
-              opacity: 1,
-              scale: 1,
-              rotateY: 0,
+              y: -8,
+              rotate: -0.6,
               stagger: 0.12,
-              ease: "power2.out",
-              duration: 0.32,
+              ease: "power1.inOut",
+              duration: 0.3,
+              yoyo: true,
+              repeat: 1,
             },
-            slideStart + 0.02
-          )
-          .to(
-            cards,
-            {
-              opacity: (i) => (i === cards.length - 1 ? 1 : 0.58),
-              scale: (i) => (i === cards.length - 1 ? 1.03 : 0.92),
-              rotateY: 6,
-              stagger: 0.12,
-              ease: "power2.inOut",
-              duration: 0.32,
-            },
-            slideStart + 0.46
+            slideStart + 0.04
           );
 
         return () => {
           tl.scrollTrigger?.kill();
           tl.kill();
         };
-      });
-
-      mm.add("(max-width: 1023px)", () => {
-        const cards = gsap.utils.toArray("[data-card]", section);
-        gsap.from(cards, {
-          y: 34,
-          opacity: 0,
-          stagger: 0.08,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: section,
-            start: "top 72%",
-          },
-        });
       });
 
       return () => mm.revert();
@@ -243,23 +213,6 @@ export default function PinnedCategorySection({
   );
 }
 
-const cardContentVariants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.08 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
-};
-
-const bulletVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
-};
-
 function Card({ card, onEnter }) {
   return (
     <motion.div
@@ -268,53 +221,33 @@ function Card({ card, onEnter }) {
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       className="flex w-[82vw] shrink-0 flex-col overflow-hidden rounded-[8px] border border-white/12 bg-surface shadow-2xl shadow-black/35 sm:w-[380px]"
     >
-      <motion.div
-        variants={cardContentVariants}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.4, margin: "0px -60px 0px 0px" }}
-      >
-        <motion.div variants={itemVariants} className="relative bg-white p-4">
-          {card.media}
-        </motion.div>
+      <div className="relative bg-white p-4">{card.media}</div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <motion.span variants={itemVariants} className="text-[12px] font-semibold text-wave-light">
-            {card.eyebrow}
-          </motion.span>
-          <motion.h3 variants={itemVariants} className="mt-1.5 text-[19px] font-semibold leading-snug text-ink">
-            {card.title}
-          </motion.h3>
-          <motion.p variants={itemVariants} className="mt-2 text-[13.5px] leading-relaxed text-mist">
-            {card.description}
-          </motion.p>
+      <div data-card-copy className="flex flex-1 flex-col p-5">
+        <span className="text-[12px] font-semibold text-wave-light">{card.eyebrow}</span>
+        <h3 className="mt-1.5 text-[19px] font-semibold leading-snug text-ink">{card.title}</h3>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-mist">{card.description}</p>
 
-          {card.bullets && (
-            <motion.ul variants={bulletVariants} className="mt-3 flex flex-col gap-1.5">
-              {card.bullets.map((b) => (
-                <motion.li
-                  key={b}
-                  variants={itemVariants}
-                  className="flex items-start gap-2 text-[12.5px] text-ink/80"
-                >
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-wave" />
-                  {b}
-                </motion.li>
-              ))}
-            </motion.ul>
-          )}
+        {card.bullets && (
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {card.bullets.map((b) => (
+              <li key={b} className="flex items-start gap-2 text-[12.5px] text-ink/80">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-wave" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        )}
 
-          <motion.button
-            type="button"
-            variants={itemVariants}
-            onClick={() => onEnter(card.target)}
-            className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-wave-light hover:underline"
-          >
-            자세히 보기
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </motion.button>
-        </div>
-      </motion.div>
+        <button
+          type="button"
+          onClick={() => onEnter(card.target)}
+          className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-wave-light hover:underline"
+        >
+          자세히 보기
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </motion.div>
   );
 }

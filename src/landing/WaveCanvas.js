@@ -12,13 +12,13 @@ const CONFIG = {
   swellAmp: 2,
   swellSpeed: 55,
   refraction: 1.3,
-  specular: 0.2,
+  specular: 0.14,
   strokeForce: 2,
 
   // Procedural water.
   waterScale: 2.6, // higher = smaller caustic cells
   flowSpeed: 0.6, // overall drift/animation rate (was playbackRate)
-  foam: 0.85, // 0 disables the white foam breakup
+  foam: 0.55, // 0 disables the white foam breakup
   glint: 0.1, // sun sparkle intensity
 
   // Render resolution multiplier. The shader is fill-rate heavy; drop to
@@ -102,9 +102,9 @@ vec3 ocean(vec2 uv, float t){
   // Large, slow depth variation so the field never reads as a flat tile.
   float depth = fbm3(p * 0.32 - t * 0.012);
 
-  vec3 deep    = vec3(0.03, 0.33, 0.50);
-  vec3 mid     = vec3(0.13, 0.66, 0.79);
-  vec3 shallow = vec3(0.26, 0.50, 0.58);
+  vec3 deep    = vec3(0.02, 0.24, 0.36);
+  vec3 mid     = vec3(0.08, 0.44, 0.53);
+  vec3 shallow = vec3(0.18, 0.35, 0.42);
 
   vec3 col = mix(deep, mid, smoothstep(0.20, 0.62, f));
   col = mix(col, shallow, smoothstep(0.60, 0.95, f));
@@ -112,7 +112,7 @@ vec3 ocean(vec2 uv, float t){
 
   // Bright rims where cells meet.
   float web = clamp(1.0 - abs(f - 0.52) * 3.2, 0.0, 1.0);
-  col += pow(web, 3.0) * 0.35 * vec3(0.50, 0.78, 0.85);
+  col += pow(web, 3.0) * 0.22 * vec3(0.42, 0.66, 0.72);
 
   // Sun glints: sparse because of the high exponent.
   float g = pow(fbm3(p * 4.0 + t * 0.45), 6.0);

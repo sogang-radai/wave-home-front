@@ -30,7 +30,6 @@ export default function ScoreRing({ score, caption }) {
           strokeDasharray={c}
           strokeDashoffset={inView ? undefined : c}
           transform="rotate(-90 50 50)"
-          pathLength="1"
           className={inView ? "score-ring" : ""}
           style={{
             "--score-offset": offset,
@@ -39,13 +38,23 @@ export default function ScoreRing({ score, caption }) {
         />
         <text
           x="50"
-          y="55"
+          y="48"
           textAnchor="middle"
-          fontSize="26"
+          fontSize="22"
           fontWeight="600"
           fill="#0f172a"
         >
-          {score}
+          {score}점
+        </text>
+        <text
+          x="50"
+          y="64"
+          textAnchor="middle"
+          fontSize="11"
+          fontWeight="500"
+          fill="#64748b"
+        >
+          / 100점
         </text>
       </svg>
       <div>
