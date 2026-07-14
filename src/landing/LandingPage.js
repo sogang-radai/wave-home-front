@@ -19,14 +19,6 @@ export default function LandingPage({ onEnter }) {
     const previousOverscroll = document.body.style.overscrollBehavior;
     document.body.style.overscrollBehavior = "none";
 
-    const lenis = new Lenis({
-      duration: 1.1,
-      easing: (t) => 1 - Math.pow(1 - t, 3),
-      smoothWheel: true,
-    });
-
-    lenis.on("scroll", ScrollTrigger.update);
-
     // Web fonts (Geist, IBM Plex Sans KR, TAN New York) can finish loading
     // and swap in after ScrollTrigger has already measured pin/scrub
     // distances off the fallback-font layout, leaving every trigger below
@@ -34,16 +26,34 @@ export default function LandingPage({ onEnter }) {
     // in sync with the fonts' final metrics.
     document.fonts.ready.then(() => ScrollTrigger.refresh());
 
-    const raf = (time) => {
-      lenis.raf(time * 1000);
-    };
+    // Lenis smooth-wheel is desktop-only. On touch devices the native
+    // scroller is smoother and avoids fighting ScrollTrigger pins.
+    const mm = gsap.matchMedia();
+    mm.add("(min-width: 1024px)", () => {
+      const lenis = new Lenis({
+        duration: 1.1,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+        smoothWheel: true,
+      });
 
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
+      lenis.on("scroll", ScrollTrigger.update);
+
+      const raf = (time) => {
+        lenis.raf(time * 1000);
+      };
+
+      gsap.ticker.add(raf);
+      gsap.ticker.lagSmoothing(0);
+
+      return () => {
+        gsap.ticker.remove(raf);
+        lenis.destroy();
+        gsap.ticker.lagSmoothing(500);
+      };
+    });
 
     return () => {
-      gsap.ticker.remove(raf);
-      lenis.destroy();
+      mm.revert();
       document.body.style.overscrollBehavior = previousOverscroll;
     };
   }, []);

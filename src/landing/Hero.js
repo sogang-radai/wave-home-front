@@ -48,8 +48,12 @@ export default function Hero() {
       delay: 0.3,
     });
 
-    if (sectionRef.current && sceneRef.current && contentRef.current) {
-      gsap
+    // Parallax scrub is desktop-only — on mobile it fights native scroll
+    // and burns filters/transforms while the page is already heavy.
+    const mm = gsap.matchMedia();
+    mm.add("(min-width: 1024px)", () => {
+      if (!sectionRef.current || !sceneRef.current || !contentRef.current) return;
+      const tl = gsap
         .timeline({
           scrollTrigger: {
             trigger: sectionRef.current,
@@ -60,9 +64,16 @@ export default function Hero() {
         })
         .to(sceneRef.current, { scale: 1.18, yPercent: 9, filter: "blur(2px)", ease: "none" }, 0)
         .to(contentRef.current, { yPercent: -18, opacity: 0.18, ease: "none" }, 0);
-    }
+      return () => {
+        tl.scrollTrigger?.kill();
+        tl.kill();
+      };
+    });
 
-    return () => split.revert();
+    return () => {
+      mm.revert();
+      split.revert();
+    };
   }, []);
 
   return (

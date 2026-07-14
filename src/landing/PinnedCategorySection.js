@@ -164,7 +164,10 @@ export default function PinnedCategorySection({
       }`}
     >
       <div className="absolute inset-0 -z-10 bg-background">
-        <FloatingBubbles />
+        {/* CSS bubble loops are expensive on mobile; keep them desktop-only. */}
+        <div className="hidden h-full lg:block">
+          <FloatingBubbles />
+        </div>
       </div>
 
       <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-10 px-6 py-16 lg:flex-row lg:items-center lg:gap-16 lg:px-10 lg:py-0">
@@ -195,17 +198,17 @@ export default function PinnedCategorySection({
           </p>
         </div>
 
-        {/* overflow-hidden clips the scrubbed/scaled cards at this box's own
-            edge, so they can never paint over the copy column to the left. */}
-        <div ref={stageRef} className="min-w-0 flex-1 overflow-x-auto lg:overflow-hidden lg:will-change-transform">
+        {/* Mobile: vertical card stack (no nested horizontal scroll).
+            Desktop: overflow-hidden clips scrubbed cards away from the copy. */}
+        <div ref={stageRef} className="min-w-0 flex-1 overflow-visible lg:overflow-hidden lg:will-change-transform">
           <div
             ref={trackRef}
-            className="flex w-max gap-5 pb-4 lg:pb-0 lg:will-change-transform"
+            className="flex w-full flex-col gap-5 pb-4 lg:w-max lg:flex-row lg:pb-0 lg:will-change-transform"
           >
             {cards.map((card) => (
               <Card key={card.title} card={card} onEnter={onEnter} />
             ))}
-            <div className="w-1 shrink-0 lg:w-24" aria-hidden />
+            <div className="hidden w-24 shrink-0 lg:block" aria-hidden />
           </div>
         </div>
       </div>
@@ -219,7 +222,7 @@ function Card({ card, onEnter }) {
       data-card
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="flex w-[82vw] shrink-0 flex-col overflow-hidden rounded-[8px] border border-white/12 bg-surface shadow-2xl shadow-black/35 sm:w-[380px]"
+      className="flex w-full shrink-0 flex-col overflow-hidden rounded-[8px] border border-white/12 bg-surface shadow-2xl shadow-black/35 lg:w-[380px]"
     >
       <div className="relative bg-white p-4">{card.media}</div>
 
