@@ -29,10 +29,12 @@ function emptyDraft() {
 
 function draftFromAlarm(alarm) {
   const deviceId = normalizeAlarmDeviceId(alarm.deviceId);
-  const days = alarm.daysOfWeek || [];
-  const repeatWeekly = typeof alarm.repeatWeekly === 'boolean'
-    ? alarm.repeatWeekly
-    : days.length > 0;
+  const days = Array.isArray(alarm.daysOfWeek) ? alarm.daysOfWeek : [];
+  // Multi-day schedules are always weekly; a stale repeatWeekly:false from older
+  // payloads would otherwise leave several day chips on with the checkbox off.
+  const repeatWeekly = days.length > 1
+    ? true
+    : (typeof alarm.repeatWeekly === 'boolean' ? alarm.repeatWeekly : days.length > 0);
   return {
     name: alarm.name,
     ...formatClock12(alarm.timeMinute),

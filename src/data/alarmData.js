@@ -5,13 +5,14 @@ import { hexId } from '../api/mock/devicesStore';
 export const initialAlarms = [
   {
     id: 1,
-    name: '평일 기상',
+    name: '평일 아침 기상',
     timeMinute: 7 * 60, // 07:00
     daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+    repeatWeekly: true,
     smartWake: true,
     radarDeviceId: hexId(1), // 침실 하방 레이더
-    deviceId: hexId(3), // Wave Station
-    method: { type: 'tts', speakerId: 0, text: '좋은 아침이에요! 일어날 시간입니다.', repeatCount: 3, intervalSec: 20 },
+    deviceId: hexId(11), // 침실 조명
+    method: { type: 'light_on', brightness: 75 },
     enabled: true,
     createdAt: '2026-06-10 08:00:00',
     updatedAt: '2026-06-10 08:00:00',
