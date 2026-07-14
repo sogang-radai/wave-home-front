@@ -1,7 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import settingsApi from '../../../api/settingsApi';
 import iotApi from '../../../api/iotApi';
 import { SendIcon } from '../icons';
+
+const TTS_MIN_ROWS = 3;
+
+function autoGrowTextarea(el, minRows) {
+  if (!el) return;
+  const styles = window.getComputedStyle(el);
+  const lineHeight = parseFloat(styles.lineHeight) || 20;
+  const pad = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+  const minHeight = lineHeight * minRows + pad;
+  el.style.height = 'auto';
+  el.style.height = `${Math.max(el.scrollHeight, minHeight)}px`;
+}
 
 // Shared TTS composer used by both CameraPanel and WaveStationPanel — any
 // device with a speaker can play a one-off announcement through this.
@@ -11,33 +23,43 @@ export function TtsPanel({ deviceId }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState('');
+  const textareaRef = useRef(null);
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     settingsApi.getTtsSpeakers().then((list) => {
       setSpeakers(list);
       if (list.length > 0) setSpeakerId(list[0].id);
     });
+    return () => clearTimeout(toastTimerRef.current);
   }, []);
+
+  useLayoutEffect(() => {
+    autoGrowTextarea(textareaRef.current, TTS_MIN_ROWS);
+  }, [text]);
+
+  const showToast = (message) => {
+    clearTimeout(toastTimerRef.current);
+    setToast(message);
+    toastTimerRef.current = setTimeout(() => setToast(''), 2500);
+  };
 
   const send = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
-    setToast('');
     try {
       await iotApi.sendTts(deviceId, { text: text.trim(), speakerId });
       setText('');
-      setToast('전송했습니다 (재생 중)');
-      setTimeout(() => setToast(''), 2500);
+      showToast('전송했습니다 (재생 중)');
     } catch (err) {
-      setToast(err?.message || '전송에 실패했습니다');
-      setTimeout(() => setToast(''), 2500);
+      showToast(err?.message || '전송에 실패했습니다');
     } finally {
       setSending(false);
     }
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       send();
     }
@@ -46,14 +68,22 @@ export function TtsPanel({ deviceId }) {
   return (
     <div className="tts-panel">
       <span className="tts-panel-label">TTS 메시지</span>
-      <textarea
-        className="tts-panel-textarea"
-        rows={3}
-        placeholder="장치에서 재생할 메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+      <div className="tts-panel-field">
+        <textarea
+          ref={textareaRef}
+          className={`tts-panel-textarea${toast ? ' has-toast' : ''}`}
+          rows={TTS_MIN_ROWS}
+          placeholder="장치에서 재생할 메시지를 입력하세요 (Ctrl/⌘+Enter 전송)"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        {toast && (
+          <span className={`tts-panel-toast ${toast.includes('실패') ? 'is-error' : ''}`} role="status">
+            {toast}
+          </span>
+        )}
+      </div>
       <div className="tts-panel-controls">
         <select
           className="settings-select tts-panel-voice"
@@ -69,7 +99,6 @@ export function TtsPanel({ deviceId }) {
           전송
         </button>
       </div>
-      {toast && <span className="tts-panel-toast">{toast}</span>}
     </div>
   );
 }
