@@ -521,7 +521,7 @@ export function SleepStatusReport({ onReportDateChange }) {
         </section>
 
         {report.analysis.some((item) => item.description?.trim()) && (
-          <Card title="WaveAI 수면 리포트">
+          <Card title="어젯밤 일일 수면 리포트">
             <p className="report-summary-only">
               {report.analysis.find((item) => item.label === 'AI 분석')?.description
                 || report.analysis[0]?.description

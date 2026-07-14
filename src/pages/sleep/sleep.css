@@ -170,7 +170,7 @@
   position: relative;
   padding: 24px 28px;
   border-radius: 20px;
-  background: linear-gradient(160deg, var(--good-18), var(--wave-08));
+  background: linear-gradient(160deg, var(--wave-20), var(--wave-08));
   border: 1px solid var(--line);
 }
 
@@ -218,8 +218,12 @@
   cursor: default;
 }
 
-.sleep-score-hero.excellent {
+.sleep-score-hero.good {
   background: linear-gradient(160deg, var(--wave-20), var(--wave-08));
+}
+
+.sleep-score-hero.excellent {
+  background: linear-gradient(160deg, var(--good-18), var(--wave-08));
 }
 
 .sleep-score-hero.attention {
