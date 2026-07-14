@@ -25,6 +25,16 @@ function isCameraClass(deviceClass) {
 }
 
 export class IotApi extends MockIotApi {
+  // Header metrics must come from the demo session backend — MockIotApi seeds
+  // (13/13, 12 events, 11 rules) diverge from virtual devices/rules.
+  async getSummary() {
+    return preferReal(() => realIotApi.getSummary(), () => super.getSummary());
+  }
+
+  async getEvents(params = {}) {
+    return preferReal(() => realIotApi.getEvents(params), () => super.getEvents(params));
+  }
+
   async getPowerPlugs() {
     const deviceStates = new Map();
     await Promise.all(DEMO_POWER_PLUGS.filter((device) => device.id !== 'all').map(async (device) => {
