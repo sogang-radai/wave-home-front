@@ -172,7 +172,7 @@ export function MainPage({
       </section>
 
       <section className="main-grid">
-        <Card title="현재 상태">
+        <Card title="현재 상태" data-coachmark="card-status">
           <div className="state-grid">
             {currentState && (
               <Metric
@@ -202,7 +202,7 @@ export function MainPage({
           </div>
         </Card>
 
-        <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')}>
+        <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-todos">
           <div className="todo-list">
             {todayTodos.length === 0 && (
               <p style={{ color: 'var(--sub)', fontSize: '0.8rem' }}>오늘 일정이 없습니다</p>
@@ -230,6 +230,7 @@ export function MainPage({
           <button
             type="button"
             className="dashboard-power-card"
+            data-coachmark="card-power"
             onClick={onGoToPowerAnalysis}
             disabled={!totalPower}
           >
@@ -300,7 +301,7 @@ export function MainPage({
 
         <div className="dashboard-sleep-column">
           <div className="dashboard-sleep-card">
-            <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')}>
+            <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')} data-coachmark="card-sleep">
               {sleepSummary && (
                 <div className="flex items-center gap-8">
                   <Donut pct={sleepSummary.achievedHours / sleepSummary.goalHours} r={48} sw={11}>
@@ -363,7 +364,7 @@ export function MainPage({
           </button>
 
           <div className="dashboard-side-card dashboard-sleep-card">
-            <Card title="수면 관리" onClick={() => onNavigate('sleep')}>
+            <Card title="수면 관리 요약" onClick={() => onNavigate('sleep')} data-coachmark="card-sleepSummary">
               <div className="mt-2 flex flex-col gap-2">
                 <div>
                   <p className="text-xs" style={{ color: 'var(--sub)' }}>수면 점수</p>
@@ -394,7 +395,7 @@ export function MainPage({
 
         <div className="dashboard-posture-column">
           <div className="dashboard-posture-card">
-            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={() => onNavigate('alarm')}>
+            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={() => onNavigate('alarm')} data-coachmark="card-alarms">
               <div className="mt-3 flex flex-col gap-2">
                 {upcomingAlarms.length === 0 && (
                   <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>
@@ -425,7 +426,7 @@ export function MainPage({
           </div>
 
           <div className="dashboard-posture-card">
-            <Card title="활성화된 제스처 목록" action={`${activeGestureRules.length}개 사용 중`} onClick={onGoToGestures}>
+            <Card title="활성화된 제스처 목록" action={`${activeGestureRules.length}개 사용 중`} onClick={onGoToGestures} data-coachmark="card-gestures">
               <div className="mt-3 flex flex-col gap-2">
                 {activeGestureRules.length === 0 && (
                   <p className="text-sm" style={{ color: 'var(--sub)' }}>아직 활성화된 제스처가 없어요.</p>

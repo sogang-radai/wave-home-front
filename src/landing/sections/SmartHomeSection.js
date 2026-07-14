@@ -6,7 +6,7 @@ import twinHome from "../twin_home.png";
 
 const cards = [
   {
-    eyebrow: "디지털 트윈홈",
+    eyebrow: "디지털 트윈 홈",
     title: "가상의 집을 만들어 관리하세요",
     description:"현실과 연결된 가상의 집에서 다양한 상황에서의 기기를 제어해보세요.",
     bullets: ["IoT 기기 제어"],

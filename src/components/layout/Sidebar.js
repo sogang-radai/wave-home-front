@@ -189,6 +189,7 @@ export function Sidebar({
           <Fragment key={item.id}>
             <button
               className={`nav-item ${page === item.id ? 'active' : ''}`}
+              data-coachmark={`nav-${item.id}`}
               onClick={() => {
                 if (item.id === 'chat') {
                   handleNavigateToChat();

@@ -82,6 +82,7 @@ export function TopActionsCluster({
       {onOpenWaveAi && (
         <button
           className="wave-ai-trigger"
+          data-coachmark={variant === 'desktop' ? 'header-waveai' : undefined}
           aria-label="WaveAI"
           title={waveAiDisabled ? 'WaveAI 대화창이 이미 열려 있어요' : 'WaveAI 열기'}
           onClick={onOpenWaveAi}

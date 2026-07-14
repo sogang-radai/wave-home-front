@@ -1,6 +1,6 @@
 import './ui.css';
 
-export function Card({ title, action, children, wide, onClick }) {
+export function Card({ title, action, children, wide, onClick, ...rest }) {
   return (
     <section
       className={`card ${wide ? 'wide' : ''} ${onClick ? 'clickable' : ''}`}
@@ -14,6 +14,7 @@ export function Card({ title, action, children, wide, onClick }) {
             }
           : undefined
       }
+      {...rest}
     >
       <div className="card-head">
         <h3>{title}</h3>

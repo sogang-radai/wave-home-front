@@ -10,6 +10,8 @@ import { ChatPopup } from './pages/chat/ChatPopup';
 import { ChatPage } from './pages/chat/ChatPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
+import { CoachMarks } from './components/coachmarks/CoachMarks';
+import { buildDashboardCoachMarkSteps } from './components/coachmarks/coachMarkSteps';
 import { MainPage } from './pages/MainPage';
 import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
@@ -25,7 +27,7 @@ import {
   syncBrowserPush,
 } from './push/browserPush';
 import { getNow } from './lib/demoClock';
-import { IS_DEMO_MODE } from './api/config';
+import { IS_DEMO_MODE, SHOW_HOME_TWIN } from './api/config';
 import { dispatchTwinControlFromToolEvent } from './lib/twinSceneStore';
 import { useMobileLayout } from './hooks/useMobileLayout';
 
@@ -78,6 +80,24 @@ function toViewTodo(task) {
     sourceInsightId: task.sourceInsightId ?? null,
     ...(task.startMinute !== undefined ? { startMin: task.startMinute, endMin: task.endMinute } : {}),
   };
+}
+
+const COACH_MARKS_DISMISSED_KEY = 'wavehome_coachmarks_dismissed';
+
+function isCoachMarksDismissed() {
+  try {
+    return localStorage.getItem(COACH_MARKS_DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function dismissCoachMarksForever() {
+  try {
+    localStorage.setItem(COACH_MARKS_DISMISSED_KEY, '1');
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 function App() {
@@ -658,6 +678,29 @@ function App() {
   const [accountId, setAccountId] = useState(null);
   const account = accounts.filter(Boolean).find((item) => item.id === accountId) || accounts.filter(Boolean)[0] || null;
 
+  const [showCoachMarks, setShowCoachMarks] = useState(false);
+  const coachMarksTriggeredRef = useRef(false);
+  const coachMarkSteps = useMemo(
+    () => buildDashboardCoachMarkSteps({ showHomeTwin: SHOW_HOME_TWIN }),
+    []
+  );
+
+  useEffect(() => {
+    if (!account || page !== 'main') return;
+    if (coachMarksTriggeredRef.current) return;
+    if (isCoachMarksDismissed()) return;
+    coachMarksTriggeredRef.current = true;
+    const timer = setTimeout(() => setShowCoachMarks(true), 600);
+    return () => clearTimeout(timer);
+  }, [account, page]);
+
+  const closeCoachMarks = () => setShowCoachMarks(false);
+  const finishCoachMarks = () => setShowCoachMarks(false);
+  const dontShowCoachMarksAgain = () => {
+    dismissCoachMarksForever();
+    setShowCoachMarks(false);
+  };
+
   useEffect(() => {
     Promise.all([settingsApi.getSession(), settingsApi.getAccounts()]).then(([session, accountList]) => {
       const list = (Array.isArray(accountList) ? accountList : []).filter(Boolean);
@@ -843,6 +886,13 @@ function App() {
           )}
         </main>
       </section>
+      <CoachMarks
+        steps={coachMarkSteps}
+        active={showCoachMarks}
+        onClose={closeCoachMarks}
+        onFinish={finishCoachMarks}
+        onDontShowAgain={dontShowCoachMarksAgain}
+      />
     </div>
   );
 }
