@@ -3,8 +3,8 @@ import { motion, useInView } from "framer-motion";
 
 const tiles = [
   { label: "수면 점수", value: "86", unit: "점", tone: "bg-wave" },
-  { label: "심박수", value: "58", unit: "bpm", tone: "bg-emerald-300" },
-  { label: "활동량", value: "6,200", unit: "걸음", tone: "bg-amber-300" },
+  { label: "연결될 가전 상태", value: "모두 연결됨", unit: "(14/14)", tone: "bg-emerald-300" },
+  { label: "전체 콘센트 현재 사용량", value: "948.2", unit: "W", tone: "bg-amber-300" },
   { label: "오늘 할 일", value: "3", unit: "/5", tone: "bg-sky-300" },
 ];
 
