@@ -235,9 +235,10 @@ button.brand-group {
   letter-spacing: 0.02em;
   line-height: 1.2;
   text-transform: lowercase;
-  color: var(--excellent-text);
-  background: linear-gradient(90deg, var(--wave-15), var(--wave-25));
-  border: 1px solid var(--wave-35);
+  color: #0a3d2e;
+  background: linear-gradient(135deg, #6eefc0, #36d399);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 6px rgba(54, 211, 153, 0.35);
 }
 
 .nav-item i {
