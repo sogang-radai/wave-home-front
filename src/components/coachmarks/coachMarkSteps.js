@@ -10,7 +10,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     {
       selector: '[data-coachmark="nav-sleep"]',
       title: '수면 관리',
-      description: '비접촉 레이더로 측정한 수면 단계·호흡·혈중 산소와 매일 아침 원인까지 짚어주는 AI 리포트를 볼 수 있어요.',
+      description: '비접촉 레이더로 측정한 수면 단계·호흡·코골이 등 매일 아침 수면 문제 원인까지 짚어주는 AI 리포트를 볼 수 있어요.',
       placement: 'right',
     },
     {
