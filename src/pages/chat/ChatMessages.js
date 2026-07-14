@@ -501,12 +501,12 @@ export function ChatMessages({
               {!compact && <h2 className="chat-welcome-title">WaveAI에게 무엇이든 물어보세요</h2>}
               {compact && <p className="chat-popup-welcome-hint">무엇이든 물어보세요</p>}
               {!compact && <p className="chat-welcome-sub">수면·자세·심박·가전까지, 건강 데이터 기반으로 답변드려요</p>}
-              { /* {IS_DEMO_MODE && !compact && (
+              {IS_DEMO_MODE && !compact && (
                 <div className="chat-demo-notice" role="note">
                   <strong>시연 모드 안내</strong>
                   <p>여러분이 함께 쓰는 데모 환경입니다. 과도한 사용은 자제해 주세요.</p>
                 </div>
-              )} */ }
+              )}
               <div className={compact ? 'chat-popup-suggestions' : 'chat-suggestions-grid'}>
                 {shownSuggestions.map((s, idx) => (
                   <button
