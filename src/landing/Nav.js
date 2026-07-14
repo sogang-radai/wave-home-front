@@ -1,4 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
+import logo from "../img/logo.png";
+import logoDark from "../img/logo_dark.png";
 
 export default function Nav({ onStart }) {
   const { scrollY } = useScroll();
@@ -19,15 +21,24 @@ export default function Nav({ onStart }) {
       className="fixed inset-x-0 top-0 z-50 border-b backdrop-blur-md"
     >
       <div className="flex w-full items-center justify-between px-6 py-3 lg:px-10">
-        <a href="#top" className="flex shrink-0 items-center gap-2">
-          <img
-            src="/logo512.png"
-            alt="WaveHome"
-            width={28}
-            height={28}
-            className="rounded-full"
-          />
-          <span className="text-[15px] font-semibold tracking-tight text-white">
+        <a href="#top" className="group flex shrink-0 items-center gap-2">
+          <span className="relative block h-7 w-7">
+            <img
+              src={logo}
+              alt="WaveHome"
+              width={28}
+              height={28}
+              className="absolute inset-0 h-7 w-7 rounded-full object-contain opacity-100 transition-opacity duration-150 group-hover:opacity-0"
+            />
+            <img
+              src={logoDark}
+              alt=""
+              width={28}
+              height={28}
+              className="absolute inset-0 h-7 w-7 rounded-full object-contain opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            />
+          </span>
+          <span className="text-[15px] font-semibold tracking-tight text-white transition-colors duration-150 group-hover:text-wave">
             WaveHome
           </span>
         </a>

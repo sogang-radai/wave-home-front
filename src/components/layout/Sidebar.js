@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import './layout.css';
-import logo from '../../img/logo_dark.png';
+import logoDark from '../../img/logo_dark.png';
+import logo from '../../img/logo.png';
 import { pages } from '../../data/appData';
 import { SHOW_HOME_TWIN } from '../../api/config';
 import { WaveAiIcon } from '../icons/WaveAiIcon';
@@ -165,16 +166,19 @@ export function Sidebar({
       <div className="brand">
         <button
           type="button"
-          className="brand-mark brand-mark--home"
+          className="brand-group brand-group--home"
           aria-label="랜딩 페이지로 이동"
           onClick={handleShowLanding}
         >
-          <img src={logo} alt="" />
+          <span className="brand-mark">
+            <img src={logoDark} alt="" className="brand-mark-img brand-mark-img--default" />
+            <img src={logo} alt="" className="brand-mark-img brand-mark-img--hover" />
+          </span>
+          <div className="brand-text">
+            <strong>WaveHome</strong>
+            <span>Your Lifestyle Agent</span>
+          </div>
         </button>
-        <div className="brand-text">
-          <strong>WaveHome</strong>
-          <span>Your Lifestyle Agent</span>
-        </div>
         <button className="collapse-button" aria-label="collapse sidebar" onClick={() => onCollapsedChange((value) => !value)}>
           {collapsed ? '›' : '‹'}
         </button>

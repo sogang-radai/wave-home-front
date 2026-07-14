@@ -265,7 +265,7 @@ export default function ValuePropSection() {
         />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 lg:px-10">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 lg:px-10">
           <div
             ref={line1Ref}
             className="font-plex-kr text-base font-normal text-white/78 drop-shadow sm:text-lg"
@@ -274,7 +274,17 @@ export default function ValuePropSection() {
           </div>
           <h2
             ref={line2Ref}
-            className="font-geist text-[40px] font-semibold leading-[0.98] tracking-tight text-white sm:text-[64px] lg:text-[92px]"
+            className="
+ibm-plex-sans-condensed-light
+text-[36px]
+sm:text-[56px]
+lg:text-[80px]
+leading-[0.98]
+tracking-[-0.04em]
+origin-left
+scale-x-[0.96]
+text-white
+"
           >
             {LINE2}
           </h2>

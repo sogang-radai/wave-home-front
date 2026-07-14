@@ -112,7 +112,7 @@ export default function Hero() {
         transition={{ duration: 0.6, delay: 1.4 }}
         className="relative z-10 flex justify-center pb-10"
       >
-        <ArrowDown className="h-5 w-5 animate-bounce text-mist" />
+        <ArrowDown className="h-16 w-16 animate-bounce text-mist" />
       </motion.div>
     </section>
   );

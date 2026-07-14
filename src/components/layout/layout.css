@@ -40,7 +40,34 @@
   font-weight: 800;
 }
 
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+button.brand-group {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  appearance: none;
+}
+
+.brand-group--home {
+  cursor: pointer;
+}
+
+.brand-group--home:focus-visible {
+  outline: 2px solid var(--wave);
+  outline-offset: 2px;
+}
+
 .brand-mark {
+  position: relative;
   width: 40px;
   height: 40px;
   font-size: 24px;
@@ -48,31 +75,30 @@
   overflow: hidden;
 }
 
-.brand-mark img {
+.brand-mark-img {
   width: 36px;
   height: 36px;
   object-fit: contain;
+  transition: opacity 0.15s ease;
 }
 
-button.brand-mark {
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  appearance: none;
+.brand-mark-img--default {
+  opacity: 1;
 }
 
-.brand-mark--home {
-  cursor: pointer;
+.brand-mark-img--hover {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 0;
 }
 
-.brand-mark--home:hover {
-  opacity: 0.88;
+.brand-group:hover .brand-mark-img--default {
+  opacity: 0;
 }
 
-.brand-mark--home:focus-visible {
-  outline: 2px solid var(--wave);
-  outline-offset: 2px;
+.brand-group:hover .brand-mark-img--hover {
+  opacity: 1;
 }
 
 .brand-text strong,
@@ -81,6 +107,7 @@ button.brand-mark {
   font-size: 16px;
   line-height: 1.2;
   color: #fff;
+  transition: color 0.15s ease;
 }
 
 .brand-text span,
@@ -92,6 +119,12 @@ button.brand-mark {
 
 .brand-text span {
   color: rgba(255, 255, 255, 0.65);
+  transition: color 0.15s ease;
+}
+
+.brand-group:hover .brand-text strong,
+.brand-group:hover .brand-text span {
+  color: var(--wave);
 }
 
 .collapse-button {
