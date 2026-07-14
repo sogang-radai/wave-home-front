@@ -704,12 +704,20 @@ function App() {
   );
 
   useEffect(() => {
+    if (showLanding) {
+      // Going back to the landing page (e.g. via the sidebar logo) counts
+      // as leaving the dashboard. Reset the "already triggered" guard so a
+      // tour that was only closed with X (not permanently dismissed) can
+      // show again the next time the dashboard is entered.
+      coachMarksTriggeredRef.current = false;
+      return;
+    }
     if (!account || page !== 'main') return;
     if (coachMarksTriggeredRef.current) return;
     if (isCoachMarksDismissed()) return;
     coachMarksTriggeredRef.current = true;
     setShowCoachMarks(true);
-  }, [account, page]);
+  }, [account, page, showLanding]);
 
   const closeCoachMarks = () => setShowCoachMarks(false);
   const finishCoachMarks = () => setShowCoachMarks(false);
