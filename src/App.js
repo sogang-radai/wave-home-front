@@ -100,8 +100,26 @@ function dismissCoachMarksForever() {
   }
 }
 
+const LANDING_SEEN_KEY = 'wavehome_landing_seen';
+
+function hasSeenLanding() {
+  try {
+    return localStorage.getItem(LANDING_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markLandingSeen() {
+  try {
+    localStorage.setItem(LANDING_SEEN_KEY, '1');
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
 function App() {
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(() => !hasSeenLanding());
   const [page, setPage] = useState('main');
   const [postureTab, setPostureTab] = useState('current');
   const [homeTab, setHomeTab] = useState('control');
@@ -690,8 +708,7 @@ function App() {
     if (coachMarksTriggeredRef.current) return;
     if (isCoachMarksDismissed()) return;
     coachMarksTriggeredRef.current = true;
-    const timer = setTimeout(() => setShowCoachMarks(true), 600);
-    return () => clearTimeout(timer);
+    setShowCoachMarks(true);
   }, [account, page]);
 
   const closeCoachMarks = () => setShowCoachMarks(false);
@@ -736,6 +753,7 @@ function App() {
   );
 
   const enterAppAt = (target) => {
+    markLandingSeen();
     setShowLanding(false);
     if (!target) return;
     const spec = typeof target === 'string' ? { page: target } : target;
@@ -743,6 +761,10 @@ function App() {
     if (spec.homeTab) setHomeTab(spec.homeTab);
     if (spec.page) setPage(spec.page);
   };
+
+  useEffect(() => {
+    if (showLanding) markLandingSeen();
+  }, [showLanding]);
 
   if (showLanding) {
     return <LandingPage onEnter={enterAppAt} />;

@@ -167,6 +167,7 @@ export function Sidebar({
         <button
           type="button"
           className="brand-group brand-group--home"
+          data-coachmark="nav-brand"
           aria-label="랜딩 페이지로 이동"
           onClick={handleShowLanding}
         >

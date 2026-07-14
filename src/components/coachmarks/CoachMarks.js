@@ -66,12 +66,33 @@ export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain }
     setTip({ top, left });
   }, [active, step]);
 
-  // 스텝이 바뀌면 대상을 화면 안으로 스크롤한 뒤 측정
+  // 스텝이 바뀌면 대상을 화면 안으로 스크롤한 뒤 측정한다. 대시보드 카드는
+  // 데이터가 비동기로 채워지며 레이아웃이 늦게 자리잡을 수 있어서, 고정된
+  // 지연 시간(예: 380ms) 한 번만 측정하면 그 타이밍에 대상이 아직 없거나
+  // 자리가 덜 잡힌 경우 코치마크가 엉뚱한 위치에 멈추거나 아예 안 보일 수
+  // 있다. 그래서 대상을 찾을 때까지(최대 2초) 매 프레임 재측정한다.
   useLayoutEffect(() => {
     if (!active || !step) return undefined;
     document.querySelector(step.selector)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    const t = setTimeout(measure, 380);
-    return () => clearTimeout(t);
+
+    let frameId;
+    let cancelled = false;
+    const startedAt = performance.now();
+    const poll = () => {
+      if (cancelled) return;
+      measure();
+      const found = document.querySelector(step.selector);
+      const elapsed = performance.now() - startedAt;
+      // 대상을 찾았어도 스크롤 애니메이션이 자리잡을 시간을 조금 더 준다.
+      if ((found && elapsed > 400) || elapsed > 2000) return;
+      frameId = requestAnimationFrame(poll);
+    };
+    frameId = requestAnimationFrame(poll);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frameId);
+    };
   }, [active, step, measure]);
 
   useEffect(() => {

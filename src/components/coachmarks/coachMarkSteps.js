@@ -89,6 +89,13 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
       title: '수면 관리 요약',
       description: '오늘의 수면 점수와 오늘 밤 추천 취침·기상 시간을 확인할 수 있어요.',
       placement: 'left',
+    },
+    {
+      selector: '[data-coachmark="nav-brand"]',
+      anchorSelector: '.sidebar',
+      title: 'WaveHome',
+      description: '로고를 누르면 언제든 랜딩 페이지로 돌아갈 수 있어요. 안내는 여기까지예요, 이제 WaveHome을 자유롭게 둘러보세요!',
+      placement: 'right',
     }
   ];
 
