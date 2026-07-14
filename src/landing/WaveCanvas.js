@@ -158,16 +158,6 @@ export default function WaveCanvas() {
     const WATER_FALLBACK =
       "linear-gradient(160deg, #94e4ea 0%, #2aa7c0 45%, #0a5478 100%)";
 
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    // Mobile: skip the fill-rate-heavy procedural sim entirely. A static
-    // gradient keeps the hero palette without a permanent rAF tax.
-    const isDesktop = window.matchMedia?.("(min-width: 1024px)").matches;
-    if (!isDesktop || reduceMotion) {
-      canvas.style.display = "none";
-      container.style.background = WATER_FALLBACK;
-      return;
-    }
-
     const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 
     // No WebGL2: a static gradient in the water's own palette. Nothing else
@@ -177,6 +167,8 @@ export default function WaveCanvas() {
       container.style.background = WATER_FALLBACK;
       return;
     }
+
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
     function compile(type, src) {
       const shader = gl.createShader(type);
@@ -374,7 +366,7 @@ export default function WaveCanvas() {
       gl.bindTexture(gl.TEXTURE_2D, texHeight);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, W, H, 0, gl.RED, gl.FLOAT, height);
 
-      gl.uniform1f(U.uTime, time * CONFIG.flowSpeed);
+      gl.uniform1f(U.uTime, reduceMotion ? 0 : time * CONFIG.flowSpeed);
       gl.uniform1f(U.uRefr, CONFIG.refraction);
       gl.uniform1f(U.uSpec, CONFIG.specular * 22);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
