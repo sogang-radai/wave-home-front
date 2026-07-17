@@ -85,8 +85,9 @@ type Insight = {
 
 | 프론트 메서드 | HTTP |
 |---------------|------|
-| `sleepApi.getInsights({ period, date })` | `GET /insights?surface=sleep_report` (+ period 클라이언트 필터) |
-| `postureApi.getDailyInsights()` / `getWeeklyInsights()` | `GET /insights?surface=posture_report` (+ period 필터) |
+| `sleepApi.getInsights({ period, date })` | `GET /insights?surface=sleep_report` (+ period 필터, date 없으면 최신일·최대 4장) |
+| `powerApi.getInsights()` | `GET /insights?surface=power` (최신 발행일만·최대 4장) |
+| `postureApi.getDailyInsights()` / `getWeeklyInsights()` | `GET /insights?surface=posture_report` (+ period 필터, 최신일·최대 4장) |
 | `weeklyPlanApi.getRecommendations()` | `GET /weekly-plan/recommendations` → `surface=weekly_plan` |
 | `dashboardApi.getDailyMessage()` | `GET /dashboard/daily-message` → `surface=dashboard_banner` |
 

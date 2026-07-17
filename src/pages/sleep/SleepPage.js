@@ -28,9 +28,13 @@ export function SleepPage() {
     settingsApi.getSleepConfig()
       .then((config) => setSleepGoalHours(config.goalHours ?? 7.5))
       .catch(() => setSleepGoalHours(7.5));
+  }, []);
+
+  // 최신 발행일 코호트만 (과거 날짜·에이전트 배치가 누적돼도 카드가 무한히 늘지 않음).
+  useEffect(() => {
     sleepApi.getInsights({ period: 'daily' }).then(setDailyInsights);
     sleepApi.getInsights({ period: 'weekly' }).then(setWeeklyInsights);
-  }, []);
+  }, [reportDate]);
 
   const toggleInsight = async (id) => {
     const current = [...dailyInsights, ...weeklyInsights].find((item) => item.id === id);

@@ -1,5 +1,9 @@
 import { httpClient } from './httpClient';
-import { filterInsightsByPeriod } from './insightUtils';
+import {
+  filterInsightsByPeriod,
+  INSIGHT_CARD_LIMIT,
+  pickLatestDateInsights,
+} from './insightUtils';
 
 export class InsightsApi {
   async list({ surface, date, kind, approved, actionable } = {}) {
@@ -18,9 +22,14 @@ export class InsightsApi {
     return httpClient.patch(`/insights/${insightId}`, { approved });
   }
 
-  /** Sleep/Posture thin wrappers — `GET /insights?surface=…` + period 필터 */
-  async listForSurface(surface, { period, date, kind, approved, actionable } = {}) {
+  /**
+   * Domain thin wrapper — `GET /insights?surface=…` + period 필터.
+   * date 미지정 시 최신 발행일만, 항상 최대 INSIGHT_CARD_LIMIT 장.
+   */
+  async listForSurface(surface, { period, date, kind, approved, actionable, limit = INSIGHT_CARD_LIMIT } = {}) {
     const items = await this.list({ surface, date, kind, approved, actionable });
-    return filterInsightsByPeriod(items, period);
+    const byPeriod = filterInsightsByPeriod(items, period);
+    if (date) return byPeriod.slice(0, limit);
+    return pickLatestDateInsights(byPeriod, { limit });
   }
 }

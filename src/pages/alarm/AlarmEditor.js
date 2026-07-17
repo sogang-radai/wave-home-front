@@ -182,17 +182,35 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
               </label>
             </div>
 
-            <div className="alarm-checkbox-row alarm-smartwake-row">
-              <label className="alarm-checkbox-row-label">
-                <input
-                  type="checkbox"
-                  checked={draft.smartWake}
-                  onChange={(e) => setDraft((d) => ({ ...d, smartWake: e.target.checked, radarDeviceId: e.target.checked ? d.radarDeviceId : '' }))}
-                />
-                <span>기상 맞춤 알람</span>
-                <InfoTooltip text="수면 단계를 추정해 설정된 시간에 맞춰 얕은 수면 단계에서 가장 개운하게 일어날 수 있도록 알람을 울립니다." />
-              </label>
-
+            <div className="alarm-smartwake-panel">
+              <div className="alarm-smartwake-panel-head">
+                <label className="alarm-checkbox-row-label">
+                  <input
+                    type="checkbox"
+                    checked={draft.smartWake}
+                    onChange={(e) => setDraft((d) => ({
+                      ...d,
+                      smartWake: e.target.checked,
+                      radarDeviceId: e.target.checked ? d.radarDeviceId : '',
+                    }))}
+                  />
+                  <span>기상 맞춤 알람</span>
+                  <InfoTooltip
+                    wide
+                    panel
+                    text={
+                      '목표 시각 최대 30분 전부터 수면 단계(얕은 수면·REM·각성)를 보고 '
+                      + '개운하게 일어날 수 있는 순간에 알람을 울립니다.\n\n'
+                      + '해당 구간이 없으면 설정한 시각에 울립니다.\n\n'
+                      + '수면 단계는 아직 휴리스틱으로 생성됩니다.'
+                    }
+                  />
+                </label>
+              </div>
+              <p className="alarm-smartwake-hint">
+                <strong>목표 시각 30분 전</strong>부터 얕은 수면·REM·각성 구간을 찾아 깨워 드려요.
+                없으면 설정 시각에 울립니다.
+              </p>
               {draft.smartWake && (
                 <select
                   className="settings-select alarm-radar-select"

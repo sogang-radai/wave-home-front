@@ -961,5 +961,82 @@
 
 .sleep-card-title-with-info .info-tooltip-bubble {
   left: 0;
+  right: auto;
   transform: none;
+}
+
+.sleep-stage-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sleep-stage-info-lead {
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.sleep-stage-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sleep-stage-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--wave-08);
+  border-left: 3px solid var(--wave);
+}
+
+.sleep-stage-info-item.tone-light {
+  border-left-color: var(--accent-stage-light);
+}
+
+.sleep-stage-info-item.tone-deep {
+  border-left-color: var(--accent-stage-deep);
+}
+
+.sleep-stage-info-item.tone-rem {
+  border-left-color: var(--accent-plum);
+}
+
+.sleep-stage-info-item strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sleep-stage-info-item span {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.sleep-stage-info-toss {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.sleep-stage-info-note {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
 }

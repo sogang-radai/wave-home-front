@@ -25,12 +25,23 @@ function HeroNavChevron({ direction }) {
   );
 }
 
-const SLEEP_STAGE_INFO =
-  '수면은 하룻밤에 여러 번 반복되는 주기로 이뤄져요. 한 주기는 대략 90분 안팎입니다.\n\n'
-  + '• 얕은 수면: 잠들기 직후와 중간 단계예요. 쉽게 깰 수 있고, 하루 동안 쌓인 정보를 정리하는 데 도움을 줍니다.\n'
-  + '• 깊은 수면: 몸이 회복되는 구간이에요. 조직 회복과 면역에 중요하며, 보통 밤 초반에 더 많이 나타납니다.\n'
-  + '• 렘(REM) 수면: 꿈이 많은 단계로, 뇌는 활발하지만 몸은 거의 움직이지 않아요. 감정·학습 정리에 관여합니다.\n\n'
-  + '뒤척임은 수면 중 몸부림·자세 변화를 말해요. 가끔은 자연스럽지만, 특정 시간대에 몰리면 온도·소음 때문에 잠이 자주 깨졌다는 신호일 수 있어요.';
+const SLEEP_STAGE_GUIDE = [
+  {
+    label: '얕은 수면',
+    tone: 'light',
+    text: '잠들기 직후와 중간 단계예요. 쉽게 깰 수 있고, 하루 동안 쌓인 정보를 정리하는 데 도움을 줍니다.',
+  },
+  {
+    label: '깊은 수면',
+    tone: 'deep',
+    text: '몸이 회복되는 구간이에요. 조직 회복과 면역에 중요하며, 보통 밤 초반에 더 많이 나타납니다.',
+  },
+  {
+    label: '렘(REM) 수면',
+    tone: 'rem',
+    text: '꿈이 많은 단계로, 뇌는 활발하지만 몸은 거의 움직이지 않아요. 감정·학습 정리에 관여합니다.',
+  },
+];
 
 const STAGE_COLORS = {
   awake: 'var(--accent-stage-awake)',
@@ -534,7 +545,29 @@ export function SleepStatusReport({ onReportDateChange }) {
           title={(
             <span className="sleep-card-title-with-info">
               수면 단계
-              <InfoTooltip wide text={SLEEP_STAGE_INFO} />
+              <InfoTooltip wide panel>
+                <div className="sleep-stage-info">
+                  <p className="sleep-stage-info-lead">
+                    수면은 하룻밤에 여러 번 반복되는 주기로 이뤄져요. 한 주기는 대략 90분 안팎입니다.
+                  </p>
+                  <ul className="sleep-stage-info-list">
+                    {SLEEP_STAGE_GUIDE.map((item) => (
+                      <li key={item.label} className={`sleep-stage-info-item tone-${item.tone}`}>
+                        <strong>{item.label}</strong>
+                        <span>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="sleep-stage-info-toss">
+                    뒤척임은 수면 중 몸부림·자세 변화예요. 특정 시간대에 몰리면 온도·소음 때문에
+                    잠이 자주 깨졌다는 신호일 수 있어요.
+                  </p>
+                  <p className="sleep-stage-info-note">
+                    수면 단계는 아직 휴리스틱으로 생성됩니다. 레이더 실측(재실·각성·뒤척임) 위에
+                    주기 규칙을 얹은 추정이에요.
+                  </p>
+                </div>
+              </InfoTooltip>
             </span>
           )}
         >

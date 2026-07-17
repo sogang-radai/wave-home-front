@@ -254,35 +254,52 @@
   font-size: 12px;
 }
 
-/* ── Info tooltip ────────────────────────────────────────────────────────── */
+/* ── Info tooltip / panel ────────────────────────────────────────────────── */
 
 .info-tooltip {
   position: relative;
   display: inline-flex;
+  vertical-align: middle;
+}
+
+.info-tooltip-trigger {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--wave-40);
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--wave-deep);
+  cursor: pointer;
+}
+
+.info-tooltip-trigger:hover,
+.info-tooltip.is-open .info-tooltip-trigger {
+  background: var(--wave-28);
+  border-color: var(--wave-60);
 }
 
 .info-tooltip-icon {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--wave-15);
-  color: var(--ink);
-  font-size: 10px;
+  width: 100%;
+  height: 100%;
+  font-size: 11px;
   font-style: italic;
   font-weight: 900;
-  cursor: help;
+  line-height: 1;
 }
 
 .info-tooltip-bubble {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
   width: 220px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--ink);
   color: #fff;
   font-size: 11px;
@@ -290,22 +307,80 @@
   line-height: 1.45;
   white-space: pre-line;
   text-align: left;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 28px rgba(11, 30, 45, 0.22);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.12s ease;
-  z-index: 40;
+  transition: opacity 0.14s ease, visibility 0.14s ease;
+  z-index: 60;
 }
 
 .info-tooltip--wide .info-tooltip-bubble {
-  width: min(320px, 72vw);
+  width: min(320px, calc(100vw - 40px));
   font-weight: 500;
 }
 
-.info-tooltip:hover .info-tooltip-bubble,
-.info-tooltip:focus-within .info-tooltip-bubble {
+.info-tooltip--panel .info-tooltip-bubble {
+  width: min(340px, calc(100vw - 40px));
+  max-height: min(380px, 62vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: normal;
+  box-shadow: 0 14px 36px rgba(11, 30, 45, 0.16);
+}
+
+.info-tooltip.is-open .info-tooltip-bubble {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
+}
+
+/* 레이더 콤보가 같은 줄 오른쪽에 붙고, 체크 여부와 무관하게 줄 높이를
+   고정해서 나타나거나 사라져도 카드 레이아웃(높이)이 흔들리지 않게 한다. */
+.alarm-smartwake-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--wave-15), var(--wave-05));
+}
+
+.alarm-smartwake-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.alarm-smartwake-hint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.alarm-smartwake-hint strong {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.alarm-smartwake-panel .alarm-radar-select {
+  width: 100%;
+  max-width: none;
+  height: 36px;
 }
 
 /* ── Device picker (step 2) ──────────────────────────────────────────────── */
