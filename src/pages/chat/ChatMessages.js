@@ -10,6 +10,7 @@ import { IS_DEMO_MODE } from '../../api/config';
 import { MarkdownMessage } from './MarkdownMessage';
 import { WaveTransitionOverlay } from '../../WaveTransitionOverlay';
 import { WaveAiIcon } from '../../components/icons/WaveAiIcon';
+import { useChatMicStt } from './useChatMicStt';
 
 const SUGGESTION_ICONS = {
   moon: '🌙',
@@ -25,6 +26,12 @@ const SUGGESTION_ICONS = {
 function suggestionIcon(icon) {
   if (!icon) return '✦';
   return SUGGESTION_ICONS[icon] || icon;
+}
+
+/** Browser mic requires a secure context (HTTPS / localhost). */
+function canUseBrowserMic() {
+  return typeof navigator !== 'undefined'
+    && typeof navigator.mediaDevices?.getUserMedia === 'function';
 }
 
 export function useAutoResizeTextarea(value) {
@@ -296,9 +303,19 @@ export function ChatMessages({
   const prevConvKeyRef = useRef(conversationKey);
   const prevMessageCountRef = useRef(messages.length);
   const ctrlEnterRef = useRef(false);
+  const voiceAutoSendRef = useRef(false);
+  const micPrefixRef = useRef('');
+  const micStoppingRef = useRef(false);
+  const draftRef = useRef(draft);
   const textareaRef = useAutoResizeTextarea(draft);
+  const [micError, setMicError] = useState('');
+  const [micSupported] = useState(() => canUseBrowserMic());
 
   const [shownSuggestions, setShownSuggestions] = useState([]);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   const focusInput = useCallback((delayMs = 0) => {
     window.setTimeout(() => {
@@ -329,6 +346,7 @@ export function ChatMessages({
       .catch(() => setShownSuggestions([]));
     settingsApi.getAiAgentSettings().then((s) => {
       ctrlEnterRef.current = s.ctrlEnterSend ?? false;
+      voiceAutoSendRef.current = s.voiceAutoSend ?? false;
     }).catch(() => {});
   }, [compact]);
 
@@ -441,6 +459,101 @@ export function ChatMessages({
     focusInput(0);
   }, [draft, onSend, textareaRef, sending, focusInput]);
 
+  const handleSendRef = useRef(handleSend);
+  handleSendRef.current = handleSend;
+  const micStopRef = useRef(async () => {});
+  const sendingRef = useRef(sending);
+  sendingRef.current = sending;
+
+  const finishMicSession = useCallback(async ({ abort = false, autoSend = false } = {}) => {
+    if (micStoppingRef.current) return;
+    micStoppingRef.current = true;
+    try {
+      await micStopRef.current({ abort });
+    } finally {
+      micStoppingRef.current = false;
+    }
+
+    if (abort) return;
+
+    const text = draftRef.current.trim();
+    if (autoSend && voiceAutoSendRef.current && text && !sendingRef.current) {
+      handleSendRef.current(text);
+    }
+  }, []);
+
+  const handleMicPartial = useCallback((text) => {
+    if (micStoppingRef.current) return;
+    const utterance = (text || '').trim();
+    if (!utterance) return;
+    const prefix = micPrefixRef.current;
+    const next = [prefix, utterance].filter(Boolean).join(' ').trim();
+    draftRef.current = next;
+    setDraft(next);
+  }, []);
+
+  const handleMicEndpoint = useCallback((text) => {
+    const utterance = (text || '').trim();
+    if (utterance) {
+      const prefix = micPrefixRef.current;
+      const next = [prefix, utterance].filter(Boolean).join(' ').trim();
+      // Commit so later teardown cannot wipe recognized text.
+      micPrefixRef.current = next;
+      draftRef.current = next;
+      setDraft(next);
+    }
+    finishMicSession({ autoSend: true });
+  }, [finishMicSession]);
+
+  const handleMicError = useCallback((err) => {
+    const code = err?.code || err?.name;
+    let message = err?.message || '음성 인식을 시작할 수 없습니다.';
+    if (code === 'NotAllowedError' || code === 'PermissionDeniedError') {
+      message = '마이크 권한을 허용해주세요.';
+    } else if (code === 'MEDIA_DEVICES_UNAVAILABLE' || code === 'MediaDevicesUnavailable') {
+      message = err?.message
+        || '마이크는 localhost 또는 HTTPS에서만 사용할 수 있습니다.';
+    } else if (code === 'STT_BUSY') {
+      message = '다른 음성 인식이 진행 중입니다.';
+    } else if (code === 'STT_UNAVAILABLE') {
+      message = '음성 인식을 사용할 수 없습니다.';
+    } else if (typeof message === 'string' && message.includes('getUserMedia')) {
+      message = '마이크는 localhost 또는 HTTPS에서만 사용할 수 있습니다. http://127.0.0.1:8510 으로 접속해 주세요.';
+    }
+    setMicError(message);
+    window.setTimeout(() => setMicError(''), 4800);
+  }, []);
+
+  const { listening: micListening, start: micStart, stop: micStop } = useChatMicStt({
+    onPartial: handleMicPartial,
+    onEndpoint: handleMicEndpoint,
+    onError: handleMicError,
+  });
+  micStopRef.current = micStop;
+
+  const toggleMic = useCallback(async () => {
+    setMicError('');
+    if (micListening) {
+      await finishMicSession({ autoSend: true });
+      return;
+    }
+    if (sending) return;
+    try {
+      const settings = await settingsApi.getAiAgentSettings();
+      voiceAutoSendRef.current = settings?.voiceAutoSend ?? false;
+      ctrlEnterRef.current = settings?.ctrlEnterSend ?? false;
+    } catch {
+      // keep last known settings
+    }
+    // Keep whatever is already in the composer; STT appends after this prefix.
+    micPrefixRef.current = draftRef.current.trim();
+    try {
+      await micStart();
+    } catch {
+      // onError already surfaced the message
+    }
+  }, [finishMicSession, micListening, micStart, sending]);
+
   // Insert a newline at the caret ourselves — don't rely on the browser's
   // default textarea behavior, which isn't reliably triggered once the
   // keydown has modifier keys involved.
@@ -549,6 +662,7 @@ export function ChatMessages({
 
       {/* Input area */}
       <div className={inputAreaClass}>
+        {micSupported && micError && <div className="chat-mic-error" role="status">{micError}</div>}
         <form
           className={inputFormClass}
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
@@ -557,16 +671,33 @@ export function ChatMessages({
             ref={textareaRef}
             className={inputClass}
             rows={1}
-            placeholder="메시지를 입력하세요..."
+            placeholder={micListening ? '듣고 있어요…' : '메시지를 입력하세요...'}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={handleKeyDown}
           />
+          {micSupported && (
+            <button
+              type="button"
+              className={`chat-mic-btn${micListening ? ' is-listening' : ''}`}
+              aria-label={micListening ? '음성 인식 중지' : '음성 인식 시작'}
+              aria-pressed={micListening}
+              disabled={sending && !micListening}
+              onClick={toggleMic}
+            >
+              <svg width={compact ? 15 : 17} height={compact ? 15 : 17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+          )}
           <button
             type="submit"
             className="chat-send-btn"
             aria-label="보내기"
-            disabled={!draft.trim() || sending}
+            disabled={!draft.trim() || sending || micListening}
           >
             <svg width={compact ? 15 : 17} height={compact ? 15 : 17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="22" y1="2" x2="11" y2="13" />

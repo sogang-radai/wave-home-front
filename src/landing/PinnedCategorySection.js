@@ -107,16 +107,22 @@ export default function PinnedCategorySection({
         );
         if (distance <= 0) return;
 
-        const cardCopies = gsap.utils.toArray("[data-card-copy]", section);
-        const introHold = 0.32;
+        const cardCount = cards.length;
+        // 2-card tracks have a short horizontal distance, so the default pin
+        // length feels like a hard snap. Hold longer and pad the scrub range.
+        const introHold = cardCount <= 2 ? 0.48 : 0.32;
+        const vhPad = cardCount <= 2 ? 2.85 : cardCount === 3 ? 1.85 : 1.25;
+        const scrub = cardCount <= 2 ? 1.05 : 0.75;
         const slideStart = introHold;
         const slideEnd = 1;
+
+        const cardCopies = gsap.utils.toArray("[data-card-copy]", section);
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
             start: "top top",
-            end: () => `+=${distance + window.innerHeight * 1.25}`,
-            scrub: 0.75,
+            end: () => `+=${distance + window.innerHeight * vhPad}`,
+            scrub,
             pin: true,
             anticipatePin: 1,
             invalidateOnRefresh: true,
@@ -135,9 +141,9 @@ export default function PinnedCategorySection({
             {
               y: -8,
               rotate: -0.6,
-              stagger: 0.12,
+              stagger: cardCount <= 2 ? 0.2 : 0.12,
               ease: "power1.inOut",
-              duration: 0.3,
+              duration: cardCount <= 2 ? 0.4 : 0.3,
               yoyo: true,
               repeat: 1,
             },

@@ -198,8 +198,9 @@ export default function ValuePropSection() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: "+=70%",
-          scrub: 0.2,
+          // Longer pin so the headline can be read before particles start.
+          end: "+=125%",
+          scrub: 0.35,
           pin: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
@@ -215,22 +216,18 @@ export default function ValuePropSection() {
         },
       });
 
-      // Text reveals over the first third of the pinned scroll, then the
-      // shatter runs to completion. A solid cover fades in right at the
-      // very end (masking any last-instant flicker at the handoff) —
-      // the next section is pulled up to overlap this section's tail via
-      // its own `overlapPrevious` margin, so it's already pinned in place
-      // by the time this section releases; the cover (part of this section)
-      // scrolls away with it in that same instant, revealing that section
-      // already sitting there instead of sliding up from below.
-      tl.to(line1, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0)
-        .to(line2, { opacity: 1, xPercent: 0, duration: 0.16, ease: "power2.out" }, 0.08)
-        .to(line3, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, 0.22)
-        .set(line2, { opacity: 0 }, 0.36)
-        .set(shatterMount, { opacity: 1 }, 0.36)
-        .to(panel, { opacity: 0, duration: 0.22, ease: "power1.in" }, 0.34)
-        .to(shatterState, { progress: 1, duration: 0.64, ease: "power1.in" }, 0.36)
-        .to(overlay, { opacity: 1, duration: 0.1, ease: "power1.in" }, 0.9);
+      // Reveal text early, then hold it readable for most of the pin.
+      // Shatter used to start at ~0.36 (right as line3 finished) — delay
+      // it so particles don't compete with the first read of the headline.
+      // Overlay still lands near the end for the Dashboard overlap handoff.
+      tl.to(line1, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0)
+        .to(line2, { opacity: 1, xPercent: 0, duration: 0.14, ease: "power2.out" }, 0.06)
+        .to(line3, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0.16)
+        .set(line2, { opacity: 0 }, 0.58)
+        .set(shatterMount, { opacity: 1 }, 0.58)
+        .to(panel, { opacity: 0, duration: 0.16, ease: "power1.in" }, 0.56)
+        .to(shatterState, { progress: 1, duration: 0.34, ease: "power1.in" }, 0.58)
+        .to(overlay, { opacity: 1, duration: 0.08, ease: "power1.in" }, 0.93);
 
       return () => {
         destroyed = true;

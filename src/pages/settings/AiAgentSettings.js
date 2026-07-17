@@ -214,6 +214,16 @@ export function AiAgentSettings({ heading }) {
             <i />
           </button>
         </SettingsRow>
+        <SettingsRow label="말 끝나면 바로 전송" desc="음성 인식이 끝나면 메시지를 바로 전송합니다.">
+          <button
+            type="button"
+            className={`toggle-switch ${settings.voiceAutoSend ? 'on' : ''}`}
+            onClick={() => patchSettings({ voiceAutoSend: !settings.voiceAutoSend })}
+            aria-label="말 끝나면 바로 전송 토글"
+          >
+            <i />
+          </button>
+        </SettingsRow>
         <SettingsRow label="WaveAI 효과음" desc="채팅을 열 때 보글보글 효과음을 재생합니다.">
           <button
             type="button"

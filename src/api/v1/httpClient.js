@@ -84,12 +84,42 @@ async function request(path, { method = 'GET', body, params, signal } = {}) {
   return payload;
 }
 
+async function requestBinary(path, { method = 'POST', body, signal, contentType = 'application/octet-stream' } = {}) {
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
+  const token = getAccessToken();
+  const demoRuntimeId = getDemoRuntimeId();
+  const res = await fetch(url, {
+    method,
+    credentials: 'include',
+    signal,
+    headers: {
+      'Content-Type': contentType,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(demoRuntimeId ? { [DEMO_RUNTIME_HEADER]: demoRuntimeId } : {}),
+    },
+    body,
+  });
+
+  captureDemoRuntimeId(res);
+
+  if (res.status === 204) return null;
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    const errCode = payload?.error?.code || 'UNKNOWN_ERROR';
+    const errMessage = payload?.error?.message || res.statusText;
+    throw new ApiError(res.status, errCode, errMessage);
+  }
+  return payload;
+}
+
 export const httpClient = {
   get: (path, params, options = {}) => request(path, { method: 'GET', params, ...options }),
   post: (path, body, options = {}) => request(path, { method: 'POST', body, ...options }),
   patch: (path, body, options = {}) => request(path, { method: 'PATCH', body, ...options }),
   put: (path, body, options = {}) => request(path, { method: 'PUT', body, ...options }),
   delete: (path, options = {}) => request(path, { method: 'DELETE', ...options }),
+  postBinary: (path, body, options = {}) => requestBinary(path, { method: 'POST', body, ...options }),
 };
 
 function parseSseChunk(chunk, onEvent) {

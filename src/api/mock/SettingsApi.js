@@ -131,6 +131,7 @@ const defaultAiAgentSettings = {
   selectedModelId: 'gemini-flash2.5',
   ctrlEnterSend: false,
   waveAiSound: true,
+  voiceAutoSend: false,
 };
 
 // Chat-related toggles (ctrlEnterSend, waveAiSound, etc.) are persisted to
@@ -468,7 +469,7 @@ export class SettingsApi {
   }
 
   // Dummy: personal prompt, model selection, and chat settings are stored in-memory only.
-  async updateAiAgentSettings({ personalPrompt, selectedModelId, ctrlEnterSend, waveAiSound }) {
+  async updateAiAgentSettings({ personalPrompt, selectedModelId, ctrlEnterSend, waveAiSound, voiceAutoSend }) {
     await delay();
     if (personalPrompt !== undefined) {
       if (personalPrompt.length > 10000) {
@@ -484,6 +485,7 @@ export class SettingsApi {
     }
     if (ctrlEnterSend !== undefined) aiAgentSettings.ctrlEnterSend = Boolean(ctrlEnterSend);
     if (waveAiSound !== undefined) aiAgentSettings.waveAiSound = Boolean(waveAiSound);
+    if (voiceAutoSend !== undefined) aiAgentSettings.voiceAutoSend = Boolean(voiceAutoSend);
     persistAiAgentSettings(aiAgentSettings);
     return cloneDeep(aiAgentSettings);
   }

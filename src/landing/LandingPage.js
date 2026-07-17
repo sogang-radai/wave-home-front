@@ -11,6 +11,7 @@ import SleepSection from "./sections/SleepSection";
 import SmartHomeSection from "./sections/SmartHomeSection";
 import LifestyleSection from "./sections/LifestyleSection";
 import DashboardSection from "./sections/DashboardSection";
+import GetStartedSection from "./sections/GetStartedSection";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -69,6 +70,7 @@ export default function LandingPage({ onEnter }) {
         <SleepSection onEnter={onEnter} />
         <LifestyleSection onEnter={onEnter} />
         <SmartHomeSection onEnter={onEnter} />
+        <GetStartedSection onEnter={onEnter} />
       </main>
     </div>
   );
