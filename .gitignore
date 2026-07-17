@@ -31,6 +31,5 @@ yarn-error.log*
 
 API_SPEC.md
 
-# public/models is filled by
-# ../../scripts/copy-twin-model.sh from demo/
-/public/models/
+# CRA lockfile unused for this repo workflow
+package-lock.json
