@@ -1,4 +1,4 @@
-import { GoalsApi as MockGoalsApi } from '../mock/GoalsApi';
+import { GoalsApi as RealGoalsApi } from '../v1/GoalsApi';
 
-// 목표 코칭은 데모 클라이언트가 메모리 상에서만 시뮬레이션하고 영구 저장소에는 반영하지 않는다.
-export class GoalsApi extends MockGoalsApi {}
+// 데모도 /api/v1/goals 를 호출한다. 서버가 세션 메모리에 목표·코칭을 보관한다.
+export class GoalsApi extends RealGoalsApi {}
