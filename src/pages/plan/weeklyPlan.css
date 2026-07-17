@@ -99,6 +99,60 @@
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: #fff;
   animation: goal-coach-spin 0.95s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  flex-shrink: 0;
+}
+
+.goal-coach-spinner--on-light {
+  width: 18px;
+  height: 18px;
+  border-color: var(--wave-28);
+  border-top-color: var(--wave);
+}
+
+.goal-coach-guide {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  background: rgba(254, 226, 226, 0.55);
+}
+
+.goal-coach-guide-title {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.goal-coach-guide-text {
+  margin: 6px 0 0;
+  color: #7f1d1d;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.goal-coach-loading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px dashed var(--wave-40);
+  background: var(--wave-05);
+}
+
+.goal-coach-loading-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.goal-coach-loading-sub {
+  margin: 4px 0 0;
+  color: var(--sub);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 @keyframes goal-coach-spin {

@@ -38,7 +38,8 @@
   font-size: 15px;
 }
 
-.card-head span,
+/* action badge only — do not style nested spans inside titles (e.g. InfoTooltip). */
+.card-head > span,
 .empty-card > span {
   padding: 6px 10px;
   border-radius: 999px;
@@ -48,7 +49,7 @@
   font-weight: 800;
 }
 
-.card-head span:has(.card-action-btn) {
+.card-head > span:has(.card-action-btn) {
   padding: 0;
   background: none;
 }

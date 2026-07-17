@@ -265,31 +265,37 @@
 .info-tooltip-trigger {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 1px solid var(--wave-40);
   border-radius: 999px;
-  background: var(--wave-15);
+  background: transparent;
   color: var(--wave-deep);
   cursor: pointer;
+  box-shadow: none;
+  outline: none;
 }
 
 .info-tooltip-trigger:hover,
 .info-tooltip.is-open .info-tooltip-trigger {
-  background: var(--wave-28);
+  background: var(--wave-15);
   border-color: var(--wave-60);
 }
 
+.info-tooltip-trigger:focus,
+.info-tooltip-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .info-tooltip-icon {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
+  display: block;
   font-size: 11px;
   font-style: italic;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
+  font-family: Georgia, 'Times New Roman', serif;
 }
 
 .info-tooltip-bubble {

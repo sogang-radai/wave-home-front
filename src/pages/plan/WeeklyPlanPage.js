@@ -6,6 +6,7 @@ import {
 } from '../../data/weeklyPlanData';
 import weeklyPlanApi from '../../api/weeklyPlanApi';
 import goalsApi from '../../api/goalsApi';
+import settingsApi from '../../api/settingsApi';
 import { DateNavigatorBar } from '../../components/calendar/DateNavigatorBar';
 import { getToday, isSameDay, normalizeDate } from '../../components/calendar/calendarUtils';
 import { getNow } from '../../lib/demoClock';
@@ -148,7 +149,10 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   const [goalFormBusy, setGoalFormBusy] = useState(false);
   const [goalRecBusyId, setGoalRecBusyId] = useState(null);
   const [goalDismissed, setGoalDismissed] = useState(() => new Set());
+  const [goalGuideMessage, setGoalGuideMessage] = useState('');
   const goalTextareaRef = useRef(null);
+  // ChatMessages 와 동일: AI 에이전트 설정의 Ctrl+Enter 전송 토글.
+  const goalCtrlEnterRef = useRef(false);
 
   const growGoalTextarea = (el) => {
     if (!el) return;
@@ -162,22 +166,71 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
       if (!goal) return;
       goalsApi.getCoaching(goal.id).then(setGoalCoaching).catch(() => setGoalCoaching(null));
     }).catch(() => setActiveGoal(null));
+    settingsApi.getAiAgentSettings().then((s) => {
+      goalCtrlEnterRef.current = s?.ctrlEnterSend ?? false;
+    }).catch(() => {});
   }, []);
 
   const submitGoal = async () => {
     const title = goalTitleInput.trim();
     if (!title || goalFormBusy) return;
     setGoalFormBusy(true);
+    setGoalCoaching(null);
+    setGoalGuideMessage('');
+    let createdGoal = null;
     try {
-      const goal = await goalsApi.createGoal({ title, category: goalCategoryInput });
-      setActiveGoal(goal);
-      setGoalTitleInput('');
-      setGoalDismissed(new Set());
-      const coaching = await goalsApi.getCoaching(goal.id);
+      // 코칭까지 성공한 뒤에만 active 로 올려, 거절 시 입력 폼+안내가 바로 보이게 한다.
+      createdGoal = await goalsApi.createGoal({ title, category: goalCategoryInput });
+      const coaching = await goalsApi.getCoaching(createdGoal.id);
+      setActiveGoal(createdGoal);
       setGoalCoaching(coaching);
+      setGoalDismissed(new Set());
+      setGoalTitleInput('');
+    } catch (err) {
+      console.error('goal coaching failed', err);
+      setGoalCoaching(null);
+      setActiveGoal(null);
+      setGoalGuideMessage(
+        err?.message
+        || '목표 코칭을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
+      );
+      setGoalTitleInput(title);
+      if (createdGoal?.id) {
+        try {
+          await goalsApi.archiveGoal(createdGoal.id);
+        } catch {
+          // ignore archive failure — form is restored for retry
+        }
+      }
     } finally {
       setGoalFormBusy(false);
     }
+  };
+
+  const handleGoalTitleKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    // macOS / Hangul IME: composition Confirm Enter must not submit.
+    if (e.nativeEvent.isComposing || e.isComposing || e.keyCode === 229) return;
+    const modifierHeld = e.ctrlKey || e.metaKey;
+    // ctrlEnterSend=true: Ctrl/⌘+Enter 제출, plain Enter → 줄바꿈.
+    // ctrlEnterSend=false (default): plain Enter 제출, Ctrl/⌘+Enter → 줄바꿈.
+    const shouldSubmit = goalCtrlEnterRef.current ? modifierHeld : !modifierHeld;
+    e.preventDefault();
+    if (shouldSubmit) {
+      submitGoal();
+      return;
+    }
+    const el = e.target;
+    const start = el.selectionStart ?? goalTitleInput.length;
+    const end = el.selectionEnd ?? start;
+    const next = `${goalTitleInput.slice(0, start)}\n${goalTitleInput.slice(end)}`;
+    setGoalTitleInput(next);
+    requestAnimationFrame(() => {
+      try {
+        el.selectionStart = el.selectionEnd = start + 1;
+      } catch { /* noop */ }
+      growGoalTextarea(el);
+    });
   };
 
   const archiveActiveGoal = async () => {
@@ -854,7 +907,14 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                   value={goalTitleInput}
                   onChange={(e) => {
                     setGoalTitleInput(e.target.value);
+                    setGoalGuideMessage('');
                     growGoalTextarea(e.target);
+                  }}
+                  onKeyDown={handleGoalTitleKeyDown}
+                  onFocus={() => {
+                    settingsApi.getAiAgentSettings().then((s) => {
+                      goalCtrlEnterRef.current = s?.ctrlEnterSend ?? false;
+                    }).catch(() => {});
                   }}
                   placeholder="예: 취침 11시 전에 자기"
                 />
@@ -864,12 +924,25 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                       key={opt.value}
                       type="button"
                       className={`goal-coach-tag${goalCategoryInput === opt.value ? ' is-active' : ''}`}
-                      onClick={() => setGoalCategoryInput(opt.value)}
+                      onClick={() => {
+                        setGoalCategoryInput(opt.value);
+                        setGoalGuideMessage('');
+                      }}
                     >
                       {opt.label}
                     </button>
                   ))}
                 </div>
+                {goalGuideMessage && (
+                  <div className="goal-coach-guide" role="alert">
+                    <p className="goal-coach-guide-title">
+                      {goalGuideMessage.includes('에이전트')
+                        ? '코칭을 시작하지 못했어요'
+                        : '목표를 다시 적어 주세요'}
+                    </p>
+                    <p className="goal-coach-guide-text">{goalGuideMessage}</p>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={submitGoal}
@@ -905,10 +978,20 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                   </button>
                 </div>
 
+                {goalFormBusy && !goalCoaching && (
+                  <div className="goal-coach-loading" role="status" aria-live="polite">
+                    <span className="goal-coach-spinner goal-coach-spinner--on-light" aria-hidden="true" />
+                    <div>
+                      <p className="goal-coach-loading-title">맞춤 코칭 생성 중…</p>
+                      <p className="goal-coach-loading-sub">목표에 맞는 첫걸음을 WaveAI가 준비하고 있어요.</p>
+                    </div>
+                  </div>
+                )}
+
                 {goalCoaching && (
                   <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                     <p className="text-xs text-slate-600 leading-relaxed">{goalCoaching.pastSummary}</p>
-                    {goalCoaching.projectedMetrics?.completionRate !== undefined && (
+                    {typeof goalCoaching.projectedMetrics?.completionRate === 'number' && (
                       <p className="text-xs font-semibold" style={{ color: '#2cb3f1' }}>
                         완료율 {Math.round(goalCoaching.projectedMetrics.completionRate * 100)}%
                         {goalCoaching.projectedMetrics.trend && ` · ${GOAL_TREND_LABEL[goalCoaching.projectedMetrics.trend] || goalCoaching.projectedMetrics.trend}`}
