@@ -31,12 +31,15 @@ const deviceClassLabels = {
 function toViewDevice(device) {
   if (!device) return null;
   const iface = device.interface || {};
+  const settings = device.settings && typeof device.settings === 'object' ? device.settings : {};
   return {
     ...device,
+    settings,
     ip: iface.host,
     mac: iface.mac,
     port: iface.port,
     classLabel: deviceClassLabels[device.class] || device.class,
+    companion: !!settings.companion,
   };
 }
 
@@ -99,9 +102,11 @@ function DetailLine({ label, value }) {
   );
 }
 
-function DeviceSettingsDialog({ device, roomName, onClose, onRename, onDelete }) {
+function DeviceSettingsDialog({ device, roomName, onClose, onRename, onDelete, onToggleCompanion }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   if (!device) return null;
+
+  const isWaveStation = device.class === 'wave_station';
 
   return (
     <div className="device-dialog-backdrop" onClick={onClose}>
@@ -129,6 +134,23 @@ function DeviceSettingsDialog({ device, roomName, onClose, onRename, onDelete })
           <DetailLine label="MAC" value={device.mac} />
           <DetailLine label="포트" value={device.port} />
         </div>
+
+        {isWaveStation && (
+          <div className="device-companion-row">
+            <div>
+              <strong>동반자 모드</strong>
+              <p>Wave Station 마이크로 말하면 에이전트가 응답합니다.</p>
+            </div>
+            <button
+              type="button"
+              className={`toggle-switch ${device.companion ? 'on' : ''}`}
+              onClick={() => onToggleCompanion?.(device.id, !device.companion)}
+              aria-label="동반자 모드 토글"
+            >
+              <i />
+            </button>
+          </div>
+        )}
 
         <div className="device-dialog-footer">
           {/* Dummy: calls mock deleteDevice after confirm — removes from in-memory list only. */}
@@ -207,6 +229,21 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
     setSelectedDevice(null);
   };
 
+  const toggleCompanion = (id, companion) => {
+    const target = devices.find((device) => device.id === id);
+    if (!target) return;
+    const nextSettings = { ...(target.settings || {}), companion };
+    const optimistic = { ...target, settings: nextSettings, companion };
+    setDevices((current) => current.map((device) => (device.id === id ? optimistic : device)));
+    setSelectedDevice((current) => (current?.id === id ? optimistic : current));
+    settingsApi.updateDevice(id, { settings: nextSettings })
+      .then((updated) => applyUpdate(updated))
+      .catch(() => {
+        setDevices((current) => current.map((device) => (device.id === id ? target : device)));
+        setSelectedDevice((current) => (current?.id === id ? target : current));
+      });
+  };
+
   return (
     <SettingsPanel heading={heading} description="집에 연결된 장치의 이름과 활성화 상태, 연결 정보를 관리합니다.">
       <SettingsSection
@@ -242,6 +279,7 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
         onClose={() => setSelectedDevice(null)}
         onRename={renameDevice}
         onDelete={deleteDevice}
+        onToggleCompanion={toggleCompanion}
       />
     </SettingsPanel>
   );

@@ -7,6 +7,76 @@
   background: var(--wave-05);
 }
 
+.wave-station-settings-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.wave-station-settings-panel .device-companion-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.wave-station-settings-panel .device-companion-row strong,
+.wave-station-settings-panel .device-mic-gain-row strong,
+.wave-station-settings-panel .device-stt-transcript-head strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.wave-station-settings-panel .device-companion-row p,
+.wave-station-settings-panel .device-mic-gain-row p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft, var(--sub));
+  line-height: 1.35;
+}
+
+.wave-station-settings-panel .device-mic-gain-head,
+.wave-station-settings-panel .device-stt-transcript-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wave-station-settings-panel .device-mic-gain-head span,
+.wave-station-settings-panel .device-stt-transcript-head em {
+  font-size: 0.82rem;
+  color: var(--ink-soft, var(--sub));
+  font-style: normal;
+}
+
+.wave-station-settings-panel .device-mic-gain-row input[type='range'] {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.wave-station-settings-panel .device-stt-transcript-box {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--wave-15, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  background: var(--wave-05, rgba(0, 0, 0, 0.03));
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.wave-station-settings-panel .device-stt-transcript small {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-soft, var(--sub));
+  font-size: 0.78rem;
+}
+
 .radar-sleep-analysis-panel strong {
   color: var(--wave);
   font-size: 1rem;

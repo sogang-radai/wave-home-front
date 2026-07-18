@@ -444,6 +444,28 @@
   font-weight: 800;
 }
 
+.device-companion-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 16px 0 4px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--settings-border, rgba(0, 0, 0, 0.08));
+}
+
+.device-companion-row strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.device-companion-row p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  opacity: 0.72;
+  line-height: 1.35;
+}
+
 .device-detail-line strong {
   font-size: 13px;
   word-break: break-word;
