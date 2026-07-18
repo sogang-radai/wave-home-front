@@ -802,6 +802,7 @@ function App() {
           sidebarWidth={sidebarCollapsed ? 76 : 263}
           forceTopRight={chatForceTopRight}
           onForceTopRightConsumed={() => setChatForceTopRight(false)}
+          defaultSize={page === 'homeTwin' ? { w: 280, h: 520 } : undefined}
         />
       )}
       <button
@@ -879,7 +880,12 @@ function App() {
           )}
           {page === 'alarm' && <AlarmPage />}
           {page === 'power' && <PowerPage />}
-          {page === 'homeTwin' && <HomeTwinPage />}
+          {page === 'homeTwin' && (
+            <HomeTwinPage
+              onOpenChat={handleHeaderWaveAiOpen}
+              chatPopupOpen={chatMode === 'popup'}
+            />
+          )}
           {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
           {page === 'setting' && (
             <SettingPage

@@ -48,7 +48,7 @@ export default function Nav({ onStart }) {
           onClick={() => onStart()}
           className="shrink-0 rounded-full bg-white px-4 py-2 text-[13px] font-semibold text-background transition-opacity hover:opacity-90"
         >
-          Start now
+          시작하기
         </button>
       </div>
     </motion.header>

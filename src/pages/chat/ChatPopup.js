@@ -95,12 +95,15 @@ export function ChatPopup({
   sidebarWidth = 263,
   forceTopRight = false,
   onForceTopRightConsumed,
+  defaultSize,
 }) {
   const popupRef = useRef(null);
   const [showConvList, setShowConvList] = useState(false);
 
-  // Size state (raw w/h — independent of which corner we're snapped to)
-  const [size, setSize] = useState(() => loadStoredSize() || { w: 380, h: 520 });
+  // Size state (raw w/h — independent of which corner we're snapped to).
+  // defaultSize only matters the very first time (before anything is ever
+  // saved) — once the user resizes, the saved size wins everywhere.
+  const [size, setSize] = useState(() => loadStoredSize() || defaultSize || { w: 380, h: 520 });
 
   // Which corner the popup is docked to — the only thing we persist for
   // position. Actual pixel position is always derived from this + size.

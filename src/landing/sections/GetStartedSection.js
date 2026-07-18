@@ -90,9 +90,7 @@ export default function GetStartedSection({ onEnter }) {
         <span
           data-cta-reveal
           className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-wide text-wave-light"
-        >
-          <span className="text-mist">06</span>
-          시작하기
+        >  
         </span>
 
         <h2
@@ -108,7 +106,7 @@ export default function GetStartedSection({ onEnter }) {
           data-cta-reveal
           className="mt-4 max-w-lg text-[15px] leading-relaxed text-white"
         >
-          수면·습관·스마트홈이 하나로 이어진 대시보드에서
+          수면·습관·스마트홈이 하나로 이어진 대시보드에서<br />
           당신만의 라이프스타일 케어를 바로 경험할 수 있어요.
         </p>
 
@@ -122,10 +120,6 @@ export default function GetStartedSection({ onEnter }) {
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
-
-        <p data-cta-reveal className="mt-4 text-[13px] text-mist">
-          대시보드로 이동합니다
-        </p>
       </div>
     </section>
   );
