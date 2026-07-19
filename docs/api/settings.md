@@ -255,14 +255,14 @@ type Device = {
   enabled: boolean;
   class:
     | 'srs_r4sn'
-    | 'wave_mic'
-    | 'wave_cam'
-    | 'ir_reciever'
-    | 'ir_remote'
+    | 'wave_station'
+    | 'droid_cam'
+    | 'reolink_e1_pro'
     | 'tizen_tv'
+    | 'samsung_g7'
     | 'tuya_ep2h'
-    | 'tuya_blind'
-    | 'hue_light';
+    | 'philips_wiz_e29';
+    // IR TX/RX is Wave Station (`wave_station`) send_ir / ir_recv — not a separate device class.
   interface: Record<string, unknown>;
   settings?: Record<string, unknown>;
 };
@@ -352,15 +352,22 @@ type DevicesResponse = {
       }
     },
     {
-      "id": "2e8d1795c0463f5a",
-      "room_id": 1,
-      "name": "IR 수신기",
-      "description": "LIRC IR 수신",
+      "id": "0000000000000003",
+      "room_id": 2,
+      "name": "Wave Station",
+      "description": "마이크·스피커·IR TX/RX·환경센서",
       "enabled": true,
-      "class": "ir_reciever",
+      "class": "wave_station",
       "interface": {
-        "transport": "lirc",
-        "device": "/dev/lirc0"
+        "host": "192.168.0.50",
+        "port": 9000,
+        "mac": "AA:BB:CC:DD:EE:FF"
+      },
+      "settings": {
+        "capabilities": {
+          "ir_transmit": true,
+          "ir_receive": true
+        }
       }
     }
   ],
@@ -390,19 +397,6 @@ type DevicesResponse = {
         "host": "192.168.0.70",
         "port": 8002,
         "name": "WaveHome-TV"
-      }
-    },
-    {
-      "id": "0f8c2d6b147ae953",
-      "room_id": 1,
-      "name": "거실 에어컨 IR",
-      "description": "LIRC IR 송신, 에어컨 제어",
-      "enabled": true,
-      "class": "ir_remote",
-      "interface": {
-        "transport": "lirc",
-        "device": "/dev/lirc1",
-        "command_list": "./ir/ac_commands.txt"
       }
     },
     {
@@ -444,14 +438,15 @@ type DevicesResponse = {
 ```json
 {
   "room_id": 1,
-  "name": "거실 에어컨 IR",
-  "description": "LIRC IR 송신, 에어컨 제어",
+  "name": "거실 스마트 플러그",
+  "description": "EP2H Tuya IoT 플러그",
   "enabled": true,
-  "class": "ir_remote",
+  "class": "tuya_ep2h",
   "interface": {
-    "transport": "lirc",
-    "device": "/dev/lirc1",
-    "command_list": "./ir/ac_commands.txt"
+    "host": "192.168.0.37",
+    "device_id": "eb61aa6ce49add5d80yfcj",
+    "local_key": "local-key-placeholder",
+    "version": "3.3"
   }
 }
 ```
@@ -459,19 +454,22 @@ type DevicesResponse = {
 **Response 201**
 ```json
 {
-  "id": "0f8c2d6b147ae953",
+  "id": "9a4c71e36b0285fd",
   "room_id": 1,
-  "name": "거실 에어컨 IR",
-  "description": "LIRC IR 송신, 에어컨 제어",
+  "name": "거실 스마트 플러그",
+  "description": "EP2H Tuya IoT 플러그",
   "enabled": true,
-  "class": "ir_remote",
+  "class": "tuya_ep2h",
   "interface": {
-    "transport": "lirc",
-    "device": "/dev/lirc1",
-    "command_list": "./ir/ac_commands.txt"
+    "host": "192.168.0.37",
+    "device_id": "eb61aa6ce49add5d80yfcj",
+    "local_key": "local-key-placeholder",
+    "version": "3.3"
   }
 }
 ```
+
+> IR 송신은 별도 `ir_remote` 장치가 아니라 Wave Station `POST …/actions/send_ir` (`commandId` from `ir_list.json`) 경로를 사용한다.
 
 ### PATCH `/devices/{deviceId}`
 
@@ -482,7 +480,7 @@ type DevicesResponse = {
 ```json
 {
   "enabled": false,
-  "name": "거실 에어컨 IR",
+  "name": "거실 스마트 플러그",
   "room_id": 1
 }
 ```
@@ -490,16 +488,17 @@ type DevicesResponse = {
 **Response 200**
 ```json
 {
-  "id": "0f8c2d6b147ae953",
+  "id": "9a4c71e36b0285fd",
   "room_id": 1,
-  "name": "거실 에어컨 IR",
-  "description": "LIRC IR 송신, 에어컨 제어",
+  "name": "거실 스마트 플러그",
+  "description": "EP2H Tuya IoT 플러그",
   "enabled": false,
-  "class": "ir_remote",
+  "class": "tuya_ep2h",
   "interface": {
-    "transport": "lirc",
-    "device": "/dev/lirc1",
-    "command_list": "./ir/ac_commands.txt"
+    "host": "192.168.0.37",
+    "device_id": "eb61aa6ce49add5d80yfcj",
+    "local_key": "local-key-placeholder",
+    "version": "3.3"
   }
 }
 ```

@@ -142,7 +142,7 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
       <label className="settings-field">
         <span className="ir-field-label-with-info">
           타이밍
-          <InfoTooltip text={TIMING_INFO} />
+          <InfoTooltip text={TIMING_INFO} panel wide />
         </span>
         <textarea
           ref={timingsRef}

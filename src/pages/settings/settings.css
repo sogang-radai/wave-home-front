@@ -272,12 +272,6 @@
   box-shadow: inset 10px 0 0 var(--ink-soft);
 }
 
-.device-thumb.ir_remote span {
-  width: 18px;
-  height: 36px;
-  border-radius: 10px;
-}
-
 .device-thumb.tizen_tv span {
   width: 42px;
   height: 26px;
@@ -1499,7 +1493,8 @@
   display: block;
 }
 
-.settings-field span {
+/* Direct label only — do not cascade into nested InfoTooltip spans. */
+.settings-field > span {
   display: block;
   margin-bottom: 6px;
   color: var(--sub);
