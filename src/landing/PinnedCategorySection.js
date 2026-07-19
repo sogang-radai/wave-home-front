@@ -189,7 +189,7 @@ function Card({ card, onEnter, accent = DEFAULT_ACCENT }) {
           card.wide ? "w-[92vw] sm:w-[760px]" : "w-[82vw] sm:w-[380px]"
         }`}
       >
-        <div className="relative w-full overflow-hidden rounded-[20px] shadow-xl shadow-black/10">
+        <div className="relative w-4/5 overflow-hidden rounded-[20px] shadow-xl shadow-black/10">
           {card.media}
         </div>
       </motion.div>

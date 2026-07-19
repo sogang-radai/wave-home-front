@@ -2,6 +2,7 @@ import PinnedCategorySection from "../PinnedCategorySection";
 import GestureGrid from "../mockups/GestureGrid";
 import ListRows from "../mockups/ListRows";
 import twinHome from "../twin_home.png";
+import importanceOfIoT from "../importance_of_interaction.png";
 
 const cards = [
   {
@@ -43,6 +44,17 @@ const cards = [
       />
     ),
     target: { page: "home", homeTab: "gesture" },
+  },
+  {
+    bleed: true,
+    title: "자연스러운 IoT 제어의 중요성",
+    wide: true,
+    media: (
+      <img
+        src={importanceOfIoT}
+        className="aspect-[1624/969]  w-full object-cover"
+      />
+    ),
   },
 ];
 

@@ -273,6 +273,88 @@ button.brand-group {
   height: 24px;
 }
 
+/* Upcoming features (dimmed, non-interactive preview) */
+.nav-upcoming {
+  padding: 4px 10px 14px;
+}
+
+.nav-upcoming-title {
+  margin: 0 14px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.nav-item--upcoming {
+  height: 40px;
+  margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.32);
+  font-weight: 600;
+  cursor: default;
+}
+
+.nav-item--upcoming:hover {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.nav-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.nav-info-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.nav-info-tooltip {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 12px);
+  transform: translateY(-50%) translateX(-4px);
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 8px 24px var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.nav-info-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--surface);
+}
+
+.nav-item--upcoming:hover .nav-info-tooltip,
+.nav-info:hover .nav-info-tooltip,
+.nav-info:focus-visible .nav-info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+.sidebar.collapsed .nav-upcoming {
+  display: none;
+}
+
 .sidebar-bottom {
   padding: 14px 10px 18px;
   border-top: 1px solid transparent;
@@ -658,6 +740,10 @@ button.brand-group {
   .sidebar.collapsed .nav-label,
   .sidebar.collapsed .sidebar-date,
   .sidebar.collapsed .nav-item i {
+    display: block;
+  }
+
+  .sidebar.collapsed .nav-upcoming {
     display: block;
   }
 

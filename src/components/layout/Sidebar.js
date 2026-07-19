@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import './layout.css';
 import logoDark from '../../img/logo_dark.png';
 import logo from '../../img/logo.png';
-import { pages } from '../../data/appData';
+import { pages, upcomingFeatures } from '../../data/appData';
 import { ChatBotIcon } from '../icons/ChatBotIcon';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
 
@@ -183,6 +183,21 @@ export function Sidebar({
           </Fragment>
         ))}
       </nav>
+
+      <div className="nav-upcoming">
+        <p className="nav-upcoming-title">확장 예정 기능</p>
+        {upcomingFeatures.map((feature) => (
+          <div className="nav-item nav-item--upcoming" key={feature.id}>
+            <span className="nav-label">
+              <span>{feature.label}</span>
+              <span className="nav-info" tabIndex={0}>
+                <span className="nav-info-icon" aria-hidden="true">ⓘ</span>
+                <span className="nav-info-tooltip" role="tooltip">{feature.description}</span>
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
 
       <div className="sidebar-bottom">
         <p className="sidebar-date">{today}</p>

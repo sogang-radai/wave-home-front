@@ -92,7 +92,7 @@ export default function SleepSection({ onEnter }) {
       index={3}
       accent={{ text: "#6a45c9", from: "#f5f2fc", to: "#ded6f5" }}
       eyebrow="수면 관리"
-      title="레이더로 측정되는 수면 분석"
+      title="비접촉 방식으로 측정되는 수면 분석"
       description="기기 착용 없이도 수면 단계, 호흡, 코골이를 감지하고 매일 아침 원인까지 짚어주는 AI 리포트를 받아보세요."
       cards={cards}
       onEnter={onEnter}

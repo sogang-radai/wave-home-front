@@ -1,6 +1,7 @@
 import PinnedCategorySection from "../PinnedCategorySection";
 import StatGrid from "../mockups/StatGrid";
 import ListRows from "../mockups/ListRows";
+import goalCoaching from "../goal_coaching.png";
 
 const cards = [
   {
@@ -25,12 +26,10 @@ const cards = [
       "목표 달성 코칭",
     ],
     media: (
-      <ListRows
-        rows={[
-          { label: "아침 스트레칭 10분", meta: "완료", tone: "wave" },
-          { label: "저녁 산책 30분", meta: "진행 중", tone: "amber" },
-          { label: "취침 전 독서 15분", meta: "예정", tone: "mist" },
-        ]}
+      <img
+        src={goalCoaching}
+        alt="목표 달성 코치"
+        className="aspect-[1310/794] w-full rounded-xl object-contain"
       />
     ),
     target: "weeklyPlan",

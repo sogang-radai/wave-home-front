@@ -2,6 +2,7 @@ import PinnedCategorySection from "../PinnedCategorySection";
 import AreaChart from "../mockups/AreaChart";
 import ListRows from "../mockups/ListRows";
 import electricity from "../electricity.png";
+import importanceOfElectricity from "../importance_of_electricity.png";
 
 const cards = [
   {
@@ -52,6 +53,17 @@ const cards = [
     ),
     target: { page: "main", chatMode: "popup" },
   },
+  {
+      bleed: true,
+      title: "전력관리의 중요성",
+      wide: true,
+      media: (
+        <img
+          src={importanceOfElectricity} 
+          className="aspect-[1624/969]  w-full object-cover"
+        />
+      ),
+    },
 ];
 
 export default function PowerSection({ onEnter }) {
