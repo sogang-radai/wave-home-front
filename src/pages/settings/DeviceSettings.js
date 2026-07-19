@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isDemoHiddenDevice } from '../../api/config';
 import settingsApi from '../../api/settingsApi';
 import { saveRoomOrder } from '../../utils/roomOrder';
 import {
@@ -188,7 +189,11 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
   useEffect(() => {
     // 등록된 전체 장치를 연결 상태와 무관하게 표시한다.
     settingsApi.getDevices().then(({ input_devices, output_devices }) => {
-      setDevices([...input_devices, ...output_devices].map(toViewDevice).filter(Boolean));
+      setDevices(
+        [...input_devices, ...output_devices]
+          .map(toViewDevice)
+          .filter((device) => device && !isDemoHiddenDevice(device)),
+      );
     });
   }, []);
 
@@ -426,7 +431,11 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
 
   const loadDevices = () => {
     settingsApi.getDevices().then(({ input_devices, output_devices }) => {
-      setDevices([...input_devices, ...output_devices].map(toViewDevice).filter(Boolean));
+      setDevices(
+        [...input_devices, ...output_devices]
+          .map(toViewDevice)
+          .filter((device) => device && !isDemoHiddenDevice(device)),
+      );
     });
   };
 

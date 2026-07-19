@@ -1235,7 +1235,8 @@
 
 .tts-custom-select {
   position: relative;
-  min-width: 160px;
+  min-width: 240px; /* 160px → +50% */
+  width: 240px;
 }
 
 .tts-custom-trigger {

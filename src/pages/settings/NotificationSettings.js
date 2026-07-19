@@ -64,12 +64,13 @@ export function NotificationSettings({ embedded = false }) {
     }
   };
 
+  const sectionTitle = embedded ? '알림' : '푸시 알림';
   const body = !config ? (
-    <SettingsSection title="푸시 알림">
+    <SettingsSection title={sectionTitle}>
       <p className="settings-panel-desc">불러오는 중…</p>
     </SettingsSection>
   ) : (
-    <SettingsSection title="푸시 알림">
+    <SettingsSection title={sectionTitle}>
       <SettingsRow
         label="푸시 알림 수신"
         desc={pushSupported

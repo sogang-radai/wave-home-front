@@ -5,6 +5,8 @@
 // User reference (1.0537, 2.6517, 0.9935) likely uses a different axis label;
 // POV camera uses getWorldPosition() at runtime (see twinCamera.js).
 
+import { IS_DEMO_MODE } from '../api/config';
+
 export const TWIN_MODEL_URL = `${process.env.PUBLIC_URL || ''}/models/model_house.gltf`;
 
 export const TWIN_ROOMS = [
@@ -99,8 +101,17 @@ export const TWIN_DEVICES = [
 
 export const LIVING_CAM_NODE = 'living_cam';
 
+/** Demo: hide living-room camera label (phone cam already has showInTwin:false). */
+const DEMO_HIDDEN_TWIN_DEVICE_IDS = new Set(['0000000000000005']);
+
+export function isTwinDeviceVisible(device) {
+  if (!device || device.showInTwin === false) return false;
+  if (IS_DEMO_MODE && DEMO_HIDDEN_TWIN_DEVICE_IDS.has(device.deviceId)) return false;
+  return true;
+}
+
 export function twinDevicesForRoom(roomGltfRoot) {
-  return TWIN_DEVICES.filter((d) => d.gltfRoot === roomGltfRoot && d.showInTwin !== false);
+  return TWIN_DEVICES.filter((d) => d.gltfRoot === roomGltfRoot && isTwinDeviceVisible(d));
 }
 
 export function twinRoomByGltfRoot(gltfRoot) {

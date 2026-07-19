@@ -3,12 +3,6 @@ import settingsApi from '../../api/settingsApi';
 import { NotificationSettings } from './NotificationSettings';
 import { SettingsPanel, SettingsSection, SettingsRow } from './SettingsUI';
 
-const generalTabs = [
-  { id: 'basic', label: '기본' },
-  { id: 'tts', label: '음성' },
-  { id: 'notifications', label: '알림' },
-];
-
 const themeOptions = [
   { value: 'light', label: '라이트' },
   { value: 'dark', label: '다크' },
@@ -89,7 +83,6 @@ function TtsSpeakerSelect({ speakers, value, onChange }) {
 }
 
 export function GeneralSettings({ heading }) {
-  const [activeTab, setActiveTab] = useState('basic');
   const [config, setConfig] = useState(null);
   const [ttsSpeakers, setTtsSpeakers] = useState([]);
   const [speedDraft, setSpeedDraft] = useState(null);
@@ -117,90 +110,69 @@ export function GeneralSettings({ heading }) {
 
   return (
     <SettingsPanel heading={heading} description="테마와 언어, 음성 합성, 알림 등 앱 전반의 기본 동작을 설정합니다.">
-      <div className="settings-general-tabs segmented" role="tablist" aria-label="일반 설정 하위 메뉴">
-        {generalTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={activeTab === tab.id ? 'active' : ''}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'basic' && (
-        <SettingsSection title="화면">
-          <SettingsRow label="테마" desc="화면 밝기와 톤을 선택합니다.">
-            <div className="segmented">
-              {themeOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={config.theme === option.value ? 'active' : ''}
-                  onClick={() => patchConfig({ theme: option.value })}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </SettingsRow>
-          <SettingsRow label="언어" desc="앱에서 사용할 언어를 선택합니다.">
-            <select
-              className="settings-select"
-              value={config.language}
-              onChange={(event) => patchConfig({ language: event.target.value })}
-            >
-              <option value="ko">한국어</option>
-              <option value="en">English</option>
-            </select>
-          </SettingsRow>
-        </SettingsSection>
-      )}
-
-      {activeTab === 'tts' && (
-        <SettingsSection title="음성 (TTS)">
-          <SettingsRow label="목소리" desc="Supertonic 3 · ko-KR 화자 프리셋">
-            <div className="tts-voice-row">
-              <TtsSpeakerSelect
-                speakers={ttsSpeakers}
-                value={config.ttsSpeakerId}
-                onChange={(id) => patchConfig({ ttsSpeakerId: id })}
-              />
-              <button type="button" className="settings-btn-ghost tts-test-btn" title="미리 듣기 (준비 중)">
-                <SpeakerIcon />
-                테스트
+      <SettingsSection title="기본">
+        <SettingsRow label="테마" desc="화면 밝기와 톤을 선택합니다.">
+          <div className="segmented">
+            {themeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={config.theme === option.value ? 'active' : ''}
+                onClick={() => patchConfig({ theme: option.value })}
+              >
+                {option.label}
               </button>
-            </div>
-          </SettingsRow>
-          <SettingsRow label="재생 속도" desc="음성 안내가 재생되는 속도입니다.">
-            <div className="settings-range-wrap">
-              <input
-                className="settings-range-input"
-                type="range"
-                min="0.5"
-                max="2"
-                step="0.1"
-                value={displaySpeed}
-                onChange={(event) => setSpeedDraft(Number(event.target.value))}
-                onPointerUp={(event) => {
-                  const next = Number(event.target.value);
-                  setSpeedDraft(null);
-                  patchConfig({ ttsPlaybackSpeed: next });
-                }}
-              />
-              <strong className="settings-range-value">{displaySpeed.toFixed(1)}x</strong>
-            </div>
-          </SettingsRow>
-        </SettingsSection>
-      )}
+            ))}
+          </div>
+        </SettingsRow>
+        <SettingsRow label="언어" desc="앱에서 사용할 언어를 선택합니다.">
+          <select
+            className="settings-select"
+            value={config.language}
+            onChange={(event) => patchConfig({ language: event.target.value })}
+          >
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+          </select>
+        </SettingsRow>
+      </SettingsSection>
 
-      {activeTab === 'notifications' && (
-        <NotificationSettings embedded />
-      )}
+      <SettingsSection title="음성">
+        <SettingsRow label="목소리" desc="Supertonic 3 · ko-KR 화자 프리셋">
+          <div className="tts-voice-row">
+            <TtsSpeakerSelect
+              speakers={ttsSpeakers}
+              value={config.ttsSpeakerId}
+              onChange={(id) => patchConfig({ ttsSpeakerId: id })}
+            />
+            <button type="button" className="settings-btn-ghost tts-test-btn" title="미리 듣기 (준비 중)">
+              <SpeakerIcon />
+              테스트
+            </button>
+          </div>
+        </SettingsRow>
+        <SettingsRow label="재생 속도" desc="음성 안내가 재생되는 속도입니다.">
+          <div className="settings-range-wrap">
+            <input
+              className="settings-range-input"
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={displaySpeed}
+              onChange={(event) => setSpeedDraft(Number(event.target.value))}
+              onPointerUp={(event) => {
+                const next = Number(event.target.value);
+                setSpeedDraft(null);
+                patchConfig({ ttsPlaybackSpeed: next });
+              }}
+            />
+            <strong className="settings-range-value">{displaySpeed.toFixed(1)}x</strong>
+          </div>
+        </SettingsRow>
+      </SettingsSection>
+
+      <NotificationSettings embedded />
     </SettingsPanel>
   );
 }

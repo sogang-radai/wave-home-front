@@ -15,6 +15,14 @@ function resolveApiMode() {
 export const API_MODE = resolveApiMode();
 export const IS_DEMO_MODE = API_MODE === 'demo';
 
+/** Demo UI: hide camera devices (not deleted — still in DB / non-demo builds). */
+export const DEMO_HIDDEN_DEVICE_CLASSES = new Set(['reolink_e1_pro', 'droid_cam']);
+
+export function isDemoHiddenDevice(device) {
+  if (!IS_DEMO_MODE || !device) return false;
+  return DEMO_HIDDEN_DEVICE_CLASSES.has(device.class);
+}
+
 /** Home Twin 3D tab (site-test + site-demo only). */
 export const SHOW_HOME_TWIN = API_MODE === 'mock' || API_MODE === 'demo';
 

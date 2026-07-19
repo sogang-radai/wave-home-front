@@ -3,6 +3,7 @@ import { Card } from '../../components/ui/Card';
 import { GearIcon, TrashIcon } from '../settings/SettingsUI';
 import iotApi from '../../api/iotApi';
 import settingsApi from '../../api/settingsApi';
+import { isDemoHiddenDevice } from '../../api/config';
 import { deviceThumbnails, describeSchedule, describeTrigger, deviceDotClass, deviceDotTitle, EXEC_MODE_LABELS, isDeviceOffline, sortDevicesForControl } from './iotUtils';
 import { ReconnectIcon } from './icons';
 import { RuleEditor } from './RuleEditor';
@@ -329,7 +330,7 @@ export function IotControlTab() {
     const list = roomFilter === 'all'
       ? devices
       : devices.filter((d) => String(d.room?.id ?? '') === String(roomFilter));
-    return sortDevicesForControl(list);
+    return sortDevicesForControl(list.filter((d) => !isDemoHiddenDevice(d)));
   }, [devices, roomFilter]);
 
   // Always keep exactly one device selected — the grid never shows an

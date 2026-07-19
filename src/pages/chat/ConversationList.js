@@ -134,7 +134,7 @@ export function ConversationList({ conversations, activeConvId, onSelect, onAdd,
               ) : (
                 <span className="conv-title">
                   {isPinned && <PinIcon className="conv-pin-mark" />}
-                  {conv.title}
+                  <span className="conv-title-text">{conv.title}</span>
                 </span>
               )}
 

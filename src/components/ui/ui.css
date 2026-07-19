@@ -144,10 +144,15 @@
 
 /* Metric */
 .metric {
+  position: relative;
   min-height: 108px;
   padding: 16px;
   border-radius: 16px;
   background: var(--surface);
+}
+
+.metric--dot-corner {
+  padding-right: 28px;
 }
 
 .metric p {
@@ -174,6 +179,13 @@
   background: var(--neutral-dot);
 }
 
+.metric--dot-corner > .metric-dot {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  margin: 0;
+}
+
 .metric-dot.online {
   background: var(--good);
   box-shadow: 0 0 0 4px var(--good-15);
@@ -185,9 +197,12 @@
 }
 
 .metric span {
+  display: block;
   color: var(--sub);
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 /* InfoList */

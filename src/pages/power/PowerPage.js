@@ -14,9 +14,10 @@ import {
 import powerApi from '../../api/powerApi';
 import settingsApi from '../../api/settingsApi';
 import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
-import { USE_CLIENT_POWER_SIM } from '../../api/config';
+import { IS_DEMO_MODE, USE_CLIENT_POWER_SIM } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
 import { InsightCard } from '../../components/report/InsightCard';
+import { getNow } from '../../lib/demoClock';
 import { formatAnchorDate, resolvePowerReportRequest } from './powerReportUtils';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
@@ -356,12 +357,25 @@ export function PowerPage() {
   const trendPlug = selectedPlug || { id: 'none', powerW: 0, voltageV: 0, currentMa: 0 };
   const rawTrend = useMemoTrend(trendPlug, rangeTab, isCombo);
   const chartData = useMemo(() => {
+    let series;
     if (!isCombo) {
-      if (periodTrend.length > 0) return periodTrend;
-      // DB trend 대기/실패 시 mock 으로 떨어지면 이전·잘못된 막대가 잠깐 그려져
-      // 범위 전환·바 클릭 리포트가 어긋난다. 데모/실서버는 빈 배열을 유지한다.
-      if (!USE_CLIENT_POWER_SIM) return [];
-      return rawTrend;
+      if (periodTrend.length > 0) series = periodTrend;
+      else if (!USE_CLIENT_POWER_SIM) series = [];
+      else series = rawTrend;
+      // 데모: 일간 막대는 현재 시각(앵커 날짜 + 실제 시각) 이후 시간을 그리지 않는다.
+      if (IS_DEMO_MODE && rangeTab === 'day' && series.length > 0) {
+        const currentHour = getNow().getHours();
+        series = series.filter((d) => {
+          if (typeof d.periodStart === 'string' && d.periodStart.length >= 13) {
+            const hour = parseInt(d.periodStart.slice(11, 13), 10);
+            return Number.isFinite(hour) && hour <= currentHour;
+          }
+          const match = String(d.label ?? '').match(/(\d+)/);
+          if (!match) return true;
+          return parseInt(match[1], 10) <= currentHour;
+        });
+      }
+      return series;
     }
     if (!USE_CLIENT_POWER_SIM) return comboTrend;
     // Attach synthesized V/A series (deterministic per-point jitter) for the V·A view
@@ -372,7 +386,7 @@ export function PowerPage() {
       v: +(v0 + Math.sin(i / 5) * 1.5).toFixed(1),
       a: +(a0 + Math.sin(i / 5 + 1) * a0 * 0.06).toFixed(3),
     }));
-  }, [rawTrend, isCombo, trendPlug.voltageV, trendPlug.currentMa, comboTrend, periodTrend]);
+  }, [rawTrend, isCombo, rangeTab, trendPlug.voltageV, trendPlug.currentMa, comboTrend, periodTrend]);
 
   useEffect(() => {
     if (!selectedPlugId) return undefined;
@@ -728,10 +742,46 @@ const VOLTAGE_DOMAIN = minSpanDomain(50);
 const CURRENT_DOMAIN = minSpanDomain(0.3);
 
 function barFillColor(index, { selectedBarIndex, hoveredBarIndex, barSelectable }) {
-  if (!barSelectable) return 'var(--wave-60)';
-  if (selectedBarIndex === index) return 'var(--wave-40)';
-  if (hoveredBarIndex === index) return 'var(--wave-deep)';
-  return 'var(--wave-60)';
+  // 콤보(1분~1시간)는 선택 불가 — 일간 미선택 바와 같은 연한 녹색.
+  if (!barSelectable) return 'var(--power-green-soft)';
+  if (selectedBarIndex === index) return 'var(--power-green-deep)';
+  if (hoveredBarIndex === index) return 'var(--power-green-deep)';
+  return 'var(--power-green-soft)';
+}
+
+/** Wh 차트 X축 라벨 — 라벨이 모두 보이는 구간(월간처럼 솎아진 경우 제외)에서 막대 선택과 동일하게 동작 */
+function WhAxisTick({
+  x, y, payload, index, labelSelectable, selectedBarIndex, onLabelSelect, isMobile,
+}) {
+  const selected = selectedBarIndex === index;
+  if (!labelSelectable) {
+    return (
+      <text x={x} y={y + 12} textAnchor="middle" fontSize={isMobile ? 9 : 11} fill="var(--sub)">
+        {payload.value}
+      </text>
+    );
+  }
+  return (
+    <g
+      style={{ cursor: 'pointer' }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onLabelSelect(index);
+      }}
+    >
+      <rect x={x - 16} y={y - 2} width={32} height={22} fill="transparent" />
+      <text
+        x={x}
+        y={y + 12}
+        textAnchor="middle"
+        fontSize={isMobile ? 9 : 11}
+        fill={selected ? 'var(--power-green-deep)' : 'var(--sub)'}
+        fontWeight={selected ? 700 : 500}
+      >
+        {payload.value}
+      </text>
+    </g>
+  );
 }
 
 // Line-chart grid only — vertical lines align with every sample; labels are
@@ -844,6 +894,14 @@ function PowerChart({
     onBarSelect(selectedBarIndex === i ? null : i);
   };
 
+  const selectBarByIndex = (i) => {
+    if (!barSelectable || i < 0 || i >= data.length) return;
+    onBarSelect(selectedBarIndex === i ? null : i);
+  };
+
+  // 월간처럼 라벨을 솎아내는 경우(tickInterval > 0)는 라벨 클릭을 끄고, 일/주/연만 허용.
+  const labelSelectable = barSelectable && tickInterval === 0;
+
   // 누적 Wh — 콤보(1분/10분/30분/1시간)와 기간(일/주/월/연) 모두 막대, 그리드 없음
   if (metricTab === 'wh') {
     return (
@@ -851,7 +909,21 @@ function PowerChart({
         <div className="power-chart" onMouseDown={(e) => e.preventDefault()}>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <ComposedChart data={data} margin={chartMargin}>
-              <XAxis xAxisId={X_AXIS_ID} dataKey="label" interval={tickInterval} {...axis} />
+              <XAxis
+                xAxisId={X_AXIS_ID}
+                dataKey="label"
+                interval={tickInterval}
+                {...axis}
+                tick={(props) => (
+                  <WhAxisTick
+                    {...props}
+                    labelSelectable={labelSelectable}
+                    selectedBarIndex={selectedBarIndex}
+                    onLabelSelect={selectBarByIndex}
+                    isMobile={isMobile}
+                  />
+                )}
+              />
               <YAxis yAxisId="left" {...yAxisWh} />
               <Tooltip content={<PowerTooltip />} {...whTooltipProps} />
               <Bar
@@ -912,7 +984,7 @@ function PowerChart({
   const seriesKey = isVoltage ? 'v' : 'a';
   const seriesName = isVoltage ? '전압' : '전류';
   const seriesUnit = isVoltage ? 'V' : 'A';
-  const seriesColor = isVoltage ? 'var(--power-green)' : 'var(--accent-navy)';
+  const seriesColor = isVoltage ? 'var(--power-orange)' : 'var(--accent-navy)';
   const yAxisVA = {
     width: yAxisWidth,
     ...axis,

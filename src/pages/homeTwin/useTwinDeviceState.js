@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import iotApi from '../../api/iotApi';
-import { TWIN_DEVICES } from '../../data/twinSceneConfig';
+import { isTwinDeviceVisible, TWIN_DEVICES } from '../../data/twinSceneConfig';
 import { getTwinDeviceOverrides, subscribeTwinScene } from '../../lib/twinSceneStore';
 
 const TWIN_POLL_MS = 4000;
@@ -30,7 +30,7 @@ function hasLivePowerField(state) {
 /** Twin visuals only care about power/color — ignore plug wattage jitter. */
 function visualFingerprint(states, devices, overrides) {
   const deviceById = new Map(devices.map((d) => [d.id, d]));
-  return TWIN_DEVICES.filter((t) => t.showInTwin !== false).map((twin) => {
+  return TWIN_DEVICES.filter((t) => isTwinDeviceVisible(t)).map((twin) => {
     const device = deviceById.get(twin.deviceId);
     const rawState = states[twin.deviceId]?.state || {};
     const override = overrides.get(twin.deviceId);
@@ -103,7 +103,7 @@ export function useTwinDeviceState() {
   }, [overrides, states, devices]);
 
   const viewModels = useMemo(
-    () => TWIN_DEVICES.filter((t) => t.showInTwin !== false).map((twin) => {
+    () => TWIN_DEVICES.filter((t) => isTwinDeviceVisible(t)).map((twin) => {
       const apiDevice = devices.find((d) => d.id === twin.deviceId);
       const entry = states[twin.deviceId];
       const override = overrides.get(twin.deviceId);
