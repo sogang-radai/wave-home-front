@@ -19,13 +19,3 @@ export function pickDashboardDailyMessage(insights, refDate = formatRefDate()) {
     body: latest.text,
   };
 }
-
-export function listDashboardActionInsights(insights, refDate = formatRefDate()) {
-  return insights
-    .filter((item) => (
-      item.surface === 'dashboard_banner'
-      && item.date <= refDate
-      && item.actionable
-    ))
-    .sort((a, b) => (a.date === b.date ? a.id - b.id : b.date.localeCompare(a.date)));
-}

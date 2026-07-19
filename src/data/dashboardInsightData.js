@@ -37,19 +37,13 @@ export const dashboardBannerInsights = [
   {
     id: 4,
     surface: 'dashboard_banner',
-    kind: 'action',
+    kind: 'tip',
     date: '2026-06-18',
     label: '전력·수면',
     title: '오늘 밤은 침실이 평소보다 더울 가능성이 있어요',
-    text: '폭염 예보로 인해 취침 시간에도 실내 온도가 높게 유지될 것으로 예상돼요. 높은 실내 온도는 깊은 수면을 방해할 수 있으므로, 평소보다 조금 일찍 냉방을 시작하면 더 쾌적하게 잠들 수 있어요. 자동 냉방을 설정해드릴까요?',
-    actionable: true,
-    actionType: 'automation_rule',
+    text: '폭염 예보로 인해 취침 시간에도 실내 온도가 높게 유지될 것으로 예상돼요. 높은 실내 온도는 깊은 수면을 방해할 수 있으므로, 평소보다 조금 일찍 냉방을 시작하면 더 쾌적하게 잠들 수 있어요. 오늘 저녁엔 미리 침실 온도를 확인해보세요.',
+    actionable: false,
     approved: false,
-    ruleJson: {
-      name: '폭염 대비 조기 냉방',
-      trigger: { type: 'manual' },
-      actions: [{ deviceId: '0000000000000007', name: 'on', params: { temp: 24 } }],
-    },
   },
   {
     id: 5,
