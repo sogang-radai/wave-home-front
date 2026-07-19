@@ -24,18 +24,20 @@ export function HomeControlPage({ tab, setTab, onOpenChat, chatPopupOpen }) {
 
   return (
     <div className="page-stack">
-      <Tabs
-        active={tab}
-        onChange={setTab}
-        items={[
-          ...(SHOW_HOME_TWIN ? [['twin', '디지털 트윈 홈', 'virtual']] : []),
-          ['control', 'IoT 제어'],
-          ['trigger', '트리거'],
-          ['ir', '적외선 명령'],
-          ['gesture', '제스처 목록'],
-          ['log', '로그'],
-        ]}
-      />
+      <div className="home-control-tabs-row">
+        <Tabs
+          active={tab}
+          onChange={setTab}
+          items={[
+            ...(SHOW_HOME_TWIN ? [['twin', '디지털 트윈 홈', 'virtual']] : []),
+            ['control', 'IoT 제어'],
+            ['trigger', '트리거'],
+            ['ir', '적외선 명령'],
+            ['gesture', '제스처 목록'],
+            ['log', '로그'],
+          ]}
+        />
+      </div>
 
       {tab !== 'twin' && (
         <div className="home-summary-grid">

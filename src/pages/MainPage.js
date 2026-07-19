@@ -162,7 +162,7 @@ export function MainPage({
   );
 
   return (
-    <div className="page-stack">
+    <div className="page-stack dashboard-page">
       <section className="hero card">
         {dailyMessage && (
           <div>

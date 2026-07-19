@@ -8,8 +8,8 @@ import background from "../background.png";
 gsap.registerPlugin(ScrollTrigger);
 
 const LINE1 = "WaveHome을 소개합니다";
-const LINE2 = "Your Personalized Lifestyle AI Agent";
-const LINE3 = "Private.  Effortless.  Sustainable.";
+const LINE2 = "Your Lifestyle AI Agent";
+const LINE3 = "Convenient. Intuitive. Personalized. Private.";
 
 const WHITE_TINT = 0xffffff;
 

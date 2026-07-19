@@ -178,3 +178,9 @@ body.calendar-modal-open .topbar {
     border-radius: 10px;
   }
 }
+
+/* Pull the date label closer to the calendar-icon trigger without touching
+   the shared flex gap used by the prev/next chevron buttons. */
+.date-nav-calendar-trigger {
+  margin-right: -3px;
+}

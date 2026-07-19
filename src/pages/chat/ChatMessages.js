@@ -9,7 +9,7 @@ import settingsApi from '../../api/settingsApi';
 import { IS_DEMO_MODE } from '../../api/config';
 import { MarkdownMessage } from './MarkdownMessage';
 import { WaveTransitionOverlay } from '../../WaveTransitionOverlay';
-import { WaveAiIcon } from '../../components/icons/WaveAiIcon';
+import { ChatBotIcon } from '../../components/icons/ChatBotIcon';
 import { useChatMicStt } from './useChatMicStt';
 
 const SUGGESTION_ICONS = {
@@ -229,7 +229,7 @@ function MessageBubble({ msg, isLast, isPinned, rowRef }) {
     >
       {msg.role === 'assistant' && (
         <div className="chat-bubble-avatar" aria-hidden="true">
-          <WaveAiIcon size={18} />
+          <ChatBotIcon size={18} />
         </div>
       )}
       <div className={`chat-bubble ${msg.role}${msg.status === 'streaming' ? ' streaming' : ''}`}>
@@ -609,9 +609,9 @@ export function ChatMessages({
           {isNewChat ? (
             <div className={`chat-welcome${chatEntered ? ' chat-welcome--entered' : ''}`}>
               <div className="chat-welcome-icon" aria-hidden="true">
-                <WaveAiIcon size={120} />
+                <ChatBotIcon size={120} />
               </div>
-              {!compact && <h2 className="chat-welcome-title">WaveAI에게 무엇이든 물어보세요</h2>}
+              {!compact && <h2 className="chat-welcome-title">WaveChat에게 무엇이든 물어보세요</h2>}
               {compact && <p className="chat-popup-welcome-hint">무엇이든 물어보세요</p>}
               {!compact && <p className="chat-welcome-sub">수면·자세·심박·가전까지, 건강 데이터 기반으로 답변드려요</p>}
               {IS_DEMO_MODE && !compact && (

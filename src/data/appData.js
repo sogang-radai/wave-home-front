@@ -3,8 +3,8 @@ export const pages = [
   { id: 'chat', label: 'WaveChat', icon: 'waveai' },
   { id: 'sleep', label: '수면 관리', icon: 'moon' },
   // { id: 'posture', label: '자세 관리', icon: 'posture' },
-  { id: 'home', label: '가전 관리', icon: 'remote' },
   { id: 'power', label: '전력 관리', icon: 'lightning' },
+  { id: 'home', label: '가전 관리', icon: 'remote' },
 ];
 
 export const pageTitles = {

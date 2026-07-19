@@ -439,8 +439,8 @@ button.brand-group {
 }
 
 @keyframes wave-ai-spark-pulse {
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-  50% { transform: scale(1.15) rotate(8deg); opacity: 0.75; }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.75; }
 }
 
 /* Bell */

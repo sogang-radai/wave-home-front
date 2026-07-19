@@ -86,13 +86,7 @@ export function DateNavigatorBar({
           </button>
         )}
 
-        <span
-          className={`text-base font-semibold text-slate-800 min-w-[140px] text-center date-nav-display-label${labelFading ? ' is-fading' : ''}`}
-        >
-          {displayLabel}
-        </span>
-
-        <div className="relative" ref={anchorRef}>
+        <div className="relative date-nav-calendar-trigger" ref={anchorRef}>
           <button
             type="button"
             onClick={() => setShowCalendar((value) => !value)}
@@ -121,6 +115,12 @@ export function DateNavigatorBar({
             />
           )}
         </div>
+
+        <span
+          className={`text-base font-semibold text-slate-800 min-w-[140px] text-center date-nav-display-label${labelFading ? ' is-fading' : ''}`}
+        >
+          {displayLabel}
+        </span>
 
         {useQuadNav ? (
           <>
