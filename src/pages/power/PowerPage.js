@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import powerApi from '../../api/powerApi';
+import settingsApi from '../../api/settingsApi';
 import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
 import { USE_CLIENT_POWER_SIM } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
@@ -54,16 +55,12 @@ const REPORT_PERIOD_MAP = { hour: '1h', day: '24h', week: '1w', month: '1mo', ye
 const LS_METRIC = 'powerMetricTab';
 const LS_RANGE = 'powerRangeTab';
 const LS_SOURCE = 'powerSourceId';
-const LS_DISABLED = 'powerDisabledSources';
 
 function loadLS(key, fallback) {
   try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
 }
 function saveLS(key, value) {
   try { localStorage.setItem(key, value); } catch { /* ignore */ }
-}
-function loadDisabledSources() {
-  try { return JSON.parse(localStorage.getItem(LS_DISABLED) || '[]'); } catch { return []; }
 }
 
 function LightningIcon(props) {
@@ -188,7 +185,7 @@ export function PowerPage() {
     // 'va' was a combined tab before V/A became separate tabs — fall back cleanly.
     return METRIC_TABS.some((t) => t.id === stored) ? stored : 'w';
   });
-  const [disabledSources, setDisabledSources] = useState(loadDisabledSources);
+  const [disabledSources, setDisabledSources] = useState([]);
   const [liveValues, setLiveValues] = useState({}); // plugId -> { w, v, a }
   const [comboTrend, setComboTrend] = useState([]);
   const [mounted, setMounted] = useState(false);
@@ -233,6 +230,7 @@ export function PowerPage() {
     const loadPlugs = () => powerApi.getPlugs()
       .then((list) => {
         setPlugs(list);
+        setDisabledSources(list.filter((p) => p.id !== 'all' && p.metering === false).map((p) => p.id));
         setPlugsError('');
         if (!USE_CLIENT_POWER_SIM) {
           setLiveValues(Object.fromEntries(list.map((p) => ([
@@ -262,9 +260,6 @@ export function PowerPage() {
   useEffect(() => saveLS(LS_METRIC, metricTab), [metricTab]);
   useEffect(() => saveLS(LS_RANGE, rangeTab), [rangeTab]);
   useEffect(() => saveLS(LS_SOURCE, selectedPlugId), [selectedPlugId]);
-  useEffect(() => {
-    try { localStorage.setItem(LS_DISABLED, JSON.stringify(disabledSources)); } catch { /* ignore */ }
-  }, [disabledSources]);
 
   // Keep `comboRange` in sync whenever a combo interval is actually active.
   useEffect(() => {
@@ -428,11 +423,23 @@ export function PowerPage() {
   };
 
   const toggleSourceEnabled = (id) => {
+    if (id === 'all') return;
+    const plug = plugs.find((p) => p.id === id);
+    if (!plug) return;
+    const nextMetering = plug.metering === false;
+    const nextSettings = { metering: nextMetering };
+    setPlugs((prev) => prev.map((p) => (p.id === id ? { ...p, metering: nextMetering } : p)));
     setDisabledSources((prev) => {
-      const isDisabled = prev.includes(id);
-      if (isDisabled) return prev.filter((x) => x !== id);
+      if (nextMetering) return prev.filter((x) => x !== id);
       if (selectedPlugId === id) setSelectedPlugId('all');
-      return [...prev, id];
+      return prev.includes(id) ? prev : [...prev, id];
+    });
+    settingsApi.updateDevice(id, { settings: nextSettings }).catch(() => {
+      setPlugs((prev) => prev.map((p) => (p.id === id ? plug : p)));
+      setDisabledSources((prev) => {
+        if (plug.metering === false) return prev.includes(id) ? prev : [...prev, id];
+        return prev.filter((x) => x !== id);
+      });
     });
   };
 
