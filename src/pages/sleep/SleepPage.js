@@ -77,7 +77,7 @@ export function SleepPage({ tab = 'analysis', setTab }) {
               <h3 className="insight-section-title">수면 인사이트</h3>
               <div className="insight-list">
                 {allInsights.map((item) => (
-                  <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} plainFooter />
+                  <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} actionType={item.actionType} scheduleTaskJson={item.scheduleTaskJson} onToggle={toggleInsight} plainFooter />
                 ))}
               </div>
             </div>
