@@ -10,7 +10,6 @@ import sleepApi from '../api/sleepApi';
 import iotApi from '../api/iotApi';
 import dashboardApi from '../api/dashboardApi';
 import powerApi from '../api/powerApi';
-import chatApi from '../api/chatApi';
 import { findAction } from '../api/mock/deviceClassRegistry';
 import './main.css';
 
@@ -70,7 +69,6 @@ export function MainPage({
   const [activeGestureRules, setActiveGestureRules] = useState([]);
   const [gestureSetDefsById, setGestureSetDefsById] = useState({});
   const [gesturePage, setGesturePage] = useState(0);
-  const [recentChats, setRecentChats] = useState([]);
 
   useEffect(() => {
     // 데모/실서버 모두 /sleep/today/summary → sleep_session DB 조회.
@@ -82,9 +80,6 @@ export function MainPage({
     iotApi.getDevices().then(setHomeDevices);
     dashboardApi.getUpcomingAlarms().then(setUpcomingAlarms);
     dashboardApi.getActiveGestureRules().then(setActiveGestureRules);
-    chatApi.getConversations()
-      .then((items) => setRecentChats((items || []).slice(0, 3)))
-      .catch(() => setRecentChats([]));
   }, []);
 
   // 전력 카드: DemoPowerMeter(/power/plugs) + 콤보 트렌드를 주기적으로 갱신.
@@ -138,7 +133,7 @@ export function MainPage({
 
   const deviceConnectionValue = homeSummary
     ? homeSummary.onlineDeviceCount === homeSummary.totalDeviceCount
-      ? '모두 연결됨'
+      ? '연결됨'
       : `연결 끊김 (${homeSummary.onlineDeviceCount}/${homeSummary.totalDeviceCount})`
     : '—';
 
@@ -172,71 +167,88 @@ export function MainPage({
         )}
       </section>
 
-      <section className="main-grid">
-        <Card title="현재 상태" data-coachmark="card-status">
-          <div className="state-grid">
-            {currentState && (
-              <Metric
-                label="실내 환경"
-                value={currentState.indoorEnvironment.label}
-                detail={currentState.indoorEnvironment.detail}
-              />
-            )}
-            <Metric
-              label={SLEEP_RADAR.role}
-              value="실행 중"
-              detail={`${SLEEP_RADAR.name}로 입면·뒤척임·기상 구간을 추적하고 있어요.`}
-              dot="online"
-            />
-            <Metric
-              label="에이전트 서비스"
-              value="정상 가동중"
-              detail="IoT·수면·전력 도구 연결됨"
-              dot="online"
-            />
-            <Metric
-              label="연결된 가전 상태"
-              value={deviceConnectionValue}
-              detail={deviceConnectionDetail}
-              dot={deviceConnectionDot}
-            />
-          </div>
-        </Card>
-
-        <div className="dashboard-todo-row">
-          <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-todos">
-            <div className="todo-list">
-              {todayTodos.length === 0 && (
-                <p className="todo-empty">오늘 일정이 없습니다</p>
+      {/* Overview grid: each column is its own independent stack, so a
+          shorter column (e.g. 전력 관리 + 예정된 알람) never gets stretched
+          down to match a taller one (어젯밤 수면) — the card below just
+          sits directly against the card above it. */}
+      <section className="dashboard-overview-grid">
+        <div className="dashboard-overview-col">
+          <div className="dashboard-sleep-card">
+            <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')} data-coachmark="card-sleep">
+              {sleepSummary && (
+                <div className="flex items-center gap-6">
+                  <Donut pct={sleepSummary.achievedHours / sleepSummary.goalHours} r={48} sw={11}>
+                    <div className="flex flex-col items-center">
+                      <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
+                      <span className="text-xs" style={{ color: 'var(--sub)' }}>/ {sleepSummary.goalHours} h</span>
+                    </div>
+                  </Donut>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex items-center gap-10">
+                      <div>
+                        <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
+                          <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                        </div>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 달성량</p>
+                      </div>
+                      <div>
+                        <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>목표</p>
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-2xl font-bold" style={{ color: 'var(--sub)' }}>{sleepSummary.goalHours}</span>
+                          <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
+                        </div>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>일일 목표</p>
+                      </div>
+                    </div>
+                    <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
+                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>{sleepSummary.bedTime}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-4 text-xs">
+                        <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
+                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>{sleepSummary.wakeTime}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
-              {todayTodos.map((todo) => (
-                <button
-                  type="button"
-                  className={`todo ${todo.done ? 'done' : ''}`}
-                  key={todo.id}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onToggleTodo(todo.id);
-                  }}
-                >
-                  <span className={todo.done ? 'checked' : ''}>{todo.done ? '✓' : ''}</span>
-                  <p>{todo.title}</p>
-                </button>
-              ))}
-            </div>
-          </Card>
+              {todayPlan && (
+                <div className="mt-1 border-t pt-1" style={{ borderColor: 'var(--wave-10)' }}>
+                  <p className="text-[15px] font-bold" style={{ color: 'var(--ink-soft)' }}>오늘 밤 추천 수면 시간</p>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+                    {todayPlan.bedtime} 취침 · {todayPlan.wakeTime} 기상
+                  </span>
+                  {todayPlan.rationale && (
+                    <p className="mt-0.5 text-xs leading-5" style={{ color: 'var(--sub)' }}>{todayPlan.rationale}</p>
+                  )}
+                </div>
+              )}
+            </Card>
+          </div>
 
-          <Card onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-weeklyplan">
-            <p className="weekly-plan-nav-desc">
-              할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인해보세요.
-            </p>
-            <span className="weekly-plan-nav-cta">주간 계획으로 이동 →</span>
-          </Card>
+          <button
+            type="button"
+            className="promo-card navy dashboard-sleep-card cursor-pointer border-0 text-left"
+            onClick={() => onOpenChatWithDraft?.('서카디안 리듬 기반으로 나에게 맞는 취침 시간을 추천해줘')}
+          >
+            <strong>취침 가이드</strong>
+            <p>나의 수면 패턴을 분석하고, 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
+          </button>
+
+          <button
+            type="button"
+            className="promo-card plum dashboard-sleep-card cursor-pointer border-0 text-left"
+            onClick={() => onOpenChatWithDraft?.('우리 집 수면 환경을 더 쾌적하게 만들려면 어떻게 해야 할까?')}
+          >
+            <strong>수면 환경</strong>
+            <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
+          </button>
         </div>
-      </section>
 
-      <section className="dashboard-health-grid">
-        <div className="dashboard-power-column">
+        <div className="dashboard-overview-col">
           <button
             type="button"
             className="dashboard-power-card"
@@ -272,141 +284,9 @@ export function MainPage({
             )}
           </button>
 
-          <button
-            type="button"
-            className="promo-card orange dashboard-power-insight cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('오늘 전력 사용량 중에서 줄일 수 있는 부분을 알려줘')}
-          >
-            <strong>전력 절약 팁</strong>
-            <p>오늘 전력 사용량 중 줄일 수 있는 부분을 물어보세요.</p>
-          </button>
-
-          <div className="dashboard-side-card">
-            <Card title="오늘 대화 요약" action={`${recentChats.length}건`} onClick={() => onNavigate('chat')}>
-              <div className="mt-2 flex flex-col gap-2">
-                {recentChats.length === 0 && (
-                  <p className="text-sm" style={{ color: 'var(--sub)' }}>아직 오늘 나눈 대화가 없어요.</p>
-                )}
-                {recentChats.map((chat) => {
-                  const preview = chat.lastMessagePreview
-                    ? (chat.lastMessagePreview.length > 48
-                      ? `${chat.lastMessagePreview.slice(0, 48)}…`
-                      : chat.lastMessagePreview)
-                    : '대화를 이어가 보세요';
-                  return (
-                    <div
-                      key={chat.id}
-                      className="rounded-xl px-3 py-2"
-                      style={{ background: 'var(--wave-05)' }}
-                    >
-                      <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{chat.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: 'var(--sub)' }}>{preview}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        <div className="dashboard-sleep-column">
-          <div className="dashboard-sleep-card">
-            <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')} data-coachmark="card-sleep">
-              {sleepSummary && (
-                <div className="flex items-center gap-8">
-                  <Donut pct={sleepSummary.achievedHours / sleepSummary.goalHours} r={48} sw={11}>
-                    <div className="flex flex-col items-center">
-                      <span className="text-3xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
-                      <span className="text-xs" style={{ color: 'var(--sub)' }}>/ {sleepSummary.goalHours} h</span>
-                    </div>
-                  </Donut>
-                  <div className="min-w-0 flex-1">
-                    <div className="mb-3 flex items-center gap-10">
-                      <div>
-                        <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>달성</p>
-                        <div className="flex items-baseline gap-0.5">
-                          <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
-                          <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
-                        </div>
-                        <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 달성량</p>
-                      </div>
-                      <div>
-                        <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>목표</p>
-                        <div className="flex items-baseline gap-0.5">
-                          <span className="text-2xl font-bold" style={{ color: 'var(--sub)' }}>{sleepSummary.goalHours}</span>
-                          <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
-                        </div>
-                        <p className="text-xs" style={{ color: 'var(--sub)' }}>일일 목표</p>
-                      </div>
-                    </div>
-                    <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
-                      <div className="flex items-center gap-4 text-xs">
-                        <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>입면 시간</span>
-                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>{sleepSummary.bedTime}</span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-4 text-xs">
-                        <span className="w-16 shrink-0" style={{ color: 'var(--sub)' }}>기상 시간</span>
-                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>{sleepSummary.wakeTime}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Card>
-          </div>
-
-          <button
-            type="button"
-            className="promo-card navy dashboard-sleep-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('서카디안 리듬 기반으로 나에게 맞는 취침 시간을 추천해줘')}
-          >
-            <strong>취침 가이드</strong>
-            <p>나의 수면 패턴을 분석하고, 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
-          </button>
-
-          <button
-            type="button"
-            className="promo-card plum dashboard-sleep-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('우리 집 수면 환경을 더 쾌적하게 만들려면 어떻게 해야 할까?')}
-          >
-            <strong>수면 환경</strong>
-            <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
-          </button>
-
-          <div className="dashboard-side-card dashboard-sleep-card">
-            <Card title="수면 관리 요약" onClick={() => onNavigate('sleep')} data-coachmark="card-sleepSummary">
-              <div className="mt-2 flex flex-col gap-2">
-                <div>
-                  <p className="text-xs" style={{ color: 'var(--sub)' }}>수면 점수</p>
-                  <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
-                    {sleepSummary ? `${sleepSummary.score}점` : '—'}
-                  </span>
-                  {sleepSummary && (
-                    <p className="mt-1 text-xs" style={{ color: 'var(--sub)' }}>
-                      {`${sleepSummary.achievedHours.toFixed(1)}h (${sleepSummary.bedTime}–${sleepSummary.wakeTime})`}
-                    </p>
-                  )}
-                </div>
-                {todayPlan && (
-                  <div className="border-t pt-2" style={{ borderColor: 'var(--wave-10)' }}>
-                    <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 밤 추천 수면 시간</p>
-                    <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
-                      {todayPlan.bedtime} 취침 · {todayPlan.wakeTime} 기상
-                    </span>
-                    {todayPlan.rationale && (
-                      <p className="mt-1 text-xs" style={{ color: 'var(--sub)' }}>{todayPlan.rationale}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        <div className="dashboard-posture-column">
           <div className="dashboard-posture-card">
             <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms">
-              <div className="mt-3 flex flex-col gap-2">
+              <div className="mt-2 flex flex-col gap-1">
                 {upcomingAlarms.length === 0 && (
                   <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>
                 )}
@@ -415,12 +295,12 @@ export function MainPage({
                   return (
                     <div
                       key={alarm.id}
-                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-1"
                       style={{ background: 'var(--wave-05)' }}
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{alarm.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--sub)' }}>{formatNextFireLabel(new Date(alarm.nextFireAt))}</p>
+                      <div className="flex min-w-0 items-baseline gap-2">
+                        <p className="shrink-0 text-sm font-semibold" style={{ color: 'var(--ink)' }}>{alarm.name}</p>
+                        <p className="truncate text-xs" style={{ color: 'var(--sub)' }}>{formatNextFireLabel(new Date(alarm.nextFireAt))}</p>
                       </div>
                       <div className="shrink-0 text-right">
                         <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
@@ -434,7 +314,9 @@ export function MainPage({
               </div>
             </Card>
           </div>
+        </div>
 
+        <div className="dashboard-overview-col">
           <div className="dashboard-posture-card">
             <Card title="활성화된 제스처 목록" action={`${activeGestureRules.length}개 사용 중`} onClick={onGoToGestures} data-coachmark="card-gestures">
               <div className="mt-3 flex flex-col gap-2">
@@ -499,23 +381,98 @@ export function MainPage({
             </Card>
           </div>
 
-          <button
-            type="button"
-            className="promo-card mint dashboard-posture-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('내일 아침 7시 알람 맞춰주고, 주간 계획에 스트레칭도 추가해줘')}
-          >
-            <strong>일정·알람도 말해보세요</strong>
-            <p>기상 알람 맞추기, 할 일 추가처럼 일정 관리도 채팅으로 할 수 있어요.</p>
-          </button>
+          <div className="dashboard-todo-card">
+            <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-todos">
+              <div className="todo-list">
+                {todayTodos.length === 0 && (
+                  <p className="todo-empty">오늘 일정이 없습니다</p>
+                )}
+                {todayTodos.map((todo) => (
+                  <button
+                    type="button"
+                    className={`todo ${todo.done ? 'done' : ''}`}
+                    key={todo.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleTodo(todo.id);
+                    }}
+                  >
+                    <span className={todo.done ? 'checked' : ''}>{todo.done ? '✓' : ''}</span>
+                    <p>{todo.title}</p>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
 
-          <button
-            type="button"
-            className="promo-card pink dashboard-posture-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('집에 어떤 장치가 있고 각각 어떤 기능을 제어할 수 있는지 알려줘')}
-          >
-            <strong>장치 제어 가이드</strong>
-            <p>조명·TV·플러그 등 어떤 기기가 있고 무엇을 바꿀 수 있는지 물어보세요.</p>
-          </button>
+      {/* Row 4+: everything else. */}
+      <section className="dashboard-remaining-grid">
+        <div className="dashboard-weeklyplan-row">
+          <div className="dashboard-weeklyplan-card">
+            <Card onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-weeklyplan">
+              <p className="weekly-plan-nav-desc">
+                할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인해보세요.
+              </p>
+              <span className="weekly-plan-nav-cta">주간 계획으로 이동 →</span>
+            </Card>
+          </div>
+
+          <div className="dashboard-weeklyplan-stack">
+            <button
+              type="button"
+              className="promo-card orange dashboard-power-insight cursor-pointer border-0 text-left"
+              onClick={() => onOpenChatWithDraft?.('오늘 전력 사용량 중에서 줄일 수 있는 부분을 알려줘')}
+            >
+              <strong>전력 절약 팁</strong>
+              <p>오늘 전력 사용량 중 줄일 수 있는 부분을 물어보세요.</p>
+            </button>
+
+            <button
+              type="button"
+              className="promo-card pink cursor-pointer border-0 text-left"
+              onClick={() => onOpenChatWithDraft?.('집에 어떤 장치가 있고 각각 어떤 기능을 제어할 수 있는지 알려줘')}
+            >
+              <strong>장치 제어 가이드</strong>
+              <p>조명·TV·플러그 등 어떤 기기가 있고 무엇을 바꿀 수 있는지 물어보세요.</p>
+            </button>
+
+            <button
+              type="button"
+              className="promo-card mint cursor-pointer border-0 text-left"
+              onClick={() => onOpenChatWithDraft?.('내일 아침 7시 알람 맞춰주고, 주간 계획에 스트레칭도 추가해줘')}
+            >
+              <strong>일정·알람도 말해보세요</strong>
+              <p>기상 알람 맞추기, 할 일 추가처럼 일정 관리도 채팅으로 할 수 있어요.</p>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <Card title="현재 상태" data-coachmark="card-status">
+            <div className="state-grid state-grid-row">
+              {currentState && (
+                <Metric
+                  label="실내 환경"
+                  value={currentState.indoorEnvironment.label}
+                  detail={currentState.indoorEnvironment.detail}
+                />
+              )}
+              <Metric
+                label={SLEEP_RADAR.role}
+                value="실행 중"
+                detail={`${SLEEP_RADAR.name}로 입면·뒤척임·기상 구간을 추적하고 있어요.`}
+                dot="online"
+              />
+              <Metric
+                label="연결된 가전 상태"
+                value={deviceConnectionValue}
+                detail={deviceConnectionDetail}
+                dot={deviceConnectionDot}
+              />
+            </div>
+          </Card>
         </div>
       </section>
     </div>

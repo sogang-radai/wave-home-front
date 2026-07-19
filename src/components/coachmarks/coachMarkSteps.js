@@ -33,10 +33,28 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
 
   const dashboardSteps = [
     {
-      selector: '[data-coachmark="card-status"]',
-      title: '현재 상태',
-      description: '실내 환경, 수면 감지, 에이전트 서비스, 연결된 가전 상태를 한눈에 확인할 수 있어요.',
+      selector: '[data-coachmark="card-sleep"]',
+      title: '어젯밤 수면',
+      description: '지난밤 수면 시간과 목표 달성률, 입면·기상 시각을 확인할 수 있어요.',
+      placement: 'left',
+    },
+    {
+      selector: '[data-coachmark="card-power"]',
+      title: '전력 관리',
+      description: '전체 콘센트의 실시간 사용량 그래프와 예상 요금을 볼 수 있어요. 눌러서 상세 분석으로 이동해보세요.',
       placement: 'right',
+    },
+    {
+      selector: '[data-coachmark="card-gestures"]',
+      title: '활성화된 제스처',
+      description: '제스처로 자동 실행되도록 설정해둔 자동화 목록이에요.',
+      placement: 'left',
+    },
+    {
+      selector: '[data-coachmark="card-alarms"]',
+      title: '예정된 알람',
+      description: '오늘·내일 아침으로 예정된 알람을 미리 확인할 수 있어요. 조명으로 꺠워드리거나 소리로 깨워드릴 수 있어요. ',
+      placement: 'left',
     },
     {
       selector: '[data-coachmark="card-todos"]',
@@ -51,34 +69,10 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
       placement: 'left',
     },
     {
-      selector: '[data-coachmark="card-power"]',
-      title: '전력 관리',
-      description: '전체 콘센트의 실시간 사용량 그래프와 예상 요금을 볼 수 있어요. 눌러서 상세 분석으로 이동해보세요.',
+      selector: '[data-coachmark="card-status"]',
+      title: '현재 상태',
+      description: '실내 환경, 수면 감지, 연결된 가전 상태를 한눈에 확인할 수 있어요.',
       placement: 'right',
-    },
-    {
-      selector: '[data-coachmark="card-alarms"]',
-      title: '예정된 알람',
-      description: '오늘·내일 아침으로 예정된 알람을 미리 확인할 수 있어요. 조명으로 꺠워드리거나 소리로 깨워드릴 수 있어요. ',
-      placement: 'left',
-    },
-    {
-      selector: '[data-coachmark="card-gestures"]',
-      title: '활성화된 제스처',
-      description: '제스처로 자동 실행되도록 설정해둔 자동화 목록이에요.',
-      placement: 'left',
-    },
-    {
-      selector: '[data-coachmark="card-sleep"]',
-      title: '어젯밤 수면',
-      description: '지난밤 수면 시간과 목표 달성률, 입면·기상 시각을 확인할 수 있어요.',
-      placement: 'left',
-    },
-    {
-      selector: '[data-coachmark="card-sleepSummary"]',
-      title: '수면 관리 요약',
-      description: '오늘의 수면 점수와 오늘 밤 추천 취침·기상 시간을 확인할 수 있어요.',
-      placement: 'left',
     },
     {
       selector: '[data-coachmark="nav-brand"]',
