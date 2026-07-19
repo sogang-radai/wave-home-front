@@ -308,6 +308,8 @@ export function PowerPage() {
       setPeriodTrend([]);
       return undefined;
     }
+    // Clear immediately so the previous tab's bars never paint under the new range.
+    setPeriodTrend([]);
     let cancelled = false;
     powerApi.getPeriodTrend({ deviceId: selectedPlugId, period: rangeTab, refDate: dateStr })
       .then((data) => { if (!cancelled) setPeriodTrend(Array.isArray(data) ? data : []); })
@@ -356,6 +358,9 @@ export function PowerPage() {
   const chartData = useMemo(() => {
     if (!isCombo) {
       if (periodTrend.length > 0) return periodTrend;
+      // DB trend 대기/실패 시 mock 으로 떨어지면 이전·잘못된 막대가 잠깐 그려져
+      // 범위 전환·바 클릭 리포트가 어긋난다. 데모/실서버는 빈 배열을 유지한다.
+      if (!USE_CLIENT_POWER_SIM) return [];
       return rawTrend;
     }
     if (!USE_CLIENT_POWER_SIM) return comboTrend;
@@ -466,9 +471,18 @@ export function PowerPage() {
   };
 
   const peakW = isCombo ? Math.max(...chartData.map((d) => d.value ?? 0), 0) : 0;
-  const totalWh = chartData.reduce((s, d) => s + (d.wh ?? 0), 0);
+  const scopedBars = (
+    barSelectable
+    && selectedBarIndex != null
+    && selectedBarIndex >= 0
+    && selectedBarIndex < chartData.length
+  )
+    ? [chartData[selectedBarIndex]]
+    : chartData;
+  const totalWh = scopedBars.reduce((s, d) => s + (d.wh ?? 0), 0);
   const totalIsKwh = !isCombo && rangeTab === 'year';
-  const estimatedCostWon = (totalWh / 1000) * TIER2_WON_PER_KWH;
+  // year 시리즈는 이미 kWh 단위로 wh 필드에 들어온다.
+  const estimatedCostWon = (totalIsKwh ? totalWh : totalWh / 1000) * TIER2_WON_PER_KWH;
 
   const metricTabControls = (
     <div className="power-tab-group">
@@ -818,7 +832,14 @@ function PowerChart({
 
   const handleBarClick = (barData, index) => {
     if (!barSelectable) return;
-    const i = typeof index === 'number' ? index : data.findIndex((d) => d === barData?.payload);
+    const payload = barData?.payload ?? barData;
+    let i = typeof index === 'number' ? index : -1;
+    if (i < 0 && payload?.periodStart) {
+      i = data.findIndex((d) => d.periodStart === payload.periodStart);
+    }
+    if (i < 0 && payload?.label != null) {
+      i = data.findIndex((d) => d.label === payload.label);
+    }
     if (i < 0) return;
     onBarSelect(selectedBarIndex === i ? null : i);
   };

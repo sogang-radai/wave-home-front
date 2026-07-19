@@ -1,4 +1,5 @@
 import { withInsightIds } from '../components/report/InsightCard';
+import { getNow } from '../lib/demoClock';
 
 // ── Power page mock trend generators ────────────────────────────────────────
 // Deterministic (seeded) pseudo-random generators so charts stay stable across
@@ -76,20 +77,48 @@ export function generatePowerPeriodTrend(range, baseW, plugId = 'plug') {
     });
   }
   if (range === 'week') {
-    const days = ['월', '화', '수', '목', '금', '토', '일'];
-    return days.map((d) => ({ label: d, wh: +(dailyWh * (0.8 + rand() * 0.4)).toFixed(1) }));
+    // 롤링 7일(앵커 기준) — 백엔드 period_trend 와 동일하게 periodStart 를 붙인다.
+    const end = getNow();
+    end.setHours(0, 0, 0, 0);
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(end);
+      day.setDate(end.getDate() - (6 - i));
+      const y = day.getFullYear();
+      const m = String(day.getMonth() + 1).padStart(2, '0');
+      const d = String(day.getDate()).padStart(2, '0');
+      return {
+        label: weekdays[day.getDay()],
+        wh: +(dailyWh * (0.8 + rand() * 0.4)).toFixed(1),
+        periodStart: `${y}-${m}-${d}`,
+      };
+    });
   }
   if (range === 'month') {
-    const now = new Date();
-    const dayCount = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    return Array.from({ length: dayCount }, (_, i) => ({
-      label: `${i + 1}`,
-      wh: +(dailyWh * (0.75 + rand() * 0.5)).toFixed(1),
-    }));
+    const now = getNow();
+    const y = now.getFullYear();
+    const month = now.getMonth();
+    const dayCount = new Date(y, month + 1, 0).getDate();
+    return Array.from({ length: dayCount }, (_, i) => {
+      const dayNum = i + 1;
+      const m = String(month + 1).padStart(2, '0');
+      const d = String(dayNum).padStart(2, '0');
+      return {
+        label: `${dayNum}`,
+        wh: +(dailyWh * (0.75 + rand() * 0.5)).toFixed(1),
+        periodStart: `${y}-${m}-${d}`,
+      };
+    });
   }
   // year — monthly totals in kWh
+  const year = getNow().getFullYear();
   const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-  return months.map((m) => ({ label: m, wh: +((dailyWh * 30 * (0.7 + rand() * 0.5)) / 1000).toFixed(1), unitKwh: true }));
+  return months.map((m, idx) => ({
+    label: m,
+    wh: +((dailyWh * 30 * (0.7 + rand() * 0.5)) / 1000).toFixed(1),
+    unitKwh: true,
+    periodStart: `${year}-${String(idx + 1).padStart(2, '0')}-01`,
+  }));
 }
 
 export const powerRanges = [

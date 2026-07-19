@@ -33,8 +33,15 @@ function parseMonthLabel(label) {
   return parseInt(String(label).replace(/[^0-9]/g, ''), 10);
 }
 
+function barPeriodStart(bar) {
+  if (!bar) return null;
+  const raw = bar.periodStart ?? bar.period_start ?? bar.date ?? null;
+  return typeof raw === 'string' && raw.length >= 10 ? raw : null;
+}
+
 /**
  * Wh 막대 선택·기간 탭에 따라 상단 리포트 API 요청과 헤더 문구를 결정한다.
+ * period 값은 프론트 UI 키(hour/day/week/…) — 백엔드 query_report 가 1h/24h/… 로 매핑한다.
  */
 export function resolvePowerReportRequest({ rangeTab, selectedBarIndex, chartData }) {
   const { y, m, d, dateStr } = formatAnchorDate();
@@ -43,7 +50,7 @@ export function resolvePowerReportRequest({ rangeTab, selectedBarIndex, chartDat
   if (
     selectedBarIndex != null
     && selectedBarIndex >= 0
-    && (selectedBarIndex >= dataLen || (rangeTab === 'week' && selectedBarIndex >= 7))
+    && selectedBarIndex >= dataLen
   ) {
     return resolvePowerReportRequest({ rangeTab, selectedBarIndex: null, chartData });
   }
@@ -73,24 +80,31 @@ export function resolvePowerReportRequest({ rangeTab, selectedBarIndex, chartDat
     return resolvePowerReportRequest({ rangeTab, selectedBarIndex: null, chartData });
   }
 
+  const fromBar = barPeriodStart(bar);
+
   if (rangeTab === 'day') {
-    const hour = parseInt(bar.label, 10);
+    const periodStart = fromBar
+      || `${dateStr} ${pad2(parseInt(bar.label, 10) || 0)}:00:00`;
+    const hour = parseInt(String(periodStart).slice(11, 13), 10);
     return {
       period: 'hour',
-      periodStart: `${dateStr} ${pad2(hour)}:00:00`,
+      periodStart,
       header: `${m}월 ${d}일 ${hour}시 기준 1시간 리포트`,
     };
   }
 
   if (rangeTab === 'week') {
-    const weekDates = getWeekDatesEnding();
-    const day = weekDates[selectedBarIndex];
-    if (!day) {
-      return resolvePowerReportRequest({ rangeTab, selectedBarIndex: null, chartData });
+    let dayStr = fromBar ? fromBar.slice(0, 10) : null;
+    if (!dayStr) {
+      const weekDates = getWeekDatesEnding();
+      const day = weekDates[selectedBarIndex];
+      if (!day) {
+        return resolvePowerReportRequest({ rangeTab, selectedBarIndex: null, chartData });
+      }
+      dayStr = `${day.getFullYear()}-${pad2(day.getMonth() + 1)}-${pad2(day.getDate())}`;
     }
-    const dm = day.getMonth() + 1;
-    const dd = day.getDate();
-    const dayStr = `${day.getFullYear()}-${pad2(dm)}-${pad2(dd)}`;
+    const dm = parseInt(dayStr.slice(5, 7), 10);
+    const dd = parseInt(dayStr.slice(8, 10), 10);
     return {
       period: 'day',
       periodStart: dayStr,
@@ -99,23 +113,31 @@ export function resolvePowerReportRequest({ rangeTab, selectedBarIndex, chartDat
   }
 
   if (rangeTab === 'month') {
-    const dayNum = parseInt(bar.label, 10);
-    const dayStr = `${y}-${pad2(m)}-${pad2(dayNum)}`;
+    const dayStr = fromBar
+      ? fromBar.slice(0, 10)
+      : `${y}-${pad2(m)}-${pad2(parseInt(bar.label, 10) || 1)}`;
+    const dayNum = parseInt(dayStr.slice(8, 10), 10);
+    const monthNum = parseInt(dayStr.slice(5, 7), 10);
     return {
       period: 'day',
       periodStart: dayStr,
-      header: `${m}월 ${dayNum}일 기준 일간 리포트`,
+      header: `${monthNum}월 ${dayNum}일 기준 일간 리포트`,
     };
   }
 
   if (rangeTab === 'year') {
-    const monthNum = parseMonthLabel(bar.label);
-    if (!monthNum) {
-      return resolvePowerReportRequest({ rangeTab, selectedBarIndex: null, chartData });
+    let monthStart = fromBar ? fromBar.slice(0, 10) : null;
+    if (!monthStart) {
+      const monthNum = parseMonthLabel(bar.label);
+      if (!monthNum) {
+        return resolvePowerReportRequest({ rangeTab, selectedBarIndex: null, chartData });
+      }
+      monthStart = `${y}-${pad2(monthNum)}-01`;
     }
+    const monthNum = parseInt(monthStart.slice(5, 7), 10);
     return {
       period: 'month',
-      periodStart: `${y}-${pad2(monthNum)}-01`,
+      periodStart: monthStart,
       header: `${monthNum}월 기준 월간 리포트`,
     };
   }
