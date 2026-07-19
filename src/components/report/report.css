@@ -59,6 +59,26 @@
   color: var(--good-text);
 }
 
+.insight-card-label--tip {
+  background: var(--accent-sky-bg);
+  color: var(--excellent-text);
+}
+
+.insight-card-label--goal {
+  background: var(--accent-plum-soft);
+  color: #6a4fc7;
+}
+
+.insight-card-label--action {
+  background: var(--warn-15);
+  color: var(--warn-text);
+}
+
+.insight-card-label--banner {
+  background: var(--good-15);
+  color: var(--good-text);
+}
+
 .insight-card-title {
   margin: 0 0 10px;
   color: var(--ink);
@@ -89,9 +109,9 @@
 
 .insight-card-action {
   padding: 8px 16px;
-  border: 1px solid var(--wave-30);
+  border: 1px solid var(--wave);
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--wave);
   color: var(--ink);
   font-size: 12px;
   font-weight: 800;
@@ -101,8 +121,9 @@
 }
 
 .insight-card-action:hover {
-  border-color: var(--wave);
-  background: var(--wave-05);
+  border-color: var(--wave-deepest);
+  background: var(--wave-deepest);
+  color: #fff;
 }
 
 .insight-card.applied .insight-card-action {

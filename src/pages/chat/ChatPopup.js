@@ -311,7 +311,7 @@ export function ChatPopup({
     >
       <span className="chat-popup-icon">✦</span>
       <span className={isMini ? 'chat-popup-mini-label' : 'chat-popup-conv-label'}>
-        {activeConv ? activeConv.title : 'WaveAI'}
+        {activeConv ? activeConv.title : 'WaveChat'}
       </span>
     </div>
   );

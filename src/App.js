@@ -16,9 +16,7 @@ import { MainPage } from './pages/MainPage';
 import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/plan/WeeklyPlanPage';
-import { AlarmPage } from './pages/alarm/AlarmPage';
 import { HomeControlPage } from './pages/iot/HomeControlPage';
-import { HomeTwinPage } from './pages/homeTwin/HomeTwinPage';
 import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
 import {
@@ -62,6 +60,9 @@ const DAY_TO_KOREAN = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '�
 const KOREAN_TO_DAY = { 월: 'mon', 화: 'tue', 수: 'wed', 목: 'thu', 금: 'fri', 토: 'sat', 일: 'sun' };
 const CATEGORY_TO_KOREAN = { posture: '자세', sleep: '수면', diet: '식습관', mental: '멘탈', life: '일상' };
 const KOREAN_TO_CATEGORY = { 자세: 'posture', 수면: 'sleep', 식습관: 'diet', 멘탈: 'mental', 일상: 'life', 일정: 'mental' };
+// Agent tool names (app/graph/tools.py) that mutate schedule_task rows —
+// completion of any of these means the dashboard todos list is stale.
+const SCHEDULE_TASK_TOOL_NAMES = new Set(['create_schedule_task', 'update_schedule_task', 'delete_schedule_task']);
 
 function formatDateParam(date) {
   const year = date.getFullYear();
@@ -123,6 +124,7 @@ function App() {
   const [page, setPage] = useState('main');
   const [postureTab, setPostureTab] = useState('current');
   const [homeTab, setHomeTab] = useState('control');
+  const [sleepTab, setSleepTab] = useState('analysis');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
@@ -258,10 +260,20 @@ function App() {
   };
   useEffect(() => {
     refreshTodos().catch(() => setTodos([]));
+    // Safety-net poll — local mutations, chat tool calls, and the
+    // visibility-change refresh below cover the normal paths, but this
+    // catches anything else (e.g. server-side task generation) eventually.
     const timer = setInterval(() => {
       refreshTodos().catch(() => {});
-    }, 2000);
-    return () => clearInterval(timer);
+    }, 30000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshTodos().catch(() => {});
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   const toggleTodo = async (id) => {
@@ -332,6 +344,11 @@ function App() {
   const goToGestureManagement = () => {
     setHomeTab('gesture');
     setPage('home');
+  };
+
+  const goToAlarmTab = () => {
+    setSleepTab('alarm');
+    setPage('sleep');
   };
 
   const goToChatWithDraft = (text) => {
@@ -591,6 +608,13 @@ function App() {
           if (evt.type === 'tool_end' && evt.toolEvent?.name === 'control_device' && evt.toolEvent?.status === 'done') {
             dispatchTwinControlFromToolEvent(evt.toolEvent);
           }
+          if (
+            evt.type === 'tool_end'
+            && evt.toolEvent?.status === 'done'
+            && SCHEDULE_TASK_TOOL_NAMES.has(evt.toolEvent?.name)
+          ) {
+            refreshTodos().catch(() => {});
+          }
           setChatConversations((prev) =>
             prev.map((c) =>
               c.id === evt.conversationId
@@ -726,6 +750,18 @@ function App() {
     setShowCoachMarks(false);
   };
 
+  // Sidebar-anchored steps target nav buttons that sit translated off-screen
+  // behind `.sidebar` until the mobile drawer is open — open it only for
+  // those steps (dashboard-card steps would otherwise be hidden behind it).
+  // Memoized: CoachMarks re-fires its onStepChange effect whenever this
+  // reference changes, so an unmemoized handler would refire on every
+  // App.js render and force-close the drawer right after the user's own
+  // toggle opened it.
+  const handleCoachMarkStepChange = useCallback((step) => {
+    if (!isMobileLayout) return;
+    setMobileNavOpen(step?.anchorSelector === '.sidebar');
+  }, [isMobileLayout]);
+
   useEffect(() => {
     Promise.all([settingsApi.getSession(), settingsApi.getAccounts()]).then(([session, accountList]) => {
       const list = (Array.isArray(accountList) ? accountList : []).filter(Boolean);
@@ -767,6 +803,7 @@ function App() {
     const spec = typeof target === 'string' ? { page: target } : target;
     if (spec.chatMode) setChatMode(spec.chatMode);
     if (spec.homeTab) setHomeTab(spec.homeTab);
+    if (spec.sleepTab) setSleepTab(spec.sleepTab);
     if (spec.page) setPage(spec.page);
   };
 
@@ -802,7 +839,7 @@ function App() {
           sidebarWidth={sidebarCollapsed ? 76 : 263}
           forceTopRight={chatForceTopRight}
           onForceTopRightConsumed={() => setChatForceTopRight(false)}
-          defaultSize={page === 'homeTwin' ? { w: 280, h: 520 } : undefined}
+          defaultSize={page === 'home' && homeTab === 'twin' ? { w: 336, h: 520 } : undefined}
         />
       )}
       <button
@@ -861,10 +898,11 @@ function App() {
               onGoToPowerAnalysis={goToPowerAnalysis}
               onOpenChatWithDraft={goToChatWithDraft}
               onGoToGestures={goToGestureManagement}
+              onGoToAlarms={goToAlarmTab}
             />
           )}
           {page === 'sleep' && (
-            <SleepPage />
+            <SleepPage tab={sleepTab} setTab={setSleepTab} />
           )}
           {page === 'posture' && <PosturePage tab={postureTab} setTab={setPostureTab} />}
           {page === 'weeklyPlan' && (
@@ -878,15 +916,15 @@ function App() {
               onRefreshTodos={refreshTodos}
             />
           )}
-          {page === 'alarm' && <AlarmPage />}
           {page === 'power' && <PowerPage />}
-          {page === 'homeTwin' && (
-            <HomeTwinPage
+          {page === 'home' && (
+            <HomeControlPage
+              tab={homeTab}
+              setTab={setHomeTab}
               onOpenChat={handleHeaderWaveAiOpen}
               chatPopupOpen={chatMode === 'popup'}
             />
           )}
-          {page === 'home' && <HomeControlPage tab={homeTab} setTab={setHomeTab} />}
           {page === 'setting' && (
             <SettingPage
               accounts={accounts}
@@ -928,6 +966,7 @@ function App() {
         onClose={closeCoachMarks}
         onFinish={finishCoachMarks}
         onDontShowAgain={dontShowCoachMarksAgain}
+        onStepChange={handleCoachMarkStepChange}
       />
     </div>
   );

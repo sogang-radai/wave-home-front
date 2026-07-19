@@ -17,7 +17,7 @@ const cards = [
         className="aspect-[2419/1464] w-full rounded-xl object-cover"
       />
     ),
-    target: "homeTwin",
+    target: { page: "home", homeTab: "twin" },
   },
   {
     eyebrow: "가전 제어",

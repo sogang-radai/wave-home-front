@@ -52,6 +52,7 @@ export function MainPage({
   onGoToPowerAnalysis,
   onOpenChatWithDraft,
   onGoToGestures,
+  onGoToAlarms,
 }) {
   const todayLabel = koreanWeekdayLabels[getNow().getDay()];
   const todayTodos = todos.filter((t) => t.day === todayLabel);
@@ -202,27 +203,36 @@ export function MainPage({
           </div>
         </Card>
 
-        <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-todos">
-          <div className="todo-list">
-            {todayTodos.length === 0 && (
-              <p style={{ color: 'var(--sub)', fontSize: '0.8rem' }}>오늘 일정이 없습니다</p>
-            )}
-            {todayTodos.map((todo) => (
-              <button
-                type="button"
-                className={`todo ${todo.done ? 'done' : ''}`}
-                key={todo.id}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleTodo(todo.id);
-                }}
-              >
-                <span className={todo.done ? 'checked' : ''}>{todo.done ? '✓' : ''}</span>
-                <p>{todo.title}</p>
-              </button>
-            ))}
-          </div>
-        </Card>
+        <div className="dashboard-todo-row">
+          <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-todos">
+            <div className="todo-list">
+              {todayTodos.length === 0 && (
+                <p className="todo-empty">오늘 일정이 없습니다</p>
+              )}
+              {todayTodos.map((todo) => (
+                <button
+                  type="button"
+                  className={`todo ${todo.done ? 'done' : ''}`}
+                  key={todo.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleTodo(todo.id);
+                  }}
+                >
+                  <span className={todo.done ? 'checked' : ''}>{todo.done ? '✓' : ''}</span>
+                  <p>{todo.title}</p>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          <Card onClick={() => onNavigate('weeklyPlan')}>
+            <p className="weekly-plan-nav-desc">
+              할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인해보세요.
+            </p>
+            <span className="weekly-plan-nav-cta">주간 계획으로 이동 →</span>
+          </Card>
+        </div>
       </section>
 
       <section className="dashboard-health-grid">
@@ -395,7 +405,7 @@ export function MainPage({
 
         <div className="dashboard-posture-column">
           <div className="dashboard-posture-card">
-            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={() => onNavigate('alarm')} data-coachmark="card-alarms">
+            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms">
               <div className="mt-3 flex flex-col gap-2">
                 {upcomingAlarms.length === 0 && (
                   <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>

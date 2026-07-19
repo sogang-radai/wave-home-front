@@ -3,8 +3,7 @@ import './layout.css';
 import logoDark from '../../img/logo_dark.png';
 import logo from '../../img/logo.png';
 import { pages } from '../../data/appData';
-import { SHOW_HOME_TWIN } from '../../api/config';
-import { WaveAiIcon } from '../icons/WaveAiIcon';
+import { ChatBotIcon } from '../icons/ChatBotIcon';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
 
 function SidebarIcon({ name }) {
@@ -32,7 +31,7 @@ function SidebarIcon({ name }) {
   }
 
   if (name === 'waveai') {
-    return <WaveAiIcon />;
+    return <ChatBotIcon />;
   }
 
   if (name === 'moon') {
@@ -48,28 +47,6 @@ function SidebarIcon({ name }) {
     return (
       <svg {...common}>
         <path d="M12 20s-7-4.4-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 5c-2.5 4.6-9.5 9-9.5 9Z" />
-      </svg>
-    );
-  }
-
-  if (name === 'calendar') {
-    return (
-      <svg {...common}>
-        <rect x="3" y="5" width="18" height="16" rx="3" />
-        <path d="M3 10h18" />
-        <path d="M8 3v4" />
-        <path d="M16 3v4" />
-      </svg>
-    );
-  }
-
-  if (name === 'alarm') {
-    return (
-      <svg {...common}>
-        <circle cx="12" cy="13" r="8" />
-        <path d="M12 9v4l3 2" />
-        <path d="M5 3 2 6" />
-        <path d="M22 6 19 3" />
       </svg>
     );
   }
@@ -90,15 +67,6 @@ function SidebarIcon({ name }) {
     return (
       <svg {...common}>
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-      </svg>
-    );
-  }
-
-  if (name === 'homeTwin') {
-    return (
-      <svg {...common}>
-        <path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
-        <path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6" />
       </svg>
     );
   }
@@ -141,7 +109,6 @@ export function Sidebar({
   const [showAccountMenu, setShowAccountMenu] = useState(false);
 
   const visiblePages = pages.filter((item) => {
-    if (item.id === 'homeTwin') return SHOW_HOME_TWIN;
     if (isDemoMode && item.id === 'posture') return false;
     return true;
   });
@@ -188,6 +155,7 @@ export function Sidebar({
       <nav className="nav-list">
         {visiblePages.map((item) => (
           <Fragment key={item.id}>
+            {item.id === 'sleep' && <div className="nav-divider" role="separator" />}
             <button
               className={`nav-item ${page === item.id ? 'active' : ''}`}
               data-coachmark={`nav-${item.id}`}
@@ -202,12 +170,7 @@ export function Sidebar({
               title={collapsed ? item.label : undefined}
             >
               <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
-              <span className="nav-label">
-                {item.label}
-                {item.id === 'homeTwin' && isDemoMode && (
-                  <span className="nav-demo-tag">demo</span>
-                )}
-              </span>
+              <span className="nav-label">{item.label}</span>
               {page === item.id && <i />}
             </button>
           </Fragment>

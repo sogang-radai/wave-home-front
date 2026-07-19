@@ -183,6 +183,13 @@ button.brand-group {
   padding: 18px 10px;
 }
 
+.nav-divider {
+  height: 1px;
+  margin: 10px 4px 18px;
+  border: 0;
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+}
+
 .nav-item {
   position: relative;
   width: 100%;
@@ -498,6 +505,14 @@ button.brand-group {
   background: var(--wave-05);
 }
 
+/* .profile strong is white for the (now unused) dark-sidebar profile block;
+   TopBar's profile-trigger sits on a light --surface background and needs
+   dark text — override with higher specificity so it wins regardless of
+   source order. */
+.profile-trigger .profile-text strong {
+  color: var(--ink);
+}
+
 .profile-menu {
   position: absolute;
   top: 48px;
@@ -781,15 +796,12 @@ button.brand-group {
     flex-shrink: 0;
   }
 
-  .top-actions-mobile .profile-text,
-  .top-actions-mobile .wave-ai-trigger span {
+  .top-actions-mobile .profile-text {
     display: none;
   }
 
   .top-actions-mobile .wave-ai-trigger {
-    width: 36px;
-    padding: 0;
-    justify-content: center;
+    padding: 0 12px;
   }
 
   .top-actions-mobile .profile,
@@ -836,6 +848,7 @@ button.brand-group {
     border: 1px solid var(--line);
     border-radius: 18px;
     background: var(--surface);
+    color: var(--ink);
     text-align: left;
     cursor: pointer;
   }
@@ -867,6 +880,7 @@ button.brand-group {
     border: 0;
     border-radius: 12px;
     background: transparent;
+    color: var(--ink);
     text-align: left;
     cursor: pointer;
   }

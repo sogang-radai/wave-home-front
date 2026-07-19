@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   LineChart,
   Line,
@@ -262,7 +263,7 @@ function resolveTransitionMode(leavingKind, enteringKind) {
   return leavingKind === 'report' && enteringKind === 'report' ? 'slide' : 'fade';
 }
 
-export function SleepStatusReport({ onReportDateChange }) {
+export function SleepStatusReport({ onReportDateChange, dateNavTarget }) {
   const [reportDate, setReportDate] = useState(getToday);
   const [latestDate] = useState(getToday);
   const [sessions, setSessions] = useState([]);
@@ -649,19 +650,23 @@ export function SleepStatusReport({ onReportDateChange }) {
     );
   })();
 
+  const dateNavBar = (
+    <DateNavigatorBar
+      mode="day"
+      selectedDate={reportDate}
+      latestDate={latestDate}
+      labelFading={labelFading}
+      onPrev={() => shiftDay(-1)}
+      onNext={() => shiftDay(1)}
+      nextDisabled={isSameDay(reportDate, latestDate)}
+      onSelectDay={navigateToDate}
+      className={dateNavTarget ? undefined : 'mb-2'}
+    />
+  );
+
   return (
     <>
-      <DateNavigatorBar
-        mode="day"
-        selectedDate={reportDate}
-        latestDate={latestDate}
-        labelFading={labelFading}
-        onPrev={() => shiftDay(-1)}
-        onNext={() => shiftDay(1)}
-        nextDisabled={isSameDay(reportDate, latestDate)}
-        onSelectDay={navigateToDate}
-        className="mb-2"
-      />
+      {dateNavTarget ? createPortal(dateNavBar, dateNavTarget) : dateNavBar}
 
       <div
         ref={viewportRef}

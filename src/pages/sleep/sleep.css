@@ -1,3 +1,13 @@
+/* ── Tabs row (tabs left, portaled date navigator right) ──────────────────── */
+
+.sleep-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 /* ── Daily report date transition ─────────────────────────────────────────── */
 
 .sleep-report-viewport {

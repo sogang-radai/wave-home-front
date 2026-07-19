@@ -41,7 +41,7 @@ const cards = [
         ]}
       />
     ),
-    target: "alarm",
+    target: { page: "sleep", sleepTab: "alarm" },
   },
 ];
 

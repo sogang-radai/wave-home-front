@@ -9,7 +9,7 @@ function padRect(r) {
   return { top: r.top - PAD, left: r.left - PAD, width: r.width + PAD * 2, height: r.height + PAD * 2 };
 }
 
-export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain }) {
+export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain, onStepChange }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState(null);
   const [extraRect, setExtraRect] = useState(null);
@@ -23,6 +23,13 @@ export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain }
   useEffect(() => {
     if (active) setStepIndex(0);
   }, [active]);
+
+  // Lets the parent open the mobile nav drawer while a sidebar-anchored step
+  // is showing (those targets sit off-screen behind `.sidebar` until it's
+  // open) and close it again for dashboard-card steps or once the tour ends.
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step, onStepChange]);
 
   // 대상 위치 측정 + 툴팁 배치. 사이드바 스텝은 anchorSelector(사이드바 컨테이너)의
   // 가장자리를 기준으로 좌우 위치를 잡아, 메뉴 버튼 안쪽 여백 때문에 툴팁이

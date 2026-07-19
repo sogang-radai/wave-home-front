@@ -91,6 +91,9 @@
 }
 
 .tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 0;
   border-radius: 13px;
   padding: 10px 18px;
@@ -103,6 +106,19 @@
 .tabs button.active {
   background: var(--wave);
   color: var(--ink);
+}
+
+.tab-badge {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: lowercase;
+  color: #0a3d2e;
+  background: linear-gradient(135deg, #6eefc0, #36d399);
 }
 
 /* Metric */

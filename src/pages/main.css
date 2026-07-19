@@ -126,10 +126,115 @@
 }
 
 .state-grid,
-.split-stats {
+.split-stats,
+.dashboard-todo-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.weekly-plan-nav-desc {
+  margin: 0;
+  color: var(--sub);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.weekly-plan-nav-cta {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* Lavender/pink treatment for the todo + weekly-plan pair, Apple Health
+   cycle-tracking style: soft plum-to-pink on the glance card, a bolder
+   purple-to-pink gradient on the CTA card. */
+.dashboard-todo-row .card {
+  border: none;
+}
+
+.dashboard-todo-row .card:first-child {
+  background:
+    radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
+    radial-gradient(circle at 45% 0%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%),
+    linear-gradient(160deg, #4a1942 0%, #8c2153 55%, #c23a5e 100%);
+  box-shadow: 0 4px 20px rgba(140, 33, 83, 0.35);
+}
+
+.dashboard-todo-row .card:first-child .card-head h3 {
+  color: #fff;
+}
+
+.dashboard-todo-row .card:first-child .card-head > span {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.dashboard-todo-row .card:first-child.clickable:hover,
+.dashboard-todo-row .card:first-child.clickable:focus-visible {
+  border-color: transparent;
+  box-shadow: 0 8px 28px rgba(140, 33, 83, 0.45);
+}
+
+.dashboard-todo-row .todo {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.dashboard-todo-row .todo:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.dashboard-todo-row .todo-empty {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-todo-row .todo p {
+  color: #fff;
+}
+
+.dashboard-todo-row .todo.done p {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.dashboard-todo-row .todo span {
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #8c2153;
+}
+
+.dashboard-todo-row .todo span.checked {
+  border-color: #fff;
+  background: #fff;
+}
+
+.dashboard-todo-row .card:last-child {
+  background: linear-gradient(135deg, #6a4fc7 0%, #b9a4f0 55%, #ffc2d4 100%);
+  box-shadow: 0 4px 20px rgba(106, 79, 199, 0.35);
+}
+
+.dashboard-todo-row .card:last-child .card-head h3 {
+  color: #fff;
+}
+
+.dashboard-todo-row .card:last-child .card-head > span {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.dashboard-todo-row .card:last-child .weekly-plan-nav-desc {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.dashboard-todo-row .card:last-child .weekly-plan-nav-cta {
+  color: #fff;
+}
+
+.dashboard-todo-row .card:last-child.clickable:hover,
+.dashboard-todo-row .card:last-child.clickable:focus-visible {
+  border-color: transparent;
+  box-shadow: 0 8px 28px rgba(106, 79, 199, 0.45);
 }
 
 .dashboard-health-grid {
@@ -267,6 +372,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.todo-empty {
+  margin: 0;
+  color: var(--sub);
+  font-size: 0.8rem;
 }
 
 .todo {

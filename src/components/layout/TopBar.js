@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NotificationsPanel } from '../notifications/NotificationsPanel';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
-import { WaveAiIcon } from '../icons/WaveAiIcon';
+import { ChatBotIcon } from '../icons/ChatBotIcon';
 
 export function MenuIcon() {
   return (
@@ -83,13 +83,13 @@ export function TopActionsCluster({
         <button
           className="wave-ai-trigger"
           data-coachmark={variant === 'desktop' ? 'header-waveai' : undefined}
-          aria-label="WaveAI"
-          title={waveAiDisabled ? 'WaveAI 대화창이 이미 열려 있어요' : 'WaveAI 열기'}
+          aria-label="WaveChat"
+          title={waveAiDisabled ? 'WaveChat 대화창이 이미 열려 있어요' : 'WaveChat 열기'}
           onClick={onOpenWaveAi}
           disabled={waveAiDisabled}
         >
-          <WaveAiIcon size={16} />
-          <span>WaveAI</span>
+          <ChatBotIcon size={16} />
+          <span>WaveChat</span>
         </button>
       )}
       <button className="bell" aria-label="알림" onClick={onToggleNotifications}>

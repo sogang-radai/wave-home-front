@@ -204,17 +204,17 @@ export default function PinnedCategorySection({
           </p>
         </div>
 
-        {/* Mobile: vertical card stack (no nested horizontal scroll).
-            Desktop: overflow-hidden clips scrubbed cards away from the copy. */}
-        <div ref={stageRef} className="min-w-0 flex-1 overflow-visible lg:overflow-hidden lg:will-change-transform">
+        {/* overflow-hidden clips the scrubbed/scaled cards at this box's own
+            edge, so they can never paint over the copy column to the left. */}
+        <div ref={stageRef} className="min-w-0 flex-1 overflow-x-auto lg:overflow-hidden lg:will-change-transform">
           <div
             ref={trackRef}
-            className="flex w-full flex-col gap-5 pb-4 lg:w-max lg:flex-row lg:pb-0 lg:will-change-transform"
+            className="flex w-max gap-5 pb-4 lg:pb-0 lg:will-change-transform"
           >
             {cards.map((card) => (
               <Card key={card.title} card={card} onEnter={onEnter} />
             ))}
-            <div className="hidden w-24 shrink-0 lg:block" aria-hidden />
+            <div className="w-1 shrink-0 lg:w-24" aria-hidden />
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ function Card({ card, onEnter }) {
       data-card
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      className="flex w-full shrink-0 flex-col overflow-hidden rounded-[8px] border border-white/12 bg-surface shadow-2xl shadow-black/35 lg:w-[380px]"
+      className="flex w-[82vw] shrink-0 flex-col overflow-hidden rounded-[8px] border border-white/12 bg-surface shadow-2xl shadow-black/35 sm:w-[380px]"
     >
       <div className="relative bg-white p-4">{card.media}</div>
 

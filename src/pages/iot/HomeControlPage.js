@@ -7,9 +7,11 @@ import { TriggerRulesTab } from './TriggerRulesTab';
 import { IrCommandsTab } from './IrCommandsTab';
 import { GestureSetsTab } from './GestureSetsTab';
 import { EventLogTab } from './EventLogTab';
+import { HomeTwinPage } from '../homeTwin/HomeTwinPage';
+import { SHOW_HOME_TWIN } from '../../api/config';
 import './HomeControlPage.css';
 
-export function HomeControlPage({ tab, setTab }) {
+export function HomeControlPage({ tab, setTab, onOpenChat, chatPopupOpen }) {
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
@@ -26,6 +28,7 @@ export function HomeControlPage({ tab, setTab }) {
         active={tab}
         onChange={setTab}
         items={[
+          ...(SHOW_HOME_TWIN ? [['twin', '디지털 트윈 홈', 'virtual']] : []),
           ['control', 'IoT 제어'],
           ['trigger', '트리거'],
           ['ir', '적외선 명령'],
@@ -34,21 +37,26 @@ export function HomeControlPage({ tab, setTab }) {
         ]}
       />
 
-      <div className="home-summary-grid">
-        <Metric
-          label="온라인 장치"
-          value={summary ? `${summary.onlineDeviceCount}/${summary.totalDeviceCount}` : '—'}
-          detail={summary?.devicesStarting ? `초기화 중 (${summary.initializingDeviceCount ?? 0})` : '연결된 기기'}
-        />
-        <Metric label="오늘 이벤트" value={summary ? `${summary.todayEventCount}건` : '—'} detail="최근 24시간" />
-        <Metric label="자동화 규칙" value={summary ? `${summary.activeRuleCount}개` : '—'} detail="트리거 + 예약 자동화 합계" />
-      </div>
+      {tab !== 'twin' && (
+        <div className="home-summary-grid">
+          <Metric
+            label="온라인 장치"
+            value={summary ? `${summary.onlineDeviceCount}/${summary.totalDeviceCount}` : '—'}
+            detail={summary?.devicesStarting ? `초기화 중 (${summary.initializingDeviceCount ?? 0})` : '연결된 기기'}
+          />
+          <Metric label="오늘 이벤트" value={summary ? `${summary.todayEventCount}건` : '—'} detail="최근 24시간" />
+          <Metric label="자동화 규칙" value={summary ? `${summary.activeRuleCount}개` : '—'} detail="트리거 + 예약 자동화 합계" />
+        </div>
+      )}
 
       {tab === 'control' && <IotControlTab />}
       {tab === 'trigger' && <TriggerRulesTab />}
       {tab === 'ir' && <IrCommandsTab />}
       {tab === 'gesture' && <GestureSetsTab />}
       {tab === 'log' && <EventLogTab />}
+      {tab === 'twin' && SHOW_HOME_TWIN && (
+        <HomeTwinPage onOpenChat={onOpenChat} chatPopupOpen={chatPopupOpen} />
+      )}
     </div>
   );
 }

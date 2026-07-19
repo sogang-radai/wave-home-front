@@ -3,38 +3,22 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     {
       selector: '[data-coachmark="nav-chat"]',
       extraSelector: '[data-coachmark="header-waveai"]',
-      title: 'WaveAI',
-      description: '자연어로 집안 기기를 제어하고 궁금한 점을 물어볼 수 있는 AI 비서에요. "거실 조명 꺼줘"같은 대화를 나눠보세요. 오른쪽 상단의 WaveAI 버튼으로도 어디서나 팝업화면을 열 수 있어요.',
+      title: 'WaveChat',
+      description: '자연어로 집안 기기를 제어하고 궁금한 점을 물어볼 수 있는 AI 비서에요. "거실 조명 꺼줘"같은 대화를 나눠보세요. 오른쪽 상단의 WaveChat 버튼으로도 어디서나 팝업화면을 열 수 있어요.',
       placement: 'right',
     },
     {
       selector: '[data-coachmark="nav-sleep"]',
       title: '수면 관리',
-      description: '비접촉 레이더로 측정한 수면 단계·호흡·코골이 등 매일 아침 수면 문제 원인까지 짚어주는 AI 리포트를 볼 수 있어요.',
-      placement: 'right',
-    },
-    {
-      selector: '[data-coachmark="nav-weeklyPlan"]',
-      title: '주간 계획',
-      description: '할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인할 수 있어요.',
-      placement: 'right',
-    },
-    {
-      selector: '[data-coachmark="nav-alarm"]',
-      title: '스마트 알람',
-      description: '소리 대신 빛으로 자연스럽게 깨워주는 알람 등, 나에게 맞는 기상 방식을 설정할 수 있어요.',
-      placement: 'right',
-    },
-    showHomeTwin && {
-      selector: '[data-coachmark="nav-homeTwin"]',
-      title: '디지털 트윈 홈',
-      description: '3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인할 수 있어요.',
+      description: '비접촉 레이더로 측정한 수면 단계·호흡·코골이 등 매일 아침 수면 문제 원인까지 짚어주는 AI 리포트를 볼 수 있어요. 알람 탭에서 스마트 기상 알람도 함께 관리할 수 있어요.',
       placement: 'right',
     },
     {
       selector: '[data-coachmark="nav-home"]',
       title: '가전 제어',
-      description: '조명·에어컨·TV 등 연결된 가전을 직접 켜고 끄거나 세부 설정을 바꿀 수 있어요.',
+      description: showHomeTwin
+        ? '조명·에어컨·TV 등 연결된 가전을 직접 켜고 끄거나 세부 설정을 바꿀 수 있어요. 디지털 트윈 홈 탭에서는 3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인할 수 있어요.'
+        : '조명·에어컨·TV 등 연결된 가전을 직접 켜고 끄거나 세부 설정을 바꿀 수 있어요.',
       placement: 'right',
     },
     {
