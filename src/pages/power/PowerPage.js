@@ -646,7 +646,7 @@ export function PowerPage() {
           <h3 className="insight-section-title">전력 인사이트</h3>
           <div className="insight-list">
             {insights.map((item) => (
-              <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} plainFooter />
+              <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} plainFooter />
             ))}
           </div>
         </div>

@@ -14,17 +14,19 @@ export function filterInsightsByPeriod(items, period) {
 }
 
 /**
- * Keep only the newest `date` cohort (YYYY-MM-DD), then cap length.
- * Rows without `date` are treated as a single cohort (mock seeds).
+ * Sort newest `date` (YYYY-MM-DD) first, then cap length. Previously this
+ * kept only the single newest date's cohort, which silently dropped every
+ * other insight whenever items were spread across different dates — now it
+ * just orders by recency so all kinds (tip/goal/action/banner) surface up
+ * to `limit`. Rows without `date` sort last but are still kept.
  */
 export function pickLatestDateInsights(items, { limit = INSIGHT_CARD_LIMIT } = {}) {
   if (!Array.isArray(items) || items.length === 0) return [];
 
-  const dated = items.filter((item) => typeof item?.date === 'string' && item.date.length > 0);
-  let pool = items;
-  if (dated.length > 0) {
-    const latest = dated.reduce((max, item) => (item.date > max ? item.date : max), dated[0].date);
-    pool = items.filter((item) => item.date === latest);
-  }
-  return pool.slice(0, limit);
+  const sorted = [...items].sort((a, b) => {
+    const aDate = typeof a?.date === 'string' ? a.date : '';
+    const bDate = typeof b?.date === 'string' ? b.date : '';
+    return bDate.localeCompare(aDate);
+  });
+  return sorted.slice(0, limit);
 }

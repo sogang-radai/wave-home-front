@@ -10,7 +10,7 @@ const INSIGHT_KIND_META = {
   banner: { label: '하이라이트', className: 'insight-card-label--banner' },
 };
 
-export function InsightCard({ id, label, kind, title, text, approved, onToggle, plainFooter }) {
+export function InsightCard({ id, label, kind, title, text, approved, actionable, onToggle, plainFooter }) {
   const kindMeta = INSIGHT_KIND_META[kind];
   const badgeLabel = kindMeta?.label || label;
   const badgeClassName = `insight-card-label${kindMeta ? ` ${kindMeta.className}` : ''}`;
@@ -22,11 +22,13 @@ export function InsightCard({ id, label, kind, title, text, approved, onToggle, 
       </header>
       <h4 className="insight-card-title">{title}</h4>
       <p className="insight-card-text">{text}</p>
-      <footer className="insight-card-footer">
-        <button type="button" className="insight-card-action" onClick={() => onToggle(id)}>
-          {approved ? '✓ 적용됨' : '실행'}
-        </button>
-      </footer>
+      {actionable && (
+        <footer className="insight-card-footer">
+          <button type="button" className="insight-card-action" onClick={() => onToggle(id)}>
+            {approved ? '✓ 적용됨' : '실행'}
+          </button>
+        </footer>
+      )}
     </article>
   );
 }

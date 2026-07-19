@@ -165,7 +165,7 @@ export function CareReport({
         <Card title="권장 액션">
           <div className="insight-list">
             {insights.map((item) => (
-              <InsightCard key={item.id} id={item.id} label={item.label} title={item.title} text={item.text} />
+              <InsightCard key={item.id} id={item.id} label={item.label} kind={item.kind} title={item.title} text={item.text} actionable={item.actionable} />
             ))}
           </div>
         </Card>

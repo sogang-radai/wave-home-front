@@ -163,7 +163,7 @@ export function PosturePage({ tab, setTab }) {
           <Card title="WaveAI 추천 일간 권장 액션">
             <div className="posture-action-list">
               {dailyInsights.map((item) => (
-                <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} />
+                <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} />
               ))}
             </div>
           </Card>
@@ -171,7 +171,7 @@ export function PosturePage({ tab, setTab }) {
           <Card title="WaveAI 추천 주간 권장 액션">
             <div className="posture-action-list">
               {weeklyInsights.map((item) => (
-                <InsightCard key={item.id} id={item.id} approved={item.approved} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} />
+                <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} />
               ))}
             </div>
           </Card>

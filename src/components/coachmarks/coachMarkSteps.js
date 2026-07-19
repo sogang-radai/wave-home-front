@@ -57,6 +57,12 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
       placement: 'left',
     },
     {
+      selector: '[data-coachmark="card-status"]',
+      title: '홈 현황',
+      description: '실내 환경, 수면 감지, 연결된 가전 상태를 한눈에 확인할 수 있어요.',
+      placement: 'right',
+    },
+    {
       selector: '[data-coachmark="card-todos"]',
       title: '오늘 할일',
       description: '오늘 예정된 일정을 확인하고 완료 체크할 수 있어요. 카드를 누르면 주간 계획 페이지로 이동해요.',
@@ -67,12 +73,6 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
       title: '주간 계획',
       description: '할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인할 수 있어요. 목표를 작성하면 AI가 일정을 추천해주고, 달성률을 추적할 수 있어요.',
       placement: 'left',
-    },
-    {
-      selector: '[data-coachmark="card-status"]',
-      title: '홈 현황',
-      description: '실내 환경, 수면 감지, 연결된 가전 상태를 한눈에 확인할 수 있어요.',
-      placement: 'right',
     },
     {
       selector: '[data-coachmark="nav-brand"]',
