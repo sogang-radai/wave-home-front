@@ -122,7 +122,7 @@
 /* Pull the dashboard's hero card up closer to the topbar — .content's
    standard 28px top padding otherwise leaves it looking too far down. */
 .dashboard-page .hero {
-  margin-top: -22px;
+  margin-top: -14px;
 }
 
 .hero > div:first-child {
@@ -209,6 +209,10 @@
 
 .state-grid-row {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.state-grid-row .metric strong {
+  font-size: 22px;
 }
 
 
@@ -299,7 +303,7 @@
 
 .dashboard-weeklyplan-card {
   display: flex;
-  flex: 0 0 33%;
+  flex: 0 0 25%;
 }
 
 .dashboard-weeklyplan-stack {
@@ -310,11 +314,49 @@
   min-width: 0;
 }
 
-.dashboard-weeklyplan-stack .promo-card {
+/* One outer card (title = "WaveChat에게 이런 질문을 해보세요") holding a
+   2-column grid of solid white sub-blocks — same pattern as the 홈 현황
+   card's metric grid, just with clickable chat-prompt blocks instead. */
+.dashboard-weeklyplan-stack .card {
   display: flex;
   flex: 1;
   flex-direction: column;
+}
+
+.dashboard-promo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+}
+
+.dashboard-promo-block {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  transition: box-shadow 0.15s ease;
+}
+
+.dashboard-promo-block:hover,
+.dashboard-promo-block:focus-visible {
+  box-shadow: 0 4px 14px var(--wave-15);
+}
+
+.dashboard-promo-block strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.dashboard-promo-block p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ink-65);
 }
 
 .dashboard-weeklyplan-card .card {
@@ -361,7 +403,7 @@
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.18fr) minmax(300px, 0.95fr);
   gap: 20px;
   align-items: start;
-  margin-top: -12px;
+  margin-top: -4px;
 }
 
 .dashboard-overview-col {
@@ -377,10 +419,10 @@
    with the weeklyplan row taking up the rest. */
 .dashboard-remaining-grid {
   display: grid;
-  grid-template-columns: 5fr 4fr;
+  grid-template-columns: 1fr;
   gap: 20px;
   align-items: start;
-  margin-top: -12px;
+  margin-top: -4px;
 }
 
 .dashboard-sleep-card {
@@ -395,7 +437,7 @@
 
 .dashboard-power-card {
   width: 100%;
-  min-height: 250px;
+  min-height: 340px;
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 18px;

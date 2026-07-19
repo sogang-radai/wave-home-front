@@ -70,7 +70,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     },
     {
       selector: '[data-coachmark="card-status"]',
-      title: '현재 상태',
+      title: '홈 현황',
       description: '실내 환경, 수면 감지, 연결된 가전 상태를 한눈에 확인할 수 있어요.',
       placement: 'right',
     },

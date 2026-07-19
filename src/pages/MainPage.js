@@ -18,7 +18,7 @@ const POWER_POLL_MS = 5000;
 
 const SLEEP_RADAR = {
   name: '침실 하방 레이더',
-  role: '수면 감지',
+  role: '수면 모니터링',
   room: '침실',
 };
 
@@ -229,23 +229,36 @@ export function MainPage({
             </Card>
           </div>
 
-          <button
-            type="button"
-            className="promo-card navy dashboard-sleep-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('서카디안 리듬 기반으로 나에게 맞는 취침 시간을 추천해줘')}
-          >
-            <strong>취침 가이드</strong>
-            <p>나의 수면 패턴을 분석하고, 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
-          </button>
-
-          <button
-            type="button"
-            className="promo-card plum dashboard-sleep-card cursor-pointer border-0 text-left"
-            onClick={() => onOpenChatWithDraft?.('우리 집 수면 환경을 더 쾌적하게 만들려면 어떻게 해야 할까?')}
-          >
-            <strong>수면 환경</strong>
-            <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
-          </button>
+          <div className="dashboard-sleep-card">
+            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms">
+              <div className="mt-2 flex flex-col gap-1">
+                {upcomingAlarms.length === 0 && (
+                  <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>
+                )}
+                {upcomingAlarms.map((alarm) => {
+                  const { hour12, minute, meridiem } = formatClock12(alarm.timeMinute);
+                  return (
+                    <div
+                      key={alarm.id}
+                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-1"
+                      style={{ background: 'var(--wave-05)' }}
+                    >
+                      <div className="flex min-w-0 items-baseline gap-2">
+                        <p className="shrink-0 text-sm font-semibold" style={{ color: 'var(--ink)' }}>{alarm.name}</p>
+                        <p className="truncate text-xs" style={{ color: 'var(--sub)' }}>{formatNextFireLabel(new Date(alarm.nextFireAt))}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
+                          {String(hour12).padStart(2, '0')}:{String(minute).padStart(2, '0')}
+                        </span>
+                        <span className="ml-1 text-xs" style={{ color: 'var(--sub)' }}>{meridiem}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
         </div>
 
         <div className="dashboard-overview-col">
@@ -285,32 +298,27 @@ export function MainPage({
           </button>
 
           <div className="dashboard-posture-card">
-            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms">
-              <div className="mt-2 flex flex-col gap-1">
-                {upcomingAlarms.length === 0 && (
-                  <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>
+            <Card title="홈 현황" data-coachmark="card-status">
+              <div className="state-grid state-grid-row">
+                {currentState && (
+                  <Metric
+                    label="실내 환경"
+                    value={currentState.indoorEnvironment.label}
+                    detail={currentState.indoorEnvironment.detail}
+                  />
                 )}
-                {upcomingAlarms.map((alarm) => {
-                  const { hour12, minute, meridiem } = formatClock12(alarm.timeMinute);
-                  return (
-                    <div
-                      key={alarm.id}
-                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-1"
-                      style={{ background: 'var(--wave-05)' }}
-                    >
-                      <div className="flex min-w-0 items-baseline gap-2">
-                        <p className="shrink-0 text-sm font-semibold" style={{ color: 'var(--ink)' }}>{alarm.name}</p>
-                        <p className="truncate text-xs" style={{ color: 'var(--sub)' }}>{formatNextFireLabel(new Date(alarm.nextFireAt))}</p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="text-sm font-bold" style={{ color: 'var(--ink)' }}>
-                          {String(hour12).padStart(2, '0')}:{String(minute).padStart(2, '0')}
-                        </span>
-                        <span className="ml-1 text-xs" style={{ color: 'var(--sub)' }}>{meridiem}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                <Metric
+                  label={SLEEP_RADAR.role}
+                  value="실행중"
+                  detail={`${SLEEP_RADAR.name}로 모니터링 중`}
+                  dot="online"
+                />
+                <Metric
+                  label="연결된 가전 상태"
+                  value={deviceConnectionValue}
+                  detail={deviceConnectionDetail}
+                  dot={deviceConnectionDot}
+                />
               </div>
             </Card>
           </div>
@@ -420,59 +428,55 @@ export function MainPage({
           </div>
 
           <div className="dashboard-weeklyplan-stack">
-            <button
-              type="button"
-              className="promo-card orange dashboard-power-insight cursor-pointer border-0 text-left"
-              onClick={() => onOpenChatWithDraft?.('오늘 전력 사용량 중에서 줄일 수 있는 부분을 알려줘')}
-            >
-              <strong>전력 절약 팁</strong>
-              <p>오늘 전력 사용량 중 줄일 수 있는 부분을 물어보세요.</p>
-            </button>
+            <Card title="WaveChat에게 이런 질문을 해보세요">
+              <div className="dashboard-promo-grid">
+                <button
+                  type="button"
+                  className="dashboard-promo-block cursor-pointer border-0 text-left"
+                  onClick={() => onOpenChatWithDraft?.('서카디안 리듬 기반으로 나에게 맞는 취침 시간을 추천해줘')}
+                >
+                  <strong>취침 가이드</strong>
+                  <p>나의 수면 패턴을 분석하고, 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
+                </button>
 
-            <button
-              type="button"
-              className="promo-card pink cursor-pointer border-0 text-left"
-              onClick={() => onOpenChatWithDraft?.('집에 어떤 장치가 있고 각각 어떤 기능을 제어할 수 있는지 알려줘')}
-            >
-              <strong>장치 제어 가이드</strong>
-              <p>조명·TV·플러그 등 어떤 기기가 있고 무엇을 바꿀 수 있는지 물어보세요.</p>
-            </button>
+                <button
+                  type="button"
+                  className="dashboard-promo-block cursor-pointer border-0 text-left"
+                  onClick={() => onOpenChatWithDraft?.('내일 아침 7시 알람 맞춰주고, 주간 계획에 스트레칭도 추가해줘')}
+                >
+                  <strong>일정·알람도 말해보세요</strong>
+                  <p>기상 알람 맞추기, 할 일 추가처럼 일정 관리도 채팅으로 할 수 있어요.</p>
+                </button>
 
-            <button
-              type="button"
-              className="promo-card mint cursor-pointer border-0 text-left"
-              onClick={() => onOpenChatWithDraft?.('내일 아침 7시 알람 맞춰주고, 주간 계획에 스트레칭도 추가해줘')}
-            >
-              <strong>일정·알람도 말해보세요</strong>
-              <p>기상 알람 맞추기, 할 일 추가처럼 일정 관리도 채팅으로 할 수 있어요.</p>
-            </button>
+                <button
+                  type="button"
+                  className="dashboard-promo-block cursor-pointer border-0 text-left"
+                  onClick={() => onOpenChatWithDraft?.('우리 집 수면 환경을 더 쾌적하게 만들려면 어떻게 해야 할까?')}
+                >
+                  <strong>수면 환경</strong>
+                  <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
+                </button>
+
+                <button
+                  type="button"
+                  className="dashboard-promo-block cursor-pointer border-0 text-left"
+                  onClick={() => onOpenChatWithDraft?.('집에 어떤 장치가 있고 각각 어떤 기능을 제어할 수 있는지 알려줘')}
+                >
+                  <strong>장치 제어 가이드</strong>
+                  <p>조명·TV·플러그 등 어떤 기기가 있고 무엇을 바꿀 수 있는지 물어보세요.</p>
+                </button>
+
+                <button
+                  type="button"
+                  className="dashboard-promo-block dashboard-power-insight cursor-pointer border-0 text-left"
+                  onClick={() => onOpenChatWithDraft?.('오늘 전력 사용량 중에서 줄일 수 있는 부분을 알려줘')}
+                >
+                  <strong>전력 절약 팁</strong>
+                  <p>오늘 전력 사용량 중 줄일 수 있는 부분을 물어보세요.</p>
+                </button>
+              </div>
+            </Card>
           </div>
-        </div>
-
-        <div>
-          <Card title="현재 상태" data-coachmark="card-status">
-            <div className="state-grid state-grid-row">
-              {currentState && (
-                <Metric
-                  label="실내 환경"
-                  value={currentState.indoorEnvironment.label}
-                  detail={currentState.indoorEnvironment.detail}
-                />
-              )}
-              <Metric
-                label={SLEEP_RADAR.role}
-                value="실행 중"
-                detail={`${SLEEP_RADAR.name}로 입면·뒤척임·기상 구간을 추적하고 있어요.`}
-                dot="online"
-              />
-              <Metric
-                label="연결된 가전 상태"
-                value={deviceConnectionValue}
-                detail={deviceConnectionDetail}
-                dot={deviceConnectionDot}
-              />
-            </div>
-          </Card>
         </div>
       </section>
     </div>
