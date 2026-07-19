@@ -10,7 +10,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     {
       selector: '[data-coachmark="nav-sleep"]',
       title: '수면 관리',
-      description: '비접촉 방식으로 측정한 수면 단계·호흡·코골이 등 매일 아침 수면 문제 원인까지 짚어주는 AI 리포트를 볼 수 있어요. 알람 탭에서 스마트 기상 알람도 함께 관리할 수 있어요.',
+      description: '매일 아침 수면 문제의 원인까지 짚어주는 AI 리포트를 볼 수 있어요. 비접촉 방식으로 측정한 수면 단계·호흡·코골이 기록도 나와있어요. 알람 탭에서 스마트 기상 알람도 함께 관리할 수 있어요.',
       placement: 'right',
     },
     {
@@ -47,13 +47,13 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     {
       selector: '[data-coachmark="card-gestures"]',
       title: '활성화된 제스처',
-      description: '제스처로 자동 실행되도록 설정해둔 자동화 목록이에요.',
+      description: '현재 활성화된 제스쳐들의 목록입니다. 이 제스처들로 가전을 제어할 수 있어요. 눌러서 제스처 설정으로 이동해보세요.',
       placement: 'left',
     },
     {
       selector: '[data-coachmark="card-alarms"]',
       title: '예정된 알람',
-      description: '오늘·내일 아침으로 예정된 알람을 미리 확인할 수 있어요. 조명으로 꺠워드리거나 소리로 깨워드릴 수 있어요. ',
+      description: '오늘·내일 아침으로 예정된 알람을 미리 확인할 수 있어요. 조명이나 소리로 깨워드릴 수 있어요. ',
       placement: 'left',
     },
     {

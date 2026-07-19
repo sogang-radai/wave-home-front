@@ -617,7 +617,7 @@ export function ChatMessages({
               {IS_DEMO_MODE && !compact && (
                 <div className="chat-demo-notice" role="note">
                   <strong>시연 모드 안내</strong>
-                  <p>여러분이 함께 쓰는 데모 환경입니다. 과도한 사용은 자제해 주세요.</p>
+                  <p>여러 사용자가 함께 이용하는 데모 환경입니다. 모두가 원활하게 사용할 수 있도록 필요한 만큼만 이용해 주세요.</p>
                 </div>
               )}
               <div className={compact ? 'chat-popup-suggestions' : 'chat-suggestions-grid'}>

@@ -191,7 +191,7 @@ export function MainPage({
                           <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>{sleepSummary.achievedHours.toFixed(1)}</span>
                           <span className="text-sm" style={{ color: 'var(--sub)' }}>h</span>
                         </div>
-                        <p className="text-xs" style={{ color: 'var(--sub)' }}>오늘 달성량</p>
+                        <p className="text-xs" style={{ color: 'var(--sub)' }}>어젯밤 달성량</p>
                       </div>
                       <div>
                         <p className="mb-0.5 text-xs" style={{ color: 'var(--sub)' }}>목표</p>
