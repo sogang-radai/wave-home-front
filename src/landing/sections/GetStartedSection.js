@@ -6,45 +6,6 @@ import { ArrowRight } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const BUBBLES = Array.from({ length: 15 }, (_, i) => {
-  const seed = i * 12.9898;
-  const x = Math.round((((Math.sin(seed) + 1) / 2) * 100) * 100) / 100;
-  const y = Math.round((((Math.sin(seed * 1.7 + 3.1) + 1) / 2) * 100) * 100) / 100;
-  const size = 12 + ((i * 7) % 18);
-  const isSky = i % 2 === 0;
-  const duration = 9 + ((i * 5) % 10);
-  const delay = Math.round(-((i * 3.3) % duration) * 100) / 100;
-  return { x, y, size, isSky, duration, delay };
-});
-
-function FloatingBubbles() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {BUBBLES.map((b, i) => {
-        const tint = b.isSky ? "149,217,248" : "255,255,255";
-        return (
-          <span
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              left: `${b.x}%`,
-              top: `${b.y}%`,
-              width: b.size,
-              height: b.size,
-              border: `1px solid rgba(${tint},0.35)`,
-              boxShadow: `inset 0 0 ${Math.max(4, b.size * 0.3)}px rgba(${tint},0.2)`,
-              background:
-                `radial-gradient(circle at 30% 26%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 32%),` +
-                `radial-gradient(circle at 50% 50%, rgba(${tint},0.28) 0%, rgba(${tint},0.06) 65%, rgba(${tint},0) 82%)`,
-              animation: `wh-float-bubble ${b.duration}s ease-in-out ${b.delay}s infinite`,
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 export default function GetStartedSection({ onEnter }) {
   const sectionRef = useRef(null);
 
@@ -80,12 +41,6 @@ export default function GetStartedSection({ onEnter }) {
       ref={sectionRef}
       className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-background"
     >
-      <div className="absolute inset-0 -z-10 bg-background">
-        <div className="hidden h-full lg:block">
-          <FloatingBubbles />
-        </div>
-      </div>
-
       <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col items-center px-6 py-24 text-center lg:px-10">
         <span
           data-cta-reveal
@@ -106,8 +61,8 @@ export default function GetStartedSection({ onEnter }) {
           data-cta-reveal
           className="mt-4 max-w-lg text-[15px] leading-relaxed text-white"
         >
-          수면·습관·스마트홈이 하나로 이어진 대시보드에서<br />
-          당신만의 라이프스타일 케어를 바로 경험할 수 있어요.
+          수면·습관·스마트홈이 하나로 통합된<br />
+          당신만의 라이프스타일 케어를 바로 경험할 수 있습니다.
         </p>
 
         <div data-cta-reveal className="mt-10">

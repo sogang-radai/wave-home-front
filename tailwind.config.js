@@ -19,6 +19,7 @@ module.exports = {
         display: ['"TAN New York"', 'cursive'],
         geist: ['"Geist"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         'plex-kr': ['"IBM Plex Sans KR"', 'sans-serif'],
+        'sf-pro': ['"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       // WaveHome landing page palette (dark cinematic surface). Plain hex/rgba
       // values on purpose, not CSS custom properties, so they can't collide

@@ -102,9 +102,11 @@ vec3 ocean(vec2 uv, float t){
   // Large, slow depth variation so the field never reads as a flat tile.
   float depth = fbm3(p * 0.32 - t * 0.012);
 
-  vec3 deep    = vec3(0.02, 0.24, 0.36);
-  vec3 mid     = vec3(0.08, 0.44, 0.53);
-  vec3 shallow = vec3(0.18, 0.35, 0.42);
+  // Saturated ocean-blue palette (deep navy center, brighter blue toward
+  // crests/edges).
+  vec3 deep    = vec3(0.039, 0.275, 0.584); // 가장 어두운 부분 #0A4695
+  vec3 mid     = vec3(0.039, 0.361, 0.702); // 진한 블루 #0A5CB3
+  vec3 shallow = vec3(0.004, 0.451, 0.773); // 메인 블루 #0173C5
 
   vec3 col = mix(deep, mid, smoothstep(0.20, 0.62, f));
   col = mix(col, shallow, smoothstep(0.60, 0.95, f));
@@ -112,15 +114,15 @@ vec3 ocean(vec2 uv, float t){
 
   // Bright rims where cells meet.
   float web = clamp(1.0 - abs(f - 0.52) * 3.2, 0.0, 1.0);
-  col += pow(web, 3.0) * 0.22 * vec3(0.42, 0.66, 0.72);
+  col += pow(web, 3.0) * 0.22 * vec3(0.122, 0.561, 0.871); // 밝은 블루 #1F8FDE
 
   // Sun glints: sparse because of the high exponent.
   float g = pow(fbm3(p * 4.0 + t * 0.45), 6.0);
-  col += g * uGlint * vec3(1.0, 1.0, 0.98);
+  col += g * uGlint * vec3(0.271, 0.706, 0.969); // 가장 밝은 하이라이트 #45B4F7
 
   // Foam breaking on the brightest crests.
   float foam = smoothstep(0.76, 0.96, f) * smoothstep(0.35, 0.82, noise(p * 7.0 + t * 0.30));
-  col = mix(col, vec3(0.72, 0.84, 0.90), foam * uFoam);
+  col = mix(col, vec3(0.635, 0.853, 0.984), foam * uFoam);
 
   return col;
 }
@@ -140,8 +142,8 @@ void main(){
   vec3 col = ocean(uv, uTime);
 
   float light = (gx * 0.7 - gy * 0.7) * uSpec / 255.0;
-  col += max(light, 0.0) * vec3(0.62, 0.78, 0.88);
-  col += min(light, 0.0) * vec3(0.30, 0.20, 0.10);
+  col += max(light, 0.0) * vec3(0.635, 0.853, 0.984);
+  col += min(light, 0.0) * vec3(0.02, 0.15, 0.32);
 
   frag = vec4(col, 1.0);
 }`;
@@ -156,7 +158,7 @@ export default function WaveCanvas() {
     if (!container || !canvas) return;
 
     const WATER_FALLBACK =
-      "linear-gradient(160deg, #94e4ea 0%, #2aa7c0 45%, #0a5478 100%)";
+      "linear-gradient(160deg, #45B4F7 0%, #1F8FDE 30%, #0173C5 55%, #0A5CB3 78%, #0A4695 100%)";
 
     const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 

@@ -2,7 +2,6 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { Application, Particle, ParticleContainer, Texture } from "pixi.js";
 import background from "../background.png";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -11,56 +10,12 @@ const LINE1 = "WaveHome을 소개합니다";
 const LINE2 = "Your Lifestyle AI Agent";
 const LINE3 = "Convenient. Intuitive. Personalized. Private.";
 
-const WHITE_TINT = 0xffffff;
-
-// Same bubble motif as the FloatingBubbles used elsewhere on the site (soft
-// tinted body + thin rim + a bright highlight glint), baked once into a
-// small canvas and reused as the single shared particle texture.
-function createBubbleTexture(size = 64) {
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 3;
-
-  const body = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  body.addColorStop(0, "rgba(255,255,255,0.55)");
-  body.addColorStop(0.55, "rgba(255,255,255,0.22)");
-  body.addColorStop(1, "rgba(255,255,255,0.05)");
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.lineWidth = size * 0.035;
-  ctx.strokeStyle = "rgba(255,255,255,0.55)";
-  ctx.beginPath();
-  ctx.arc(cx, cy, r - ctx.lineWidth / 2, 0, Math.PI * 2);
-  ctx.stroke();
-
-  const glintX = cx - r * 0.35;
-  const glintY = cy - r * 0.4;
-  const glintR = r * 0.4;
-  const glint = ctx.createRadialGradient(glintX, glintY, 0, glintX, glintY, glintR);
-  glint.addColorStop(0, "rgba(255,255,255,0.95)");
-  glint.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = glint;
-  ctx.beginPath();
-  ctx.arc(glintX, glintY, glintR, 0, Math.PI * 2);
-  ctx.fill();
-
-  return canvas;
-}
-
 export default function ValuePropSection() {
   const sectionRef = useRef(null);
   const panelRef = useRef(null);
   const line1Ref = useRef(null);
   const line2Ref = useRef(null);
   const line3Ref = useRef(null);
-  const shatterMountRef = useRef(null);
   const overlayRef = useRef(null);
 
   useGSAP(
@@ -70,135 +25,17 @@ export default function ValuePropSection() {
       const line1 = line1Ref.current;
       const line2 = line2Ref.current;
       const line3 = line3Ref.current;
-      const shatterMount = shatterMountRef.current;
       const overlay = overlayRef.current;
-      if (!section || !panel || !line1 || !line2 || !line3 || !shatterMount || !overlay) return;
-
-      // Capture the headline's resting geometry before any transform is
-      // applied to it, so the particle rig lines up with where the text
-      // actually sits once its entrance animation has settled.
-      const line2Rect = line2.getBoundingClientRect();
-      const mountRect = shatterMount.getBoundingClientRect();
+      if (!section || !panel || !line1 || !line2 || !line3 || !overlay) return;
 
       gsap.set(line1, { opacity: 0, y: 12 });
       gsap.set(line2, { opacity: 0, xPercent: -6 });
       gsap.set(line3, { opacity: 0, y: 12 });
 
-      const shatterState = { progress: 0 };
-      const rig = [];
-      let app = null;
-      let destroyed = false;
-
-      async function buildShatter() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const w = Math.max(1, Math.ceil(line2Rect.width));
-        const h = Math.max(1, Math.ceil(line2Rect.height));
-
-        // Rasterize the same headline, same computed font, into an
-        // offscreen canvas so we can sample it into particles.
-        const style = window.getComputedStyle(line2);
-        const off = document.createElement("canvas");
-        off.width = Math.ceil(w * dpr);
-        off.height = Math.ceil(h * dpr);
-        const octx = off.getContext("2d");
-        if (!octx) return;
-        octx.scale(dpr, dpr);
-        octx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-        octx.fillStyle = "#ffffff";
-        octx.textBaseline = "middle";
-        octx.textAlign = "center";
-        octx.fillText(LINE2, w / 2, h / 2, w);
-
-        const image = octx.getImageData(0, 0, off.width, off.height);
-
-        const pixiApp = new Application();
-        await pixiApp.init({
-          resizeTo: shatterMount,
-          backgroundAlpha: 0,
-          antialias: true,
-        });
-        if (destroyed) {
-          pixiApp.destroy(true);
-          return;
-        }
-        shatterMount.appendChild(pixiApp.canvas);
-
-        const texture = Texture.from(createBubbleTexture());
-
-        const container = new ParticleContainer({
-          dynamicProperties: { position: true, color: true, rotation: true },
-        });
-        pixiApp.stage.addChild(container);
-
-        const originLeft = line2Rect.left - mountRect.left;
-        const originTop = line2Rect.top - mountRect.top;
-        // Slightly coarser sampling on narrow viewports keeps the dust look
-        // without spawning as many particles on phones.
-        const step = Math.max(
-          2,
-          Math.round((window.innerWidth < 1024 ? 4.5 : 3) * dpr)
-        );
-
-        for (let y = 0; y < off.height; y += step) {
-          for (let x = 0; x < off.width; x += step) {
-            const alpha = image.data[(y * off.width + x) * 4 + 3];
-            if (alpha < 80) continue;
-
-            const baseX = originLeft + x / dpr;
-            const baseY = originTop + y / dpr;
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 50 + Math.random() * 160;
-            // Skewed toward small with a long tail of bigger ones, so most
-            // bubbles read as fine dust with a scattering of larger ones —
-            // closer to how real foam actually looks than a flat spread.
-            const scale = 0.12 + Math.random() * Math.random() * 0.6;
-
-            const particle = new Particle({
-              texture,
-              x: baseX,
-              y: baseY,
-              anchorX: 0.5,
-              anchorY: 0.5,
-              scaleX: scale,
-              scaleY: scale,
-              alpha: 1,
-              tint: WHITE_TINT,
-            });
-            container.addParticle(particle);
-
-            rig.push({
-              particle,
-              baseX,
-              baseY,
-              vx: Math.cos(angle) * speed,
-              // upward bias so the burst drifts and floats like the site's
-              // bubbles rather than exploding straight outward
-              vy: Math.sin(angle) * speed - 70,
-              vr: (Math.random() - 0.5) * 5,
-            });
-          }
-        }
-
-        app = pixiApp;
-
-        pixiApp.ticker.add(() => {
-          const p = shatterState.progress;
-          for (const item of rig) {
-            item.particle.x = item.baseX + item.vx * p;
-            item.particle.y = item.baseY + item.vy * p - 40 * p * p;
-            item.particle.alpha = Math.max(0, 1 - p);
-            item.particle.rotation += item.vr * 0.02;
-          }
-        });
-      }
-
-      buildShatter();
-
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          // Longer pin so the headline can be read before particles start.
           end: "+=125%",
           scrub: 0.35,
           pin: true,
@@ -216,24 +53,20 @@ export default function ValuePropSection() {
         },
       });
 
-      // Reveal text early, then hold it readable for most of the pin.
-      // Shatter used to start at ~0.36 (right as line3 finished) — delay
-      // it so particles don't compete with the first read of the headline.
-      // Overlay still lands near the end for the Dashboard overlap handoff.
+      // Reveal text early, hold it readable for most of the pin, then
+      // crossfade the panel straight into the overlay (same start time and
+      // duration for both) so there's never a gap where the panel has faded
+      // but the overlay hasn't caught up yet — that gap used to be filled by
+      // the particle shatter; without it, it read as a blank black frame.
       tl.to(line1, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0)
         .to(line2, { opacity: 1, xPercent: 0, duration: 0.14, ease: "power2.out" }, 0.06)
         .to(line3, { opacity: 1, y: 0, duration: 0.1, ease: "power2.out" }, 0.16)
-        .set(line2, { opacity: 0 }, 0.58)
-        .set(shatterMount, { opacity: 1 }, 0.58)
-        .to(panel, { opacity: 0, duration: 0.16, ease: "power1.in" }, 0.56)
-        .to(shatterState, { progress: 1, duration: 0.34, ease: "power1.in" }, 0.58)
-        .to(overlay, { opacity: 1, duration: 0.08, ease: "power1.in" }, 0.93);
+        .to(panel, { opacity: 0, duration: 0.22, ease: "power1.in" }, 0.72)
+        .to(overlay, { opacity: 1, duration: 0.22, ease: "power1.in" }, 0.72);
 
       return () => {
-        destroyed = true;
         tl.scrollTrigger?.kill();
         tl.kill();
-        app?.destroy(true);
       };
     },
     { scope: sectionRef }
@@ -277,12 +110,13 @@ export default function ValuePropSection() {
           <h2
             ref={line2Ref}
             className="
-ibm-plex-sans-condensed-light
+font-sf-pro
+font-black
 text-[36px]
 sm:text-[56px]
 lg:text-[80px]
 leading-[0.98]
-tracking-[-0.04em]
+tracking-[-0.03em]
 origin-left
 scale-x-[0.96]
 text-white
@@ -299,21 +133,13 @@ text-white
         </div>
       </div>
 
-      {/* Particle stand-in for the headline: sits over the whole panel (not
-          just the h2's own box) so the shattered pieces have room to fly. */}
-      <div
-        ref={shatterMountRef}
-        className="pointer-events-none absolute inset-0 z-20 opacity-0"
-        aria-hidden
-      />
-
-      {/* Solid cover that fades in right as the bubbles finish and holds
-          while the next section secretly settles into place behind it —
-          this whole section scrolls away with it the instant the pin
-          releases, so the swap reads as instantaneous, not a slide-up. */}
+      {/* Solid cover that fades in as the panel fades out and holds while the
+          next section secretly settles into place behind it — this whole
+          section scrolls away with it the instant the pin releases, so the
+          swap reads as instantaneous, not a slide-up. */}
       <div
         ref={overlayRef}
-        className="pointer-events-none absolute inset-0 z-30 bg-background opacity-0"
+        className="pointer-events-none absolute inset-0 z-30 bg-[#f7f8fb] opacity-0"
         aria-hidden
       />
     </section>

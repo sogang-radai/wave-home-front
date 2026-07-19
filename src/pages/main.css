@@ -35,6 +35,24 @@
   box-shadow: 0 12px 40px rgba(31, 41, 55, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
+/* "어젯밤 수면" opts out of the glass treatment — solid white like the
+   전력 관리 card, instead of the translucent/blurred dashboard cards. */
+.dashboard-page .dashboard-sleep-card .card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 1px 8px var(--wave-10);
+}
+
+.dashboard-page .dashboard-sleep-card .card.clickable:hover,
+.dashboard-page .dashboard-sleep-card .card.clickable:focus-visible {
+  background: var(--surface);
+  border-color: var(--wave);
+  box-shadow: 0 6px 20px var(--wave-25);
+}
+
 .calendar-popup-grid button.muted-day {
   color: var(--line);
 }

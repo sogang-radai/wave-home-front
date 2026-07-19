@@ -1,6 +1,5 @@
 import PinnedCategorySection from "../PinnedCategorySection";
 import GestureGrid from "../mockups/GestureGrid";
-import AreaChart from "../mockups/AreaChart";
 import ListRows from "../mockups/ListRows";
 import twinHome from "../twin_home.png";
 
@@ -45,26 +44,6 @@ const cards = [
     ),
     target: { page: "home", homeTab: "gesture" },
   },
-  {
-    eyebrow: "전력 관리",
-    title: "기기별 전력 사용량을 한눈에 확인",
-    description:
-      "방과 기기별 전력 사용량을 실시간으로 추적하고, 사용량이 급증하면 알려드립니다. 대기전력이 많은 기기는 자동 절전 모드를 제안해요.",
-    bullets: [
-      "실시간 전력 사용량 추적",
-      "실시간 전기요금 계산",
-      "채팅을 통한 실시간 전력 제어"
-    ],
-    media: (
-      <AreaChart
-        label="오늘 전력 사용량"
-        value="4.2 kWh"
-        points="0,45 30,40 60,42 90,25 120,30 150,15 180,20 210,10 240,18"
-        color="#22c55e"
-      />
-    ),
-    target: "power",
-  },
 ];
 
 export default function SmartHomeSection({ onEnter }) {
@@ -72,9 +51,10 @@ export default function SmartHomeSection({ onEnter }) {
     <PinnedCategorySection
       id="smarthome"
       index={5}
-      eyebrow="스마트홈 제어"
-      title="손짓 하나로 움직이는 침실"
-      description="제스처로 조명과 가전을 제어하고, 수면 데이터에 맞춰 에어컨과 조명을 자동으로 조절하세요."
+      accent={{ text: "#b8860b", from: "#fdf8ee", to: "#f7e9c9" }}
+      eyebrow="가전 관리"
+      title="손짓 하나로 움직이는 우리 집"
+      description="제스처로 조명과 가전을 제어하고, 3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인하세요."
       cards={cards}
       onEnter={onEnter}
     />

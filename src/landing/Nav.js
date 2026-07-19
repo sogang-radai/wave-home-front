@@ -14,7 +14,6 @@ export default function Nav({ onStart }) {
     [0, 140],
     ["rgba(255,255,255,0)", "rgba(255,255,255,0.08)"]
   );
-
   return (
     <motion.header
       style={{ backgroundColor, borderColor }}

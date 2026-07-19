@@ -86,41 +86,43 @@ export function DateNavigatorBar({
           </button>
         )}
 
-        <div className="relative date-nav-calendar-trigger" ref={anchorRef}>
-          <button
-            type="button"
-            onClick={() => setShowCalendar((value) => !value)}
-            className={navBtnClass}
-            aria-label="달력 열기"
-          >
-            <CalendarIcon />
-          </button>
-          {showCalendar && (
-            <MonthCalendarPopup
-              mode={mode}
-              anchorRef={anchorRef}
-              selectedDate={selectedDate}
-              rangeStartDate={rangeStartDate}
-              latestDate={latestDate}
-              onSelectDay={(date) => {
-                onSelectDay?.(date);
-                setShowCalendar(false);
-              }}
-              onSelectWeek={(date) => {
-                onSelectWeek?.(date);
-                setShowCalendar(false);
-              }}
-              onClose={() => setShowCalendar(false)}
-              className={mode === 'week' ? 'week-calendar-popup' : ''}
-            />
-          )}
-        </div>
+        <div className="flex items-center gap-0.5">
+          <div className="relative" ref={anchorRef}>
+            <button
+              type="button"
+              onClick={() => setShowCalendar((value) => !value)}
+              className={navBtnClass}
+              aria-label="달력 열기"
+            >
+              <CalendarIcon />
+            </button>
+            {showCalendar && (
+              <MonthCalendarPopup
+                mode={mode}
+                anchorRef={anchorRef}
+                selectedDate={selectedDate}
+                rangeStartDate={rangeStartDate}
+                latestDate={latestDate}
+                onSelectDay={(date) => {
+                  onSelectDay?.(date);
+                  setShowCalendar(false);
+                }}
+                onSelectWeek={(date) => {
+                  onSelectWeek?.(date);
+                  setShowCalendar(false);
+                }}
+                onClose={() => setShowCalendar(false)}
+                className={mode === 'week' ? 'week-calendar-popup' : ''}
+              />
+            )}
+          </div>
 
-        <span
-          className={`text-base font-semibold text-slate-800 min-w-[140px] text-center date-nav-display-label${labelFading ? ' is-fading' : ''}`}
-        >
-          {displayLabel}
-        </span>
+          <span
+            className={`text-base font-semibold text-slate-800 text-left date-nav-display-label${labelFading ? ' is-fading' : ''}`}
+          >
+            {displayLabel}
+          </span>
+        </div>
 
         {useQuadNav ? (
           <>

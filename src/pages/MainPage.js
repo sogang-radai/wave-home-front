@@ -226,7 +226,7 @@ export function MainPage({
             </div>
           </Card>
 
-          <Card onClick={() => onNavigate('weeklyPlan')}>
+          <Card onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-weeklyplan">
             <p className="weekly-plan-nav-desc">
               할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인해보세요.
             </p>

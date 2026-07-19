@@ -8,8 +8,8 @@ import Hero from "./Hero";
 import ValuePropSection from "./sections/ValuePropSection";
 import WaveAISection from "./sections/WaveAISection";
 import SleepSection from "./sections/SleepSection";
+import PowerSection from "./sections/PowerSection";
 import SmartHomeSection from "./sections/SmartHomeSection";
-import LifestyleSection from "./sections/LifestyleSection";
 import DashboardSection from "./sections/DashboardSection";
 import GetStartedSection from "./sections/GetStartedSection";
 
@@ -31,10 +31,14 @@ export default function LandingPage({ onEnter }) {
     // scroller is smoother and avoids fighting ScrollTrigger pins.
     const mm = gsap.matchMedia();
     mm.add("(min-width: 1024px)", () => {
+      // Shorter duration + a sub-1 wheel multiplier so a single wheel tick
+      // settles quickly instead of gliding the page an exaggerated distance
+      // — the long duration made normal scrolling feel like it overshot.
       const lenis = new Lenis({
-        duration: 1.1,
+        duration: 0.8,
         easing: (t) => 1 - Math.pow(1 - t, 3),
         smoothWheel: true,
+        wheelMultiplier: 0.75,
       });
 
       lenis.on("scroll", ScrollTrigger.update);
@@ -68,7 +72,7 @@ export default function LandingPage({ onEnter }) {
         <DashboardSection onEnter={onEnter} />
         <WaveAISection onEnter={onEnter} />
         <SleepSection onEnter={onEnter} />
-        <LifestyleSection onEnter={onEnter} />
+        <PowerSection onEnter={onEnter} />
         <SmartHomeSection onEnter={onEnter} />
         <GetStartedSection onEnter={onEnter} />
       </main>

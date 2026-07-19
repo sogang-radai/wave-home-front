@@ -14,6 +14,6 @@ export const pageTitles = {
   sleep: '수면 관리',
   // posture: '자세 관리',
   power: '전력 관리',
-  home: '가전 제어',
+  home: '가전 관리',
   setting: '설정',
 };

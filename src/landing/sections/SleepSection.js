@@ -1,10 +1,26 @@
 import PinnedCategorySection from "../PinnedCategorySection";
 import BarLanes from "../mockups/BarLanes";
 import AreaChart from "../mockups/AreaChart";
-import ScoreRing from "../mockups/ScoreRing";
 import ListRows from "../mockups/ListRows";
+import sleepReport from "../sleep_report.png";
+import importanceOfSleep from "../importance_of_sleep.png";
 
 const cards = [
+  {
+    eyebrow: "AI 수면 리포트",
+    title: "점수만 보여주지 않고, 원인까지 설명하는 리포트",
+    description:
+      "수면 점수를 구성하는 요인(입면 시간, 각성 횟수, 깊은수면 비율 등)을 분해해 보여주고, 매일 아침 요약을 자동 생성합니다.",
+    bullets: ["일간·주간 리포트 자동 생성", "전일 대비 변화 원인 설명", "수면 데이터에 따른 맞춤형 권장 액션 제공"],
+    media: (
+      <img
+        src={sleepReport}
+        alt="AI 수면 리포트"
+        className="aspect-[1123/1400] w-full rounded-xl object-contain"
+      />
+    ),
+    target: "sleep",
+  },
   {
     eyebrow: "직관적인 그래프",
     title: "수면 단계를 색으로 구분한 타임라인",
@@ -39,15 +55,6 @@ const cards = [
     target: "sleep",
   },
   {
-    eyebrow: "AI 수면 리포트",
-    title: "점수만 보여주지 않고, 원인까지 설명하는 리포트",
-    description:
-      "수면 점수를 구성하는 요인(입면 시간, 각성 횟수, 깊은수면 비율 등)을 분해해 보여주고, 매일 아침 요약을 자동 생성합니다.",
-    bullets: ["일간·주간 리포트 자동 생성", "전일 대비 변화 원인 설명", "수면 데이터에 따른 맞춤형 권장 액션 제공"],
-    media: <ScoreRing score={86} caption="어젯밤 수면 점수" />,
-    target: "sleep",
-  },
-  {
       eyebrow: "수면 인사이트",
       title: "잠드는 순간에 맞춰 집을 조절",
       description:
@@ -63,7 +70,19 @@ const cards = [
         />
       ),
       target: "sleep",
-    }
+    },
+  {
+    bleed: true,
+    title: "수면의 중요성",
+    wide: true,
+    media: (
+      <img
+        src={importanceOfSleep}
+        alt="더 나은 수면, 더 건강한 삶"
+        className="aspect-[1624/969] w-full object-cover"
+      />
+    ),
+  },
 ];
 
 export default function SleepSection({ onEnter }) {
@@ -71,6 +90,7 @@ export default function SleepSection({ onEnter }) {
     <PinnedCategorySection
       id="sleep"
       index={3}
+      accent={{ text: "#6a45c9", from: "#f5f2fc", to: "#ded6f5" }}
       eyebrow="수면 관리"
       title="레이더로 측정되는 수면 분석"
       description="기기 착용 없이도 수면 단계, 호흡, 코골이를 감지하고 매일 아침 원인까지 짚어주는 AI 리포트를 받아보세요."

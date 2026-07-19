@@ -15,7 +15,6 @@ const frontendLibraries = [
   { name: '@gsap/react', version: '2.1.2', license: 'GSAP Standard' },
   { name: 'Lenis', version: '1.3.25', license: 'MIT' },
   { name: 'lucide-react', version: '1.24.0', license: 'ISC' },
-  { name: 'pixi.js', version: '8.19.0', license: 'MIT' },
   { name: 'web-vitals', version: '2.1.4', license: 'Apache-2.0' },
   { name: 'react-scripts (CRA)', version: '5.0.1', license: 'MIT' },
   { name: 'Tailwind CSS', version: '3.4.19', license: 'MIT' },

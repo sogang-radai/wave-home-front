@@ -84,7 +84,10 @@ export default function Hero() {
     >
       <div ref={sceneRef} className="absolute inset-0 origin-center will-change-transform">
         <WaveCanvas />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(255,255,255,0.22),transparent_36%),linear-gradient(to_bottom,rgba(3,36,54,0.02),rgba(3,36,54,0.08)_58%,rgba(5,7,10,0.58)_100%)]" />
+        {/* The water is bright periwinkle now, so white text needs its own dark
+            scrim (not the old light wash) to stay legible — a soft vignette
+            centered on the copy plus extra depth toward the bottom edge. */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(20,28,58,0.38),transparent_58%),linear-gradient(to_bottom,rgba(15,22,48,0.16)_0%,rgba(15,22,48,0.08)_45%,rgba(15,22,48,0.42)_100%)]" />
       </div>
 
       <div
@@ -123,7 +126,7 @@ export default function Hero() {
         transition={{ duration: 0.6, delay: 1.4 }}
         className="relative z-10 flex justify-center pb-10"
       >
-        <ArrowDown className="h-16 w-16 animate-bounce text-mist" />
+        <ArrowDown className="h-16 w-16 animate-bounce text-white/60" />
       </motion.div>
     </section>
   );
