@@ -114,14 +114,11 @@ export class IotApi extends MockIotApi {
   }
 
   async getGestureSets() {
-    return preferReal(realIotApi.getGestureSets, () => super.getGestureSets());
+    return realIotApi.getGestureSets();
   }
 
   async getGestureSetDefinition(gestureSetId) {
-    return preferReal(
-      () => realIotApi.getGestureSetDefinition(gestureSetId),
-      () => super.getGestureSetDefinition(gestureSetId),
-    );
+    return realIotApi.getGestureSetDefinition(gestureSetId);
   }
 
   async getRadarGestureSet(deviceId) {

@@ -226,7 +226,7 @@ function randomLearnedTimings() {
   return timings;
 }
 
-// ── Gesture sets ─────────────────────────────────────────────────────────────
+// ── Gesture sets (local mirror for mock/test; demo/prod use real API) ─────────
 function toGestureSetSummary(entry) {
   const def = gestureSetDefinitions[entry.id];
   return {

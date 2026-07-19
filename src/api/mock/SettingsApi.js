@@ -246,7 +246,7 @@ function ensureRoomExists(roomId) {
 }
 
 function classifyDeviceBucket(deviceClass) {
-  return ['srs_r4sn', 'wave_mic', 'wave_cam', 'ir_reciever', 'reolink_e1_pro', 'droid_cam'].includes(deviceClass)
+  return ['srs_r4sn', 'wave_mic', 'wave_cam', 'reolink_e1_pro', 'droid_cam'].includes(deviceClass)
     ? 'input_devices'
     : 'output_devices';
 }

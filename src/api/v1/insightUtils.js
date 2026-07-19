@@ -1,6 +1,32 @@
 /** Max insight cards shown on a domain page (matches agent MIN_TOTAL_ITEMS). */
 export const INSIGHT_CARD_LIMIT = 4;
 
+const SURFACE_LABEL = {
+  power: '전력',
+  sleep_report: '수면',
+  posture_report: '자세',
+  weekly_plan: '주간계획',
+  dashboard_banner: '안내',
+};
+
+const KIND_LABEL = {
+  tip: '팁',
+  action: '액션',
+  goal: '목표',
+  banner: '안내',
+};
+
+/** Fallback when the API/agent omitted `label` (empty pill looks broken). */
+export function resolveInsightLabel(item) {
+  if (typeof item?.label === 'string' && item.label.trim()) return item.label.trim();
+  if (item?.surface && SURFACE_LABEL[item.surface]) return SURFACE_LABEL[item.surface];
+  if (item?.domain === 'power') return '전력';
+  if (item?.domain === 'sleep') return '수면';
+  if (item?.domain === 'posture') return '자세';
+  if (item?.kind && KIND_LABEL[item.kind]) return KIND_LABEL[item.kind];
+  return '인사이트';
+}
+
 /** @param {Array<{ kind?: string; label?: string }>} items */
 export function filterInsightsByPeriod(items, period) {
   if (!period) return items;

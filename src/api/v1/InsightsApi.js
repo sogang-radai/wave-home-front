@@ -3,6 +3,7 @@ import {
   filterInsightsByPeriod,
   INSIGHT_CARD_LIMIT,
   pickLatestDateInsights,
+  resolveInsightLabel,
 } from './insightUtils';
 
 export class InsightsApi {
@@ -29,7 +30,11 @@ export class InsightsApi {
   async listForSurface(surface, { period, date, kind, approved, actionable, limit = INSIGHT_CARD_LIMIT } = {}) {
     const items = await this.list({ surface, date, kind, approved, actionable });
     const byPeriod = filterInsightsByPeriod(items, period);
-    if (date) return byPeriod.slice(0, limit);
-    return pickLatestDateInsights(byPeriod, { limit });
+    const selected = date ? byPeriod.slice(0, limit) : pickLatestDateInsights(byPeriod, { limit });
+    return selected.map((item) => ({
+      ...item,
+      surface: item.surface || surface,
+      label: resolveInsightLabel({ ...item, surface: item.surface || surface }),
+    }));
   }
 }
