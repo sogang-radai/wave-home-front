@@ -1,10 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { ModelHouseScene } from '../../scene/ModelHouseScene';
 import { useTwinDeviceState } from './useTwinDeviceState';
 import { useSpeechOverlays } from './useSpeechOverlays';
-import { twinRoomByGltfRoot } from '../../data/twinSceneConfig';
+import { TWIN_ROOMS, twinRoomByGltfRoot } from '../../data/twinSceneConfig';
 import twinIntroMedia from '../../landing/twin_home.png';
+import { useIotDevices } from '../iot/useIotDevices';
+import { deviceDotClass, deviceDotTitle, isDeviceOffline } from '../iot/iotUtils';
+import { DeviceThumb, DeviceDetailBody, detailTabsFor } from '../iot/deviceDetail';
+import { ReconnectIcon } from '../iot/icons';
 import './homeTwin.css';
 
 const TWIN_INTRO_DISMISSED_KEY = 'wavehome_twin_intro_dismissed';
@@ -98,8 +102,9 @@ function TwinIntroPopup({ onClose, onDontShowAgain, onOpenChat, onStartTour }) {
           <p className="text-xs font-semibold tracking-wide text-sky-500">디지털 트윈 홈</p>
           <h3 className="mt-1.5 text-xl font-bold text-slate-900">이렇게 사용해보세요</h3>
           <p className="mt-2.5 text-sm leading-relaxed text-slate-600">
-            3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인할 수 있어요. WaveAI 채팅으로
-            기기를 제어하면, 그 결과가 여기 트윈 홈에 실시간으로 반영돼요.
+            3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인할 수 있어요. 왼쪽 목록에서
+            기기를 눌러 직접 제어할 수도 있고, WaveChat 챗봇으로 제어하면 그 결과가 여기 트윈
+            홈에 실시간으로 반영돼요.
           </p>
 
           <div className="mt-5 space-y-4">
@@ -149,6 +154,18 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [hoveredRoom, setHoveredRoom] = useState(null);
   const [showIntro, setShowIntro] = useState(() => !isTwinIntroDismissed());
+  const [showDeviceDetail, setShowDeviceDetail] = useState(false);
+
+  const iot = useIotDevices();
+  const {
+    rooms, devices, devicesLoading, devicesError,
+    roomFilter, setRoomFilter,
+    filteredDevices, selectedDevice, selectedDeviceId, selectDevice,
+    detailTab, setDetailTab,
+    allDeviceRules, deviceEvents,
+    reconnectingId, reconnect,
+    toast, loadDevices, showToast, onlineCount,
+  } = iot;
 
   const closeIntro = useCallback(() => setShowIntro(false), []);
   const dontShowIntroAgain = useCallback(() => {
@@ -160,16 +177,37 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
     onOpenChat?.();
   }, [onOpenChat]);
 
-  const handleRoomSelect = useCallback((gltfRoot) => {
-    setSelectedRoom(gltfRoot);
-    setMode('room');
+  // 방 히트박스는 overview 모드에서만 렌더링되므로, 3D에서 직접 클릭할 때는
+  // 항상 "전체 보기"를 한 번 거친 뒤에만 다른 방을 고를 수 있다. 방→방으로
+  // 곧장 점프하는 경로는 원래 코드에 없던 상태라 카메라 전환·벽 컬링이 꼬여
+  // 트윈이 하얗게 비어버리는 버그가 있다 — 사이드바 필터도 항상 이 경로를
+  // 그대로 타도록, room/tour 모드에서는 잠깐 overview를 거쳐서 안전하게
+  // 전환한다.
+  const roomTransitionTimer = useRef(null);
+
+  const clearPendingRoomTransition = useCallback(() => {
+    if (roomTransitionTimer.current) {
+      clearTimeout(roomTransitionTimer.current);
+      roomTransitionTimer.current = null;
+    }
   }, []);
 
+  useEffect(() => clearPendingRoomTransition, [clearPendingRoomTransition]);
+
+  const handleRoomSelect = useCallback((gltfRoot) => {
+    clearPendingRoomTransition();
+    setSelectedRoom(gltfRoot);
+    setMode('room');
+    const room = twinRoomByGltfRoot(gltfRoot);
+    if (room) setRoomFilter(room.id);
+  }, [clearPendingRoomTransition, setRoomFilter]);
+
   const handleTour = useCallback(() => {
+    clearPendingRoomTransition();
     setSelectedRoom(null);
     setHoveredRoom(null);
     setMode('tour');
-  }, []);
+  }, [clearPendingRoomTransition]);
 
   const startTourFromIntro = useCallback(() => {
     setShowIntro(false);
@@ -177,13 +215,52 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
   }, [handleTour]);
 
   const handleBack = useCallback(() => {
+    clearPendingRoomTransition();
     setMode('overview');
     setSelectedRoom(null);
     setHoveredRoom(null);
-  }, []);
+    setRoomFilter('all');
+  }, [clearPendingRoomTransition, setRoomFilter]);
+
+  const selectRoomFilter = (roomId) => {
+    setRoomFilter(roomId);
+    clearPendingRoomTransition();
+
+    if (roomId === 'all') {
+      setSelectedRoom(null);
+      setMode((current) => (current === 'room' ? 'overview' : current));
+      return;
+    }
+
+    const room = TWIN_ROOMS.find((r) => r.id === roomId);
+    if (!room) return;
+
+    if (mode === 'overview') {
+      setSelectedRoom(room.gltfRoot);
+      setMode('room');
+      return;
+    }
+
+    setSelectedRoom(null);
+    setMode('overview');
+    roomTransitionTimer.current = setTimeout(() => {
+      setSelectedRoom(room.gltfRoot);
+      setMode('room');
+      roomTransitionTimer.current = null;
+    }, 250);
+  };
+
+  const openDeviceDetail = (device) => {
+    selectDevice(device);
+    setShowDeviceDetail(true);
+  };
+
+  const backToDeviceList = () => setShowDeviceDetail(false);
 
   const roomLabel = selectedRoom ? twinRoomByGltfRoot(selectedRoom)?.label : null;
   const showLabels = mode === 'room' || mode === 'tour';
+  const detailTabs = detailTabsFor(selectedDevice);
+  const showSidebar = !chatPopupOpen;
 
   return (
     <div className={`home-twin-page${chatPopupOpen ? ' home-twin-page--chat-open' : ''}`}>
@@ -195,38 +272,151 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
           onStartTour={startTourFromIntro}
         />
       )}
-      {mode === 'overview' && (
-        <button type="button" className="twin-back-button" onClick={handleTour} aria-label="둘러보기">
-          <span>둘러보기</span>
-        </button>
+
+      <div className="twin-scene-area">
+        {mode === 'overview' && (
+          <button type="button" className="twin-back-button" onClick={handleTour} aria-label="둘러보기">
+            <span>둘러보기</span>
+          </button>
+        )}
+        {mode === 'room' && (
+          <button type="button" className="twin-back-button" onClick={handleBack} aria-label="전체 보기">
+            <BackIcon />
+            <span>전체 보기</span>
+          </button>
+        )}
+        {mode === 'tour' && (
+          <button type="button" className="twin-back-button" onClick={handleBack} aria-label="돌아가기">
+            <BackIcon />
+            <span>돌아가기</span>
+          </button>
+        )}
+        {roomLabel && mode === 'room' && (
+          <div className="twin-room-title">{roomLabel}</div>
+        )}
+        <ModelHouseScene
+          className="home-twin-canvas"
+          mode={mode}
+          selectedRoom={selectedRoom}
+          hoveredRoom={hoveredRoom}
+          onRoomHover={setHoveredRoom}
+          onRoomSelect={handleRoomSelect}
+          viewModels={viewModels}
+          showLabels={showLabels}
+          speechOverlays={speechOverlays}
+          cameraMode="ortho"
+        />
+      </div>
+
+      {showSidebar && (
+        <aside className="twin-device-sidebar">
+          {!showDeviceDetail || !selectedDevice ? (
+            <>
+              <div className="twin-sidebar-head">
+                <h3>연결된 기기</h3>
+                {devices.length > 0 && (
+                  <span className="iot-online-count">
+                    <span className="device-dot online" aria-hidden="true" />
+                    온라인 {onlineCount}/{devices.length}
+                  </span>
+                )}
+              </div>
+
+              <div className="room-filter-pills">
+                <button type="button" className={roomFilter === 'all' ? 'active' : ''} onClick={() => selectRoomFilter('all')}>전체</button>
+                {rooms.map((room) => (
+                  <button key={room.id} type="button" className={roomFilter === room.id ? 'active' : ''} onClick={() => selectRoomFilter(room.id)}>
+                    {room.name}
+                  </button>
+                ))}
+              </div>
+
+              {devicesLoading && devices.length === 0 && (
+                <p className="panel-loading">장치 목록을 불러오는 중…</p>
+              )}
+              {devicesError && devices.length === 0 && (
+                <p className="panel-empty">{devicesError}</p>
+              )}
+
+              <div className="twin-device-list">
+                {filteredDevices.map((device) => {
+                  const dotClass = deviceDotClass(device);
+                  const showReconnect = isDeviceOffline(device);
+                  return (
+                    <button
+                      key={device.id}
+                      type="button"
+                      className={`iot-device-card${selectedDeviceId === device.id ? ' selected' : ''}${!device.connected ? ' offline' : ''}`}
+                      onClick={() => openDeviceDetail(device)}
+                    >
+                      <span
+                        className={`device-dot ${dotClass}`}
+                        title={deviceDotTitle(device)}
+                        aria-label={deviceDotTitle(device)}
+                      />
+                      <DeviceThumb deviceClass={device.class} />
+                      <div className="iot-device-card-body">
+                        <span className="iot-device-card-room">{device.room?.name || '미지정'}</span>
+                        <strong className="iot-device-card-name" title={device.name}>{device.name}</strong>
+                      </div>
+                      {showReconnect && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          className={`iot-device-reconnect-btn${reconnectingId === device.id ? ' spinning' : ''}`}
+                          onClick={(event) => reconnect(event, device)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') reconnect(event, device);
+                          }}
+                          aria-label="재연결"
+                          title="재연결 시도"
+                        >
+                          <ReconnectIcon width={16} height={16} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {!devicesLoading && filteredDevices.length === 0 && (
+                  <p className="panel-empty">이 구역에 등록된 장치가 없습니다.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="twin-device-detail">
+              <button type="button" className="twin-sidebar-back" onClick={backToDeviceList}>
+                <BackIcon />
+                <span>목록으로</span>
+              </button>
+
+              <div className="twin-device-detail-head">
+                <DeviceThumb deviceClass={selectedDevice.class} />
+                <div>
+                  <strong>{selectedDevice.name}</strong>
+                  <span>{selectedDevice.classLabel}</span>
+                </div>
+              </div>
+
+              <div className="device-detail-tabs">
+                {detailTabs.map(([id, label]) => (
+                  <button key={id} type="button" className={detailTab === id ? 'active' : ''} onClick={() => setDetailTab(id)}>{label}</button>
+                ))}
+              </div>
+
+              <DeviceDetailBody
+                device={selectedDevice}
+                detailTab={detailTab}
+                onChanged={loadDevices}
+                showToast={showToast}
+                deviceEvents={deviceEvents}
+                allDeviceRules={allDeviceRules}
+              />
+            </div>
+          )}
+        </aside>
       )}
-      {mode === 'room' && (
-        <button type="button" className="twin-back-button" onClick={handleBack} aria-label="전체 보기">
-          <BackIcon />
-          <span>전체 보기</span>
-        </button>
-      )}
-      {mode === 'tour' && (
-        <button type="button" className="twin-back-button" onClick={handleBack} aria-label="돌아가기">
-          <BackIcon />
-          <span>돌아가기</span>
-        </button>
-      )}
-      {roomLabel && mode === 'room' && (
-        <div className="twin-room-title">{roomLabel}</div>
-      )}
-      <ModelHouseScene
-        className="home-twin-canvas"
-        mode={mode}
-        selectedRoom={selectedRoom}
-        hoveredRoom={hoveredRoom}
-        onRoomHover={setHoveredRoom}
-        onRoomSelect={handleRoomSelect}
-        viewModels={viewModels}
-        showLabels={showLabels}
-        speechOverlays={speechOverlays}
-        cameraMode="ortho"
-      />
+
+      {toast && <div className="iot-toast">{toast}</div>}
     </div>
   );
 }

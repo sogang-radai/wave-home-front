@@ -45,9 +45,11 @@ export function EventLogTab() {
   const [rules, setRules] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [todayEventCount, setTodayEventCount] = useState(null);
 
   useEffect(() => {
     iotApi.getRules().then(setRules);
+    iotApi.getSummary().then((summary) => setTodayEventCount(summary.todayEventCount));
   }, []);
 
   useEffect(() => {
@@ -57,16 +59,22 @@ export function EventLogTab() {
   }, [filter]);
 
   return (
-    <Card title="통합 로그" wide>
-      <div className="event-filter-chips">
-        {EVENT_TYPE_FILTERS.map((f) => (
-          <button key={f.id} type="button" className={`filter-chip${filter === f.id ? ' active' : ''}`} onClick={() => setFilter(f.id)}>
-            {f.id !== 'all' && <span className={`event-type-dot event-type-${f.id}`} />}
-            {f.label}
-          </button>
-        ))}
-      </div>
-      {loading ? <p className="panel-loading">불러오는 중…</p> : <EventTimeline events={events} rules={rules} />}
-    </Card>
+    <div className="event-log-page">
+      <Card
+        title="통합 로그"
+        wide
+        action={todayEventCount !== null ? `오늘 이벤트 ${todayEventCount}건` : undefined}
+      >
+        <div className="event-filter-chips">
+          {EVENT_TYPE_FILTERS.map((f) => (
+            <button key={f.id} type="button" className={`filter-chip${filter === f.id ? ' active' : ''}`} onClick={() => setFilter(f.id)}>
+              {f.id !== 'all' && <span className={`event-type-dot event-type-${f.id}`} />}
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {loading ? <p className="panel-loading">불러오는 중…</p> : <EventTimeline events={events} rules={rules} />}
+      </Card>
+    </div>
   );
 }

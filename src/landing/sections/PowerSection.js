@@ -59,7 +59,8 @@ const cards = [
       wide: true,
       media: (
         <img
-          src={importanceOfElectricity} 
+          src={importanceOfElectricity}
+          alt="전력관리의 중요성"
           className="aspect-[1624/969]  w-full object-cover"
         />
       ),

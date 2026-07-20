@@ -85,3 +85,37 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
 
   return [...sidebarSteps, ...dashboardSteps];
 }
+
+// 가전 관리의 자동화 관리/적외선 명령/제스처 관리 탭 — 세 탭을 한 번에
+// 소개하는 투어가 아니라, 그 탭에 들어갈 때마다 해당 탭의 코치마크 하나만
+// 뜬다(App.js가 tabId로 이 맵을 조회해서 1개짜리 steps 배열을 넘긴다).
+const HOME_CONTROL_COACH_MARK_STEPS = {
+  trigger: [
+    {
+      selector: '[data-coachmark="hometab-trigger"]',
+      title: '자동화 관리',
+      description: '기기 상태·제스처·적외선 신호를 감지해 자동으로 실행하는 자동 감지와, 정해진 시각에 실행하는 자동 예약을 한 화면에서 만들고 관리할 수 있어요.',
+      placement: 'bottom',
+    },
+  ],
+  ir: [
+    {
+      selector: '[data-coachmark="hometab-ir"]',
+      title: '적외선 명령',
+      description: 'Wave Station이 리모컨 신호를 직접 받아 등록하거나 직접 입력해서, 에어컨·TV 같은 적외선 기기도 여기서 제어할 수 있게 만들어요.',
+      placement: 'bottom',
+    },
+  ],
+  gesture: [
+    {
+      selector: '[data-coachmark="hometab-gesture"]',
+      title: '제스처 관리',
+      description: '레이더에 구성된 제스처와, 각 동작에 연결된 자동화를 확인하는 화면이에요.',
+      placement: 'bottom',
+    },
+  ],
+};
+
+export function buildHomeControlCoachMarkSteps(tabId) {
+  return HOME_CONTROL_COACH_MARK_STEPS[tabId] || [];
+}

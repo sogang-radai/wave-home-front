@@ -61,7 +61,7 @@ export function RadarPanel({ device }) {
             )}
             {grouped.trigger.length > 0 && (
               <div>
-                <span className="radar-class-group-label">트리거 ({grouped.trigger.length})</span>
+                <span className="radar-class-group-label">감지 ({grouped.trigger.length})</span>
                 <div className="radar-class-badges">
                   {grouped.trigger.map((c) => (
                     <span key={c.classId} className="badge trigger">{c.name}</span>
@@ -72,7 +72,7 @@ export function RadarPanel({ device }) {
           </div>
         </div>
       ) : (
-        <p className="panel-empty">제스처 셋이 지정되지 않아 이 레이더는 아직 제스처를 트리거로 사용할 수 없습니다.</p>
+        <p className="panel-empty">제스처 셋이 지정되지 않아 이 레이더는 아직 제스처로 자동화를 감지시킬 수 없습니다.</p>
       )}
     </div>
   );

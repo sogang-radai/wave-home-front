@@ -210,7 +210,14 @@ export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain, 
         <h3 className="mt-1.5 pr-6 text-base font-bold text-slate-900">{step.title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.description}</p>
 
-        <div className="mt-5 flex items-center justify-end">
+        <div className="mt-5 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onDontShowAgain}
+            className="text-xs font-medium text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline"
+          >
+            다시 보지 않기
+          </button>
           <div className="flex items-center gap-1.5">
             {!isFirst && (
               <button
@@ -230,16 +237,6 @@ export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain, 
               {!isLast && <ChevronRight size={14} />}
             </button>
           </div>
-        </div>
-
-        <div className="mt-4 border-t border-slate-100 pt-3">
-          <button
-            type="button"
-            onClick={onDontShowAgain}
-            className="text-xs font-medium text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline"
-          >
-            다시 보지 않기
-          </button>
         </div>
       </div>
     </div>

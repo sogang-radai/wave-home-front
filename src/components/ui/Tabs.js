@@ -7,7 +7,7 @@ export function Tabs({ items, active, onChange }) {
   return (
     <div className="tabs">
       {items.map(([id, label, badge]) => (
-        <button key={id} className={active === id ? 'active' : ''} onClick={() => onChange(id)}>
+        <button key={id} className={active === id ? 'active' : ''} data-coachmark={`hometab-${id}`} onClick={() => onChange(id)}>
           {active === id && (
             <motion.span
               layoutId={`tabs-pill-${layoutId}`}

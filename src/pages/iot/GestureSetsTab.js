@@ -34,18 +34,23 @@ export function GestureSetsTab() {
 
   return (
     <div className="gesture-management">
-      <div className="gesture-set-list">
-        {sets.map((set) => (
-          <article className={`gesture-set-card ${selectedSetId === set.id ? 'selected' : ''} ${set.triggerClassCount > 0 ? 'active-set' : ''}`} key={set.id}>
-            <button type="button" className="gesture-set-select-button" onClick={() => setSelectedSetId(set.id)} disabled={!set.enabled}>
-              <span>{set.enabled ? `${set.classCount}개 클래스` : '미구성'}</span>
-              <strong>{set.name}</strong>
-              <p>{set.description || '설정 파일이 아직 없습니다.'}</p>
-              <small>{set.triggerClassCount}개 트리거 가능</small>
-            </button>
-          </article>
-        ))}
-      </div>
+      <Card title="제스처 관리" wide>
+        <p className="section-description">
+          레이더에 구성된 제스처 셋을 확인하는 화면이에요. 제스처 셋을 클릭하면 어떤 동작이 정의되어 있고, 어떤 <strong className="wave-term">자동 감지</strong>에 연결돼 있는지 볼 수 있어요.
+        </p>
+        <div className="gesture-set-list">
+          {sets.map((set) => (
+            <article className={`gesture-set-card ${selectedSetId === set.id ? 'selected' : ''} ${set.triggerClassCount > 0 ? 'active-set' : ''}`} key={set.id}>
+              <button type="button" className="gesture-set-select-button" onClick={() => setSelectedSetId(set.id)} disabled={!set.enabled}>
+                <span>{set.enabled ? `${set.classCount}개 클래스` : '미구성'}</span>
+                <strong>{set.name}</strong>
+                <p>{set.description || '설정 파일이 아직 없습니다.'}</p>
+                <small>{set.triggerClassCount}개 감지 가능</small>
+              </button>
+            </article>
+          ))}
+        </div>
+      </Card>
 
       {definition && (
         <Card title={definition.name} wide>
@@ -60,7 +65,7 @@ export function GestureSetsTab() {
                   </div>
                   <div className="gesture-card-body">
                     <span className={`status-chip ${c.kind === 'state' ? 'inactive' : 'active'}`}>
-                      {c.kind === 'state' ? '상태' : '트리거'}
+                      {c.kind === 'state' ? '상태' : '감지'}
                     </span>
                     <h3>{c.name}</h3>
                     <p>
@@ -69,7 +74,7 @@ export function GestureSetsTab() {
                         : `홀드 ${c.trigger.highHoldMs}ms · 쿨다운 ${c.trigger.cooldownMs}ms`}
                     </p>
                     {c.kind === 'trigger' && (
-                      <span className="rule-link-badge">연결된 룰 {ruleCount}개</span>
+                      <span className="rule-link-badge">연결된 자동화 {ruleCount}개</span>
                     )}
                   </div>
                 </article>

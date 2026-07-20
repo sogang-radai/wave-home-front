@@ -33,14 +33,14 @@ export const EVENT_TYPE_LABELS = {
   gesture: '제스처',
   execution: '실행',
   schedule: '예약',
-  ir: 'IR',
+  ir: '적외선',
 };
 
 export const EVENT_TYPE_FILTERS = [
   { id: 'all', label: '전체' },
   { id: 'connection', label: '연결' },
   { id: 'gesture', label: '제스처' },
-  { id: 'ir', label: 'IR' },
+  { id: 'ir', label: '적외선' },
   { id: 'execution', label: '실행' },
   { id: 'schedule', label: '예약' },
 ];
@@ -48,7 +48,7 @@ export const EVENT_TYPE_FILTERS = [
 export const TRIGGER_KIND_LABELS = {
   gesture: '제스처',
   device_state: '장치 상태',
-  ir_recv: 'IR 수신',
+  ir_recv: '적외선 신호',
 };
 
 export function formatRelativeTime(iso) {
@@ -71,8 +71,8 @@ export function formatTriggeredBy(triggeredBy, rules) {
   if (triggeredBy === 'manual') return '수동';
   const [kind, id] = triggeredBy.split(':');
   const rule = rules?.find((r) => r.id === id);
-  if (kind === 'rule') return rule ? `룰: ${rule.name}` : `룰: ${id}`;
-  if (kind === 'schedule') return rule ? `예약: ${rule.name}` : `예약: ${id}`;
+  if (kind === 'rule') return rule ? `자동 감지: ${rule.name}` : `자동 감지: ${id}`;
+  if (kind === 'schedule') return rule ? `자동 예약: ${rule.name}` : `자동 예약: ${id}`;
   return triggeredBy;
 }
 
@@ -86,7 +86,7 @@ export function execModesFor(action) {
   return modes;
 }
 
-export const EXEC_MODE_LABELS = { once: '한 번', toggle: '토글', repeat: '연속 실행' };
+export const EXEC_MODE_LABELS = { once: '한 번 실행', toggle: '켬·끔 전환', repeat: '반복 실행' };
 
 export const SCHEDULE_REPEAT_LABELS = { once: '한 번만', daily: '매일', weekly: '매주' };
 
@@ -107,6 +107,6 @@ export function describeTrigger(trigger, { deviceName, gestureClassName, command
   if (!trigger) return null;
   if (trigger.kind === 'gesture') return `${deviceName || trigger.deviceId} · ${gestureClassName || `클래스 ${trigger.classId}`}`;
   if (trigger.kind === 'device_state') return `${deviceName || trigger.deviceId} · ${trigger.query} ${trigger.op} ${trigger.value}`;
-  if (trigger.kind === 'ir_recv') return `${deviceName || trigger.deviceId} · IR 수신 (${commandName || trigger.commandId})`;
+  if (trigger.kind === 'ir_recv') return `${deviceName || trigger.deviceId} · 적외선 신호 수신 (${commandName || trigger.commandId})`;
   return trigger.kind;
 }

@@ -52,6 +52,7 @@ const cards = [
     media: (
       <img
         src={importanceOfIoT}
+        alt="자연스러운 IoT 제어의 중요성"
         className="aspect-[1624/969]  w-full object-cover"
       />
     ),
