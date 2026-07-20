@@ -52,6 +52,8 @@ export function TwinOverviewCamera({
   const startQuat = useRef(new THREE.Quaternion());
   const startFrustum = useRef({ left: -10, right: 10, top: 10, bottom: -10, near: 0.1, far: 200 });
   const endQuat = useRef(new THREE.Quaternion());
+  const prevModeRef = useRef(mode);
+  const prevRoomRef = useRef(selectedRoom);
 
   const layout = useMemo(() => {
     if (mode === 'room') {
@@ -72,8 +74,13 @@ export function TwinOverviewCamera({
     _endTarget.copy(layout.target);
     quatLookingAt(_endPos, _endTarget, endQuat.current);
 
-    // First layout only: snap into place.
-    if (currentTarget.current.lengthSq() === 0) {
+    const modeOrRoomChanged =
+      prevModeRef.current !== mode || prevRoomRef.current !== selectedRoom;
+    prevModeRef.current = mode;
+    prevRoomRef.current = selectedRoom;
+
+    // Snap on first layout and on pure resizes. Animate only when mode/room changes.
+    if (currentTarget.current.lengthSq() === 0 || !modeOrRoomChanged) {
       camera.up.copy(_up);
       camera.position.copy(_endPos);
       applyOrthoFrustum(camera, layout);
@@ -102,7 +109,7 @@ export function TwinOverviewCamera({
 
     onLayoutReady?.(true);
     invalidate();
-  }, [layout, mode, invalidate, onLayoutReady, onTransitionChange]);
+  }, [layout, mode, selectedRoom, invalidate, onLayoutReady, onTransitionChange]);
 
   useFrame((_, delta) => {
     const camera = cameraRef.current;

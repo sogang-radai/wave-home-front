@@ -40,6 +40,15 @@ export function PlugPanel({ device, onChanged }) {
 
   const invoke = async (name) => {
     setBusy(true);
+    // Optimistic twin update so the 3D model flips before the round-trip returns.
+    if (state) {
+      const optimistic = {
+        ...state,
+        switch: name === 'on' ? true : name === 'off' ? false : !state.switch,
+      };
+      setState(optimistic);
+      dispatchTwinDeviceState(device.id, optimistic, { deviceName: device.name, action: name });
+    }
     try {
       const next = unwrapState(await iotApi.invokeDevice(device.id, name, {}));
       setState(next);
@@ -59,35 +68,38 @@ export function PlugPanel({ device, onChanged }) {
   }
 
   return (
-    <div className="plug-panel plug-panel--split">
-      <div className="plug-panel-controls">
-        <div className="plug-power-row">
-          <button type="button" className={`toggle-switch toggle-switch--lg${state.switch ? ' on' : ''}`} disabled={busy} onClick={() => invoke('toggle')} aria-label="전원 토글">
-            <i />
-          </button>
-          <span className="plug-power-label">{state.switch ? '켜짐' : '꺼짐'}</span>
-        </div>
-        <div className="plug-btn-row">
-          <button type="button" disabled={busy} onClick={() => invoke('on')}>켜기</button>
-          <button type="button" disabled={busy} onClick={() => invoke('off')}>끄기</button>
-          <button type="button" disabled={busy} onClick={() => invoke('toggle')}>토글</button>
-        </div>
-      </div>
-
-      <div className="plug-panel-sensors">
-        <div className="plug-power-hero">
-          <span>현재 전력</span>
-          <strong>{(state.switch ? state.power : 0).toFixed(1)}<small>W</small></strong>
-        </div>
-        <div className="telemetry-grid">
-          <div className="telemetry-tile">
+    <div className="plug-panel">
+      <div className="panel-section">
+        <span className="device-panel-label">실시간 전력 소모</span>
+        <div className="plug-metrics-card">
+          <div className="plug-metric">
+            <span>전력</span>
+            <strong>{(state.switch ? state.power : 0).toFixed(1)}<small>W</small></strong>
+          </div>
+          <div className="plug-metric">
             <span>전압</span>
             <strong>{state.voltage.toFixed(1)}<small>V</small></strong>
           </div>
-          <div className="telemetry-tile">
+          <div className="plug-metric">
             <span>전류</span>
             <strong>{state.current.toFixed(0)}<small>mA</small></strong>
           </div>
+        </div>
+      </div>
+
+      <div className="panel-section">
+        <span className="device-panel-label">On/Off</span>
+        <div className="plug-power-row">
+          <button
+            type="button"
+            className={`toggle-switch toggle-switch--lg${state.switch ? ' on' : ''}`}
+            disabled={busy}
+            onClick={() => invoke('toggle')}
+            aria-label="전원 토글"
+          >
+            <i />
+          </button>
+          <span className="plug-power-label">{state.switch ? '켜짐' : '꺼짐'}</span>
         </div>
       </div>
     </div>

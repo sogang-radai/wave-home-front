@@ -17,6 +17,7 @@ import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
 import { WeeklyPlanPage } from './pages/plan/WeeklyPlanPage';
 import { HomeControlPage } from './pages/iot/HomeControlPage';
+import { TwinPage } from './pages/twin/TwinPage';
 import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
 import {
@@ -101,7 +102,7 @@ function dismissCoachMarksForever() {
   }
 }
 
-// 가전 관리의 자동화 관리/적외선 명령/제스처 관리 세 탭은 각각 개별
+  // IoT 가전 제어의 자동화 관리/적외선 명령/제스처 관리 세 탭은 각각 개별
 // 코치마크를 갖는다 — "다시 보지 않기"를 누르지 않는 한, 그 탭에 들어갈
 // 때마다(재방문마다) 매번 다시 뜬다. 탭별로 dismiss 여부를 따로 저장한다.
 const HOME_TAB_COACH_MARK_KEYS = {
@@ -150,7 +151,7 @@ function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSeenLanding());
   const [page, setPage] = useState('main');
   const [postureTab, setPostureTab] = useState('current');
-  const [homeTab, setHomeTab] = useState(() => (SHOW_HOME_TWIN ? 'twin' : 'control'));
+  const [homeTab, setHomeTab] = useState('control');
   const [sleepTab, setSleepTab] = useState('analysis');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -777,7 +778,7 @@ function App() {
     setShowCoachMarks(false);
   };
 
-  // 가전 관리 페이지의 자동화 관리/적외선 명령/제스처 관리 탭 전용 안내 —
+  // IoT 가전 제어 페이지의 자동화 관리/적외선 명령/제스처 관리 탭 전용 안내 —
   // 대시보드 투어와는 별개의 상태·localStorage 키를 쓴다. 세 탭을 한 번에
   // 소개하는 투어 대신, 해당 탭에 들어갈 때마다(재방문 포함) 그 탭만의
   // 코치마크가 하나씩 뜬다.
@@ -859,8 +860,13 @@ function App() {
     if (!target) return;
     const spec = typeof target === 'string' ? { page: target } : target;
     if (spec.chatMode) setChatMode(spec.chatMode);
-    if (spec.homeTab) setHomeTab(spec.homeTab);
     if (spec.sleepTab) setSleepTab(spec.sleepTab);
+    // Legacy landing targets used { page: 'home', homeTab: 'twin' }.
+    if (spec.homeTab === 'twin' || spec.page === 'twin') {
+      setPage('twin');
+      return;
+    }
+    if (spec.homeTab) setHomeTab(spec.homeTab);
     if (spec.page) setPage(spec.page);
   };
 
@@ -896,7 +902,7 @@ function App() {
           sidebarWidth={sidebarCollapsed ? 76 : 263}
           forceTopRight={chatForceTopRight}
           onForceTopRightConsumed={() => setChatForceTopRight(false)}
-          defaultSize={page === 'home' && homeTab === 'twin' ? { w: 336, h: 520 } : undefined}
+          defaultSize={page === 'twin' ? { w: 336, h: 520 } : undefined}
         />
       )}
       <button
@@ -978,9 +984,12 @@ function App() {
             <HomeControlPage
               tab={homeTab}
               setTab={setHomeTab}
-              onOpenChat={handleHeaderWaveAiOpen}
-              chatPopupOpen={chatMode === 'popup'}
             />
+          )}
+          {page === 'twin' && SHOW_HOME_TWIN && (
+            <div className="page-stack page-stack--fixed page-stack--twin">
+              <TwinPage onOpenChat={handleHeaderWaveAiOpen} />
+            </div>
           )}
           {page === 'setting' && (
             <SettingPage

@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,6 +8,8 @@ import {
   captureRoomMaterialBases,
   fadeWallsToSolid,
   findNodeByName,
+  invalidateRoomWallApplied,
+  restoreRoomOpacity,
   setRoomOpacity,
   updateAirconWind,
   updateFanSpin,
@@ -15,14 +17,19 @@ import {
   updatePcActivityLeds,
   updateTourWallVisibility,
   updateWallVisibility,
-} from '../pages/homeTwin/twinVisuals';
-import { hideNodeSubtree } from '../pages/homeTwin/twinCamera';
+} from '../pages/twin/twinVisuals';
+import { hideNodeSubtree } from '../pages/twin/twinCamera';
 import { TwinOverviewCamera } from './TwinOverviewCamera';
+import {
+  computeTwinRoomLayout,
+  computeTwinTourLayout,
+} from './twinOverviewLayout';
 import { configureTwinThreeRuntime, createTwinGlRenderer, applyTwinRendererSettings } from './twinThreeSetup';
 
 configureTwinThreeRuntime();
 
 const ROOM_FADE_SPEED = 5.5;
+const _destCamPos = new THREE.Vector3();
 
 function disposeObject3D(root) {
   if (!root) return;
@@ -147,7 +154,7 @@ function HouseModel({
   }, [scene]);
   const roomRefs = useRef({});
   const roomFadeTarget = useRef({});
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
 
   useEffect(() => {
     onSceneReady?.(cloned);
@@ -208,6 +215,40 @@ function HouseModel({
     applyDeviceVisuals(cloned, viewModels);
   }, [cloned, viewModels]);
 
+  // Pre-cull destination walls as soon as the target view changes so the
+  // camera hop is never blocked by walls that should already be gone.
+  // Invalidate first: room fade may have left wall materials at opacity 0
+  // while twinWallSolidApplied still said "solid", which skipped re-paint.
+  useLayoutEffect(() => {
+    if (mode === 'room' && selectedRoom) {
+      const room = roomRefs.current[selectedRoom];
+      const roomDef = TWIN_ROOMS.find((r) => r.gltfRoot === selectedRoom);
+      const layout = computeTwinRoomLayout(cloned, selectedRoom, size.width, size.height);
+      if (room && roomDef && layout) {
+        invalidateRoomWallApplied(room, roomDef.walls);
+        _destCamPos.fromArray(layout.position);
+        updateWallVisibility(room, roomDef.walls, _destCamPos, 0);
+      }
+      return;
+    }
+    if (mode === 'tour') {
+      const layout = computeTwinTourLayout(cloned, size.width, size.height);
+      if (!layout) return;
+      TWIN_ROOMS.forEach((roomDef) => {
+        invalidateRoomWallApplied(roomRefs.current[roomDef.gltfRoot], roomDef.walls);
+      });
+      _destCamPos.fromArray(layout.position);
+      updateTourWallVisibility(
+        TWIN_ROOMS.map((roomDef) => ({
+          room: roomRefs.current[roomDef.gltfRoot],
+          walls: roomDef.walls,
+        })),
+        _destCamPos,
+        0,
+      );
+    }
+  }, [mode, selectedRoom, cloned, size.width, size.height]);
+
   useFrame((_, delta) => {
     updateFanSpin(cloned, delta);
     updateAirconWind(cloned, delta);
@@ -225,11 +266,18 @@ function HouseModel({
       group.userData.twinRoomFade = opacity;
       group.visible = opacity > 0.01;
 
-      // Wall-culling modes own material opacity; fade only drives the rest.
+      // Wall-culling modes own material opacity once the room is solid.
+      // Room→room still needs setRoomOpacity while the new room fades in
+      // from 0 — otherwise materials stay invisible under wall-cull ownership.
       const wallCulled = (mode === 'tour')
         || (mode === 'room' && selectedRoom === roomDef.gltfRoot);
+      const fadingIn = group.userData.twinRoomFadeApplied !== undefined
+        && group.userData.twinRoomFadeApplied < 0.999;
       if (!wallCulled) {
         setRoomOpacity(group, opacity);
+      } else if (fadingIn) {
+        if (opacity < 0.999) setRoomOpacity(group, opacity, { skipWallGroups: true });
+        else restoreRoomOpacity(group, { skipWallGroups: true });
       } else if (opacity >= 0.999) {
         group.userData.twinRoomFade = 1;
       }
@@ -238,19 +286,37 @@ function HouseModel({
     if (mode === 'room' && selectedRoom) {
       const room = roomRefs.current[selectedRoom];
       const roomDef = TWIN_ROOMS.find((r) => r.gltfRoot === selectedRoom);
-      // Fade only during view-mode camera transitions; orbiting snaps instantly.
       if (room && roomDef) {
-        updateWallVisibility(room, roomDef.walls, camera, cameraTransitioning ? delta : 0);
+        // During hops, cull for the destination pose immediately. Live camera
+        // only drives culling after the transition (orbit).
+        if (cameraTransitioning) {
+          const layout = computeTwinRoomLayout(cloned, selectedRoom, size.width, size.height);
+          if (layout) {
+            _destCamPos.fromArray(layout.position);
+            updateWallVisibility(room, roomDef.walls, _destCamPos, 0);
+          } else {
+            updateWallVisibility(room, roomDef.walls, camera, 0);
+          }
+        } else {
+          updateWallVisibility(room, roomDef.walls, camera, 0);
+        }
       }
     } else if (mode === 'tour') {
-      updateTourWallVisibility(
-        TWIN_ROOMS.map((roomDef) => ({
-          room: roomRefs.current[roomDef.gltfRoot],
-          walls: roomDef.walls,
-        })),
-        camera,
-        cameraTransitioning ? delta : 0,
-      );
+      const tourEntries = TWIN_ROOMS.map((roomDef) => ({
+        room: roomRefs.current[roomDef.gltfRoot],
+        walls: roomDef.walls,
+      }));
+      if (cameraTransitioning) {
+        const layout = computeTwinTourLayout(cloned, size.width, size.height);
+        if (layout) {
+          _destCamPos.fromArray(layout.position);
+          updateTourWallVisibility(tourEntries, _destCamPos, 0);
+        } else {
+          updateTourWallVisibility(tourEntries, camera, 0);
+        }
+      } else {
+        updateTourWallVisibility(tourEntries, camera, 0);
+      }
     } else if (mode === 'overview') {
       // Returning to ceiling: fade previously culled walls back in.
       TWIN_ROOMS.forEach((roomDef) => {

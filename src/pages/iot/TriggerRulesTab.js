@@ -6,8 +6,8 @@ import { describeTrigger, describeSchedule, EXEC_MODE_LABELS, TRIGGER_KIND_LABEL
 import { AutomationWizard } from './AutomationWizard';
 
 const SECTIONS = [
-  { id: 'trigger', title: '자동 감지', match: (rule) => !rule.schedule },
-  { id: 'schedule', title: '자동 예약', match: (rule) => !!rule.schedule },
+  { id: 'trigger', title: '자동화', addLabel: '+ 새 자동화', initialMode: 'trigger', match: (rule) => !rule.schedule },
+  { id: 'schedule', title: '예약', addLabel: '+ 새 예약', initialMode: 'schedule', match: (rule) => !!rule.schedule },
 ];
 
 function matchesSearch(rule, devices, query) {
@@ -59,14 +59,17 @@ function AutomationRow({ rule, devices, onOpen, onToggle, onDelete, onExecute })
   );
 }
 
-function AutomationSection({ section, rules, devices, onOpen, onToggle, onDelete, onExecute }) {
+function AutomationSection({ section, rules, devices, onOpen, onToggle, onDelete, onExecute, onAdd }) {
   return (
     <div className="automation-section">
       <div className="automation-section-head">
         <span>{section.title} <em>({rules.length})</em></span>
+        <button type="button" className="card-action-btn" onClick={onAdd}>
+          {section.addLabel}
+        </button>
       </div>
       <div className="automation-section-body trigger-scroll">
-        {rules.length === 0 && <p className="panel-empty">해당하는 자동화가 없습니다.</p>}
+        {rules.length === 0 && <p className="panel-empty">해당하는 항목이 없습니다.</p>}
         {rules.map((rule) => (
           <AutomationRow
             key={rule.id}
@@ -88,7 +91,7 @@ export function TriggerRulesTab() {
   const [rules, setRules] = useState([]);
   const [irCommands, setIrCommands] = useState([]);
   const [search, setSearch] = useState('');
-  const [wizardTarget, setWizardTarget] = useState(null); // null | 'new' | rule
+  const [wizardTarget, setWizardTarget] = useState(null); // null | { kind: 'new', mode } | rule
   const [toast, setToast] = useState('');
 
   const load = () => iotApi.getRules().then(setRules);
@@ -109,7 +112,7 @@ export function TriggerRulesTab() {
   const deleteRule = async (rule) => {
     await iotApi.deleteRule(rule.id);
     load();
-    showToast(`${rule.schedule ? '자동 예약을' : '자동 감지를'} 삭제했습니다.`);
+    showToast(`${rule.schedule ? '예약을' : '자동화를'} 삭제했습니다.`);
   };
 
   const executeRule = async (rule) => {
@@ -132,56 +135,47 @@ export function TriggerRulesTab() {
     closeWizard();
   };
 
+  const wizardIsNew = wizardTarget && wizardTarget.kind === 'new';
+  const editingRule = wizardIsNew ? null : wizardTarget;
+  const initialMode = wizardIsNew ? wizardTarget.mode : undefined;
+
   return (
     <div className="automation-page">
-      <Card
-        title="자동화 관리"
-        wide
-        action={(
-          <button type="button" className="card-action-btn" onClick={() => setWizardTarget('new')}>
-            + 새 자동화
-          </button>
-        )}
-      >
+      <Card title="자동화·예약" wide>
         <p className="section-description">
-          기기 상태·제스처·적외선 신호를 감지하는 <strong className="wave-term">자동 감지</strong>와, 정해진 시각에 실행하는 <strong className="wave-term">자동 예약</strong>을 관리합니다.
+          장치 상태·제스처·적외선 신호를 감지하여 가전을 제어하는 <strong className="wave-term">자동화</strong>와 정해진 시각에 가전을 제어하는 <strong className="wave-term">예약</strong>을 관리해요.
         </p>
 
         <input
           type="search"
           className="automation-search-input"
-          placeholder="자동화 검색 (이름, 기기 등)"
+          placeholder="자동화·예약  검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {rules.length === 0 ? (
-          <div className="automation-empty-state">
-            <p className="panel-empty">아직 만든 자동화가 없습니다.</p>
-            <button type="button" className="settings-btn-primary" onClick={() => setWizardTarget('new')}>+ 새 자동화 만들기</button>
-          </div>
-        ) : (
-          <div className="automation-sections-grid">
-            {filteredBySection.map(({ section, rules: sectionRules }) => (
-              <AutomationSection
-                key={section.id}
-                section={section}
-                rules={sectionRules}
-                devices={devices}
-                onOpen={(rule) => setWizardTarget(rule)}
-                onToggle={toggleRule}
-                onDelete={deleteRule}
-                onExecute={executeRule}
-              />
-            ))}
-          </div>
-        )}
+        <div className="automation-sections-grid">
+          {filteredBySection.map(({ section, rules: sectionRules }) => (
+            <AutomationSection
+              key={section.id}
+              section={section}
+              rules={sectionRules}
+              devices={devices}
+              onOpen={(rule) => setWizardTarget(rule)}
+              onToggle={toggleRule}
+              onDelete={deleteRule}
+              onExecute={executeRule}
+              onAdd={() => setWizardTarget({ kind: 'new', mode: section.initialMode })}
+            />
+          ))}
+        </div>
 
         {wizardTarget && (
           <AutomationWizard
             devices={devices}
             irCommands={irCommands}
-            editingRule={wizardTarget === 'new' ? null : wizardTarget}
+            editingRule={editingRule}
+            initialMode={initialMode}
             onClose={closeWizard}
             onSaved={handleSaved}
           />

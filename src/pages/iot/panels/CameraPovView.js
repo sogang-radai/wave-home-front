@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ModelHouseScene } from '../../../scene/ModelHouseScene';
-import { setupLivingCamPov, hideNodeSubtree } from '../../homeTwin/twinCamera';
-import { useTwinDeviceState } from '../../homeTwin/useTwinDeviceState';
+import { setupLivingCamPov, hideNodeSubtree } from '../../twin/twinCamera';
+import { useTwinDeviceState } from '../../twin/useTwinDeviceState';
 import { LIVING_CAM_NODE } from '../../../data/twinSceneConfig';
-import '../../homeTwin/homeTwin.css';
+import '../../twin/twin.css';
 
 /** Inline 3D living-room POV for the Reolink camera control panel. */
 export function CameraPovView({ ptz }) {

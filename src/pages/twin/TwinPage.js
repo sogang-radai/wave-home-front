@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { X } from 'lucide-react';
 import { ModelHouseScene } from '../../scene/ModelHouseScene';
 import { useTwinDeviceState } from './useTwinDeviceState';
@@ -7,9 +7,10 @@ import { TWIN_ROOMS, twinRoomByGltfRoot } from '../../data/twinSceneConfig';
 import twinIntroMedia from '../../landing/twin_home.png';
 import { useIotDevices } from '../iot/useIotDevices';
 import { deviceDotClass, deviceDotTitle, isDeviceOffline } from '../iot/iotUtils';
+import { Tabs } from '../../components/ui/Tabs';
 import { DeviceThumb, DeviceDetailBody, detailTabsFor } from '../iot/deviceDetail';
 import { ReconnectIcon } from '../iot/icons';
-import './homeTwin.css';
+import './twin.css';
 
 const TWIN_INTRO_DISMISSED_KEY = 'wavehome_twin_intro_dismissed';
 
@@ -33,6 +34,15 @@ function BackIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M15 18l-6-6 6-6" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
     </svg>
   );
 }
@@ -147,7 +157,7 @@ function TwinIntroPopup({ onClose, onDontShowAgain, onOpenChat, onStartTour }) {
   );
 }
 
-export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
+export function TwinPage({ onOpenChat }) {
   const { viewModels } = useTwinDeviceState();
   const speechOverlays = useSpeechOverlays(true);
   const [mode, setMode] = useState('overview');
@@ -177,37 +187,23 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
     onOpenChat?.();
   }, [onOpenChat]);
 
-  // 방 히트박스는 overview 모드에서만 렌더링되므로, 3D에서 직접 클릭할 때는
-  // 항상 "전체 보기"를 한 번 거친 뒤에만 다른 방을 고를 수 있다. 방→방으로
-  // 곧장 점프하는 경로는 원래 코드에 없던 상태라 카메라 전환·벽 컬링이 꼬여
-  // 트윈이 하얗게 비어버리는 버그가 있다 — 사이드바 필터도 항상 이 경로를
-  // 그대로 타도록, room/tour 모드에서는 잠깐 overview를 거쳐서 안전하게
-  // 전환한다.
-  const roomTransitionTimer = useRef(null);
-
-  const clearPendingRoomTransition = useCallback(() => {
-    if (roomTransitionTimer.current) {
-      clearTimeout(roomTransitionTimer.current);
-      roomTransitionTimer.current = null;
-    }
-  }, []);
-
-  useEffect(() => clearPendingRoomTransition, [clearPendingRoomTransition]);
-
+  // 사이드바 방 필터는 방→방 직행. (예전엔 overview를 한 번 거쳐
+  // 방1→전체→방2로 카메라가 두 번 움직였는데, TwinOverviewCamera가
+  // selectedRoom 변경을 직접 보간하므로 중간 overview는 필요 없다.
+  // 3D 히트박스는 overview에서만 보이므로, 씬에서 방→방 클릭은 여전히
+  // 전체 보기를 거친 뒤에만 가능하다.)
   const handleRoomSelect = useCallback((gltfRoot) => {
-    clearPendingRoomTransition();
     setSelectedRoom(gltfRoot);
     setMode('room');
     const room = twinRoomByGltfRoot(gltfRoot);
     if (room) setRoomFilter(room.id);
-  }, [clearPendingRoomTransition, setRoomFilter]);
+  }, [setRoomFilter]);
 
   const handleTour = useCallback(() => {
-    clearPendingRoomTransition();
     setSelectedRoom(null);
     setHoveredRoom(null);
     setMode('tour');
-  }, [clearPendingRoomTransition]);
+  }, []);
 
   const startTourFromIntro = useCallback(() => {
     setShowIntro(false);
@@ -215,16 +211,14 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
   }, [handleTour]);
 
   const handleBack = useCallback(() => {
-    clearPendingRoomTransition();
     setMode('overview');
     setSelectedRoom(null);
     setHoveredRoom(null);
     setRoomFilter('all');
-  }, [clearPendingRoomTransition, setRoomFilter]);
+  }, [setRoomFilter]);
 
   const selectRoomFilter = (roomId) => {
     setRoomFilter(roomId);
-    clearPendingRoomTransition();
 
     if (roomId === 'all') {
       setSelectedRoom(null);
@@ -235,19 +229,8 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
     const room = TWIN_ROOMS.find((r) => r.id === roomId);
     if (!room) return;
 
-    if (mode === 'overview') {
-      setSelectedRoom(room.gltfRoot);
-      setMode('room');
-      return;
-    }
-
-    setSelectedRoom(null);
-    setMode('overview');
-    roomTransitionTimer.current = setTimeout(() => {
-      setSelectedRoom(room.gltfRoot);
-      setMode('room');
-      roomTransitionTimer.current = null;
-    }, 250);
+    setSelectedRoom(room.gltfRoot);
+    setMode('room');
   };
 
   const openDeviceDetail = (device) => {
@@ -260,10 +243,9 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
   const roomLabel = selectedRoom ? twinRoomByGltfRoot(selectedRoom)?.label : null;
   const showLabels = mode === 'room' || mode === 'tour';
   const detailTabs = detailTabsFor(selectedDevice);
-  const showSidebar = !chatPopupOpen;
 
   return (
-    <div className={`home-twin-page${chatPopupOpen ? ' home-twin-page--chat-open' : ''}`}>
+    <div className="home-twin-page">
       {showIntro && (
         <TwinIntroPopup
           onClose={closeIntro}
@@ -276,6 +258,7 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
       <div className="twin-scene-area">
         {mode === 'overview' && (
           <button type="button" className="twin-back-button" onClick={handleTour} aria-label="둘러보기">
+            <SearchIcon />
             <span>둘러보기</span>
           </button>
         )}
@@ -308,8 +291,7 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
         />
       </div>
 
-      {showSidebar && (
-        <aside className="twin-device-sidebar">
+      <aside className="twin-device-sidebar">
           {!showDeviceDetail || !selectedDevice ? (
             <>
               <div className="twin-sidebar-head">
@@ -391,16 +373,16 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
 
               <div className="twin-device-detail-head">
                 <DeviceThumb deviceClass={selectedDevice.class} />
-                <div>
+                <div className="twin-device-detail-title">
                   <strong>{selectedDevice.name}</strong>
                   <span>{selectedDevice.classLabel}</span>
                 </div>
-              </div>
-
-              <div className="device-detail-tabs">
-                {detailTabs.map(([id, label]) => (
-                  <button key={id} type="button" className={detailTab === id ? 'active' : ''} onClick={() => setDetailTab(id)}>{label}</button>
-                ))}
+                <Tabs
+                  active={detailTab}
+                  onChange={setDetailTab}
+                  items={detailTabs}
+                  coachMarkPrefix=""
+                />
               </div>
 
               <DeviceDetailBody
@@ -414,7 +396,6 @@ export function HomeTwinPage({ onOpenChat, chatPopupOpen = false }) {
             </div>
           )}
         </aside>
-      )}
 
       {toast && <div className="iot-toast">{toast}</div>}
     </div>

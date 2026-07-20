@@ -146,7 +146,29 @@ export function captureRoomMaterialBases(root) {
   });
 }
 
-export function setRoomOpacity(roomGroup, opacity) {
+/** Wall cull groups are named like bed_px / living_my. */
+function isWallCullGroup(obj) {
+  return !!obj?.name && /_(px|mx|py|my)$/.test(obj.name);
+}
+
+function isUnderWallCullGroup(obj, roomRoot) {
+  let node = obj;
+  while (node && node !== roomRoot) {
+    if (isWallCullGroup(node)) return true;
+    node = node.parent;
+  }
+  return false;
+}
+
+/** Room fade mutates wall materials — drop applied cache so cull re-paints. */
+function invalidateWallSolidApplied(roomGroup) {
+  if (!roomGroup) return;
+  roomGroup.traverse((obj) => {
+    if (isWallCullGroup(obj)) obj.userData.twinWallSolidApplied = undefined;
+  });
+}
+
+export function setRoomOpacity(roomGroup, opacity, { skipWallGroups = false } = {}) {
   if (!roomGroup) return;
   const clamped = THREE.MathUtils.clamp(opacity, 0, 1);
   // Skip full mesh traverse when fade has not moved (was a per-frame hitch source).
@@ -158,6 +180,8 @@ export function setRoomOpacity(roomGroup, opacity) {
   roomGroup.userData.twinRoomFadeApplied = clamped;
   roomGroup.traverse((obj) => {
     if (!obj.isMesh || !obj.material) return;
+    // Wall-cull ownership must keep camera-side walls hidden while the room fades in.
+    if (skipWallGroups && isUnderWallCullGroup(obj, roomGroup)) return;
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
     mats.forEach((mat) => {
       if (mat.userData.twinOriginalOpacity === undefined)
@@ -170,15 +194,17 @@ export function setRoomOpacity(roomGroup, opacity) {
       mat.needsUpdate = true;
     });
   });
+  if (!skipWallGroups) invalidateWallSolidApplied(roomGroup);
 }
 
 /** Force materials back to their captured base opacity (fade = 1). */
-export function restoreRoomOpacity(roomGroup) {
+export function restoreRoomOpacity(roomGroup, { skipWallGroups = false } = {}) {
   if (!roomGroup) return;
   roomGroup.userData.twinRoomFade = 1;
   roomGroup.userData.twinRoomFadeApplied = undefined;
   roomGroup.visible = true;
   roomGroup.traverse((obj) => {
+    if (skipWallGroups && isUnderWallCullGroup(obj, roomGroup)) return;
     obj.visible = true;
     if (!obj.isMesh || !obj.material) return;
     const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
@@ -191,6 +217,7 @@ export function restoreRoomOpacity(roomGroup) {
       mat.needsUpdate = true;
     });
   });
+  if (!skipWallGroups) invalidateWallSolidApplied(roomGroup);
 }
 
 const FAN_SPIN_SPEED = -30;
@@ -632,14 +659,29 @@ function wallGroupsFor(room, walls) {
   return cached;
 }
 
-export function updateWallVisibility(room, walls, camera, delta = 0) {
-  if (!room || !camera || !walls?.length) return;
+function readCullCameraPosition(cameraOrPosition, out) {
+  if (!cameraOrPosition) return false;
+  if (cameraOrPosition.isCamera) {
+    cameraOrPosition.getWorldPosition(out);
+    return true;
+  }
+  if (cameraOrPosition.isVector3) {
+    out.copy(cameraOrPosition);
+    return true;
+  }
+  return false;
+}
 
-  camera.getWorldPosition(_wallCamPos);
-  room.worldToLocal(_wallCamPos);
+export function updateWallVisibility(room, walls, cameraOrPosition, delta = 0) {
+  if (!room || !walls?.length) return;
+  if (!readCullCameraPosition(cameraOrPosition, _wallCamPos)) return;
+
+  // Work on a copy — callers may reuse the same world-space vector.
+  const camLocal = _wallCamPos;
+  room.worldToLocal(camLocal);
   _wallBox.setFromObject(room).getCenter(_wallRoomCenter);
   room.worldToLocal(_wallRoomCenter);
-  _wallToCamera.copy(_wallCamPos).sub(_wallRoomCenter).setY(0);
+  _wallToCamera.copy(camLocal).sub(_wallRoomCenter).setY(0);
   if (_wallToCamera.lengthSq() < 1e-8) return;
   _wallToCamera.normalize();
 
@@ -652,12 +694,21 @@ export function updateWallVisibility(room, walls, camera, delta = 0) {
   });
 }
 
+/** Clear wall paint cache so the next cull pass rewrites mesh opacity/visibility. */
+export function invalidateRoomWallApplied(room, walls) {
+  if (!room || !walls?.length) return;
+  wallGroupsFor(room, walls).forEach(({ group }) => {
+    if (group) group.userData.twinWallSolidApplied = undefined;
+  });
+}
+
 /**
  * Tour-mode wall culling: one house-wide camera vector so adjacent rooms
  * flip shared-facing walls together. Always-visible walls stay opaque.
  */
-export function updateTourWallVisibility(roomEntries, camera, delta = 0) {
-  if (!camera || !roomEntries?.length) return;
+export function updateTourWallVisibility(roomEntries, cameraOrPosition, delta = 0) {
+  if (!roomEntries?.length) return;
+  if (!readCullCameraPosition(cameraOrPosition, _wallCamPos)) return;
 
   _wallBox.makeEmpty();
   roomEntries.forEach(({ room }) => {
@@ -666,7 +717,6 @@ export function updateTourWallVisibility(roomEntries, camera, delta = 0) {
   if (_wallBox.isEmpty()) return;
 
   _wallBox.getCenter(_wallRoomCenter);
-  camera.getWorldPosition(_wallCamPos);
   _wallToCamera.copy(_wallCamPos).sub(_wallRoomCenter).setY(0);
   if (_wallToCamera.lengthSq() < 1e-8) return;
   _wallToCamera.normalize();

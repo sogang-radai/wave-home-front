@@ -4,7 +4,13 @@ export const pages = [
   { id: 'sleep', label: '수면 관리', icon: 'moon' },
   // { id: 'posture', label: '자세 관리', icon: 'posture' },
   { id: 'power', label: '전력 관리', icon: 'lightning' },
-  { id: 'home', label: '가전 관리', icon: 'remote' },
+  { id: 'home', label: '가전 제어', icon: 'remote' },
+];
+
+/** Compact secondary nav items rendered under IoT with a separator. */
+export const secondaryPages = [
+  { id: 'twin', label: '디지털 트윈홈', icon: 'twin' },
+  { id: 'weeklyPlan', label: '주간 계획', icon: 'planner' },
 ];
 
 export const upcomingFeatures = [
@@ -32,9 +38,10 @@ export const pageTitles = {
   main: '대시보드',
   chat: 'WaveChat',
   weeklyPlan: '주간 계획',
+  twin: '디지털 트윈홈',
   sleep: '수면 관리',
   // posture: '자세 관리',
   power: '전력 관리',
-  home: '가전 관리',
+  home: '가전 제어',
   setting: '설정',
 };

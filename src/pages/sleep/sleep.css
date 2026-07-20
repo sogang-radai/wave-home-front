@@ -882,7 +882,7 @@
   line-height: 1.05;
 }
 
-.weekly-bottom-grid .metric span {
+.weekly-bottom-grid .metric-detail {
   font-size: 11px;
   line-height: 1.25;
 }

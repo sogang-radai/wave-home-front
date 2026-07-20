@@ -11,7 +11,7 @@ import { RadarPanel } from './panels/RadarPanel';
 import { WaveStationPanel } from './panels/WaveStationPanel';
 
 // Shared between the plain IoT 제어 grid (IotControlTab) and the merged
-// 디지털 트윈 홈 sidebar (HomeTwinPage) — same panel set, same tab rules.
+// 디지털 트윈 홈 sidebar (TwinPage) — same panel set, same tab rules.
 export const PANEL_COMPONENTS = {
   plug: PlugPanel,
   light: LightPanel,
@@ -22,22 +22,48 @@ export const PANEL_COMPONENTS = {
 };
 
 export function detailTabsFor(device) {
-  const controlLabel = device?.panel === 'radar' ? '제스처 셋' : '제어';
-  const tabs = [
-    ['control', controlLabel],
+  if (!device) return [];
+
+  if (device.panel === 'radar') {
+    const tabs = [];
+    if (device.sleepAnalysis)
+      tabs.push(['sleep', '수면 관리']);
+    tabs.push(['control', '제스처']);
+    tabs.push(['log', '로그']);
+    return tabs;
+  }
+
+  if (device.class === 'wave_station' || device.panel === 'wave_station') {
+    return [
+      ['control', '제어'],
+      ['settings', '설정'],
+      ['log', '로그'],
+    ];
+  }
+
+  return [
+    ['control', '제어'],
+    ['log', '로그'],
   ];
-  if (device?.panel === 'radar' && device?.sleepAnalysis)
-    tabs.push(['sleep', '수면 분석']);
-  if (device?.class === 'wave_station' || device?.panel === 'wave_station')
-    tabs.push(['settings', '장치 설정']);
-  tabs.push(['log', '로그']);
-  return tabs;
+}
+
+export function defaultDetailTabFor(device) {
+  if (!device) return 'control';
+  if (isDeviceOffline(device)) return 'log';
+  if (device.panel === 'radar')
+    return device.sleepAnalysis ? 'sleep' : 'control';
+  return 'control';
 }
 
 export function DeviceThumb({ deviceClass }) {
   const src = deviceThumbnails[deviceClass];
   if (src) return <img className="iot-device-thumb-img" src={src} alt="" />;
   return <div className="iot-device-thumb-placeholder" aria-hidden="true">⌁</div>;
+}
+
+async function findSettingsDevice(deviceId) {
+  const { input_devices = [], output_devices = [] } = await settingsApi.getDevices();
+  return [...input_devices, ...output_devices].find((item) => item.id === deviceId) || null;
 }
 
 export function WaveStationSettingsPanel({ device, onChanged, showToast }) {
@@ -86,13 +112,14 @@ export function WaveStationSettingsPanel({ device, onChanged, showToast }) {
   }, [device?.id]);
 
   const patchSettings = async (patch, { toastOnSuccess } = {}) => {
-    const { input_devices = [], output_devices = [] } = await settingsApi.getDevices();
-    const current = [...input_devices, ...output_devices].find((item) => item.id === device.id);
+    const current = await findSettingsDevice(device.id);
     const settings = { ...(current?.settings || {}), ...patch };
-    await settingsApi.updateDevice(device.id, { settings });
+    const updated = await settingsApi.updateDevice(device.id, { settings });
+    if (updated == null) return false;
     await onChanged?.();
     if (toastOnSuccess)
       showToast?.(toastOnSuccess);
+    return true;
   };
 
   const toggleCompanion = async () => {
@@ -142,28 +169,28 @@ export function WaveStationSettingsPanel({ device, onChanged, showToast }) {
 
   return (
     <div className="wave-station-settings-panel">
-      <div className="device-companion-row">
-        <div>
-          <strong>동반자 모드</strong>
-          <p>Wave Station 마이크로 말하면 에이전트가 응답합니다.</p>
+      <div className="panel-section">
+        <span className="device-panel-label">동반자 모드</span>
+        <div className="device-companion-row">
+          <p>마이크로 말하면 에이전트가 응답합니다.</p>
+          <button
+            type="button"
+            className={`toggle-switch ${companion ? 'on' : ''}`}
+            onClick={toggleCompanion}
+            disabled={saving}
+            aria-label="동반자 모드 토글"
+          >
+            <i />
+          </button>
         </div>
-        <button
-          type="button"
-          className={`toggle-switch ${companion ? 'on' : ''}`}
-          onClick={toggleCompanion}
-          disabled={saving}
-          aria-label="동반자 모드 토글"
-        >
-          <i />
-        </button>
       </div>
 
-      <div className="device-mic-gain-row">
+      <div className="panel-section">
         <div className="device-mic-gain-head">
-          <strong>마이크 게인</strong>
+          <span className="device-panel-label">마이크 게인</span>
           <span>{micGain.toFixed(1)}×</span>
         </div>
-        <p>Wave Station 마이크 입력 증폭 (동반자 STT·볼륨 미터에 공통 적용).</p>
+        <p className="device-panel-hint">마이크 입력 증폭 (동반자 STT·볼륨 미터에 공통 적용).</p>
         <input
           type="range"
           min="0.1"
@@ -175,9 +202,9 @@ export function WaveStationSettingsPanel({ device, onChanged, showToast }) {
         />
       </div>
 
-      <div className="device-stt-transcript">
+      <div className="panel-section device-stt-transcript">
         <div className="device-stt-transcript-head">
-          <strong>인식된 텍스트</strong>
+          <span className="device-panel-label">인식된 텍스트</span>
           <em>{statusLabel}</em>
         </div>
         <textarea
@@ -195,12 +222,78 @@ export function WaveStationSettingsPanel({ device, onChanged, showToast }) {
   );
 }
 
-export function RadarSleepAnalysisPanel() {
+export function RadarSleepAnalysisPanel({ device, onChanged, showToast }) {
+  const [accounts, setAccounts] = useState([]);
+  const [sleepUserId, setSleepUserId] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      settingsApi.getAccounts(),
+      findSettingsDevice(device.id),
+    ]).then(([accountList, settingsDevice]) => {
+      if (cancelled) return;
+      setAccounts(accountList || []);
+      const saved = settingsDevice?.settings?.sleep_user_id
+        ?? settingsDevice?.settings?.sleepUserId
+        ?? '';
+      setSleepUserId(saved === null || saved === undefined ? '' : String(saved));
+    }).catch(() => {
+      if (!cancelled) {
+        setAccounts([]);
+        setSleepUserId('');
+      }
+    });
+    return () => { cancelled = true; };
+  }, [device.id]);
+
+  const onSelectUser = async (event) => {
+    const next = event.target.value;
+    const prev = sleepUserId;
+    setSleepUserId(next);
+    if (saving) return;
+    setSaving(true);
+    try {
+      const current = await findSettingsDevice(device.id);
+      const settings = {
+        ...(current?.settings || {}),
+        sleep_user_id: next ? Number(next) || next : null,
+      };
+      const updated = await settingsApi.updateDevice(device.id, { settings });
+      if (updated == null) {
+        setSleepUserId(prev);
+        return;
+      }
+      await onChanged?.();
+      showToast?.(next ? '수면 관리 대상을 저장했습니다.' : '수면 관리 대상을 해제했습니다.');
+    } catch (err) {
+      setSleepUserId(prev);
+      showToast?.(err?.message || '수면 관리 대상을 저장하지 못했습니다.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="radar-sleep-analysis-panel">
-      <strong>수면 분석 중</strong>
-      <p>이 레이더가 수면 중 움직임과 활동을 분석하고 있어요.</p>
-      <span>분석 결과는 수면 관리 페이지에서 확인할 수 있습니다.</span>
+      <div className="panel-section">
+        <span className="device-panel-label">이 레이더로 누구의 수면을 관리할까요?</span>
+        <select
+          className="settings-select"
+          value={sleepUserId}
+          onChange={onSelectUser}
+          disabled={saving || accounts.length === 0}
+        >
+          <option value="">선택 안 함</option>
+          {accounts.map((account) => (
+            <option key={account.id} value={String(account.id)}>
+              {account.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <p className="device-panel-hint">분석 결과는 수면 관리 페이지에서 확인할 수 있습니다.</p>
     </div>
   );
 }
@@ -250,7 +343,13 @@ export function DeviceDetailBody({ device, detailTab, onChanged, showToast, devi
         )
       )}
 
-      {detailTab === 'sleep' && <RadarSleepAnalysisPanel />}
+      {detailTab === 'sleep' && (
+        <RadarSleepAnalysisPanel
+          device={device}
+          onChanged={onChanged}
+          showToast={showToast}
+        />
+      )}
 
       {detailTab === 'settings' && (
         <WaveStationSettingsPanel

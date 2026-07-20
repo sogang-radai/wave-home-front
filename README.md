@@ -94,7 +94,7 @@ wave-home-front/
 │   ├── api/                    # per-domain facades + mock/ demo/ v1/ implementations
 │   ├── components/             # coachmarks/ layout/ notifications/ report/ ui/ icons/ calendar/
 │   ├── landing/                # marketing landing page (sections/, mockups/)
-│   ├── pages/                  # sleep/ posture/ plan/ alarm/ iot/ power/ homeTwin/ chat/ settings/
+│   ├── pages/                  # sleep/ posture/ plan/ alarm/ iot/ power/ twin/ chat/ settings/
 │   ├── scene/                  # react-three-fiber Home Twin 3D scene
 │   ├── lib/, hooks/, utils/    # api router, clock/demo helpers, misc utilities
 │   ├── push/                   # Web Push subscription helper

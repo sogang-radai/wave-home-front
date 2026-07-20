@@ -5,16 +5,11 @@ export const DEVICE_STATE_OPS = ['>', '>=', '<', '<=', '=='];
 export const SCHEDULE_REPEATS = ['once', 'daily', 'weekly'];
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-// 마법사 1단계("무엇을 감지할까요?")의 선택지. 실제로 지원되는 trigger
-// kind(gesture/device_state/ir_recv) + 예약(schedule)을 한 화면에 모은다 —
-// 예전에는 "감지/예약" 모드 토글과 "감지 조건 종류" 드롭다운이 별개의
-// 단계였는데, 사용자 입장에서는 결국 하나의 질문("언제 실행할까요?")이라
-// 합쳤다.
+// 자동화(+ 새 자동화) 1단계 — 예약은 별도 진입이라 여기선 제외.
 export const TYPE_OPTIONS = [
-  { mode: 'trigger', kind: 'gesture', label: '제스처 감지', desc: '레이더가 특정 동작을 인식하면 실행해요.' },
-  { mode: 'trigger', kind: 'device_state', label: '기기 상태 감지', desc: '센서 값이 설정한 조건을 만족하면 실행해요.' },
-  { mode: 'trigger', kind: 'ir_recv', label: '적외선 신호 감지', desc: '리모컨 등에서 신호를 받으면 실행해요.' },
-  { mode: 'schedule', kind: null, label: '예약된 시각', desc: '정해진 시각 또는 반복 주기에 실행해요.' },
+  { mode: 'trigger', kind: 'gesture', label: '제스처 감지', desc: '레이더가 특정 제스처를 인식하면 실행해요.' },
+  { mode: 'trigger', kind: 'device_state', label: '장치 상태 감지', desc: '센서의 값이 설정한 조건을 만족하면 실행해요.' },
+  { mode: 'trigger', kind: 'ir_recv', label: '적외선 신호 감지', desc: '리모컨에서 적외선 신호를 받으면 실행해요.' },
 ];
 
 export function emptyDraft() {
@@ -59,7 +54,7 @@ export function validateDraft(draft) {
     if (!draft.trigger?.kind) return '감지 조건 종류를 선택하세요.';
     if (!draft.trigger.deviceId) return '감지할 장치를 선택하세요.';
     if (draft.trigger.kind === 'gesture' && (draft.trigger.classId === null || draft.trigger.classId === undefined || draft.trigger.classId === '')) {
-      return '제스처 클래스를 선택하세요.';
+      return '제스처를 선택하세요.';
     }
     if (draft.trigger.kind === 'device_state' && !draft.trigger.query) return '측정값을 선택하세요.';
     if (draft.trigger.kind === 'ir_recv' && !draft.trigger.commandId) return '수신 커맨드를 선택하세요.';
@@ -77,18 +72,34 @@ export function validateDraft(draft) {
 }
 
 export function stepsFor(draft) {
-  if (draft.mode === 'schedule') return ['type', 'schedule', 'actionDevice', 'action', 'execMode', 'name'];
-  if (draft.mode === 'trigger') return ['type', 'device', 'detail', 'actionDevice', 'action', 'execMode', 'name'];
+  if (draft.mode === 'schedule') {
+    return ['schedule', 'actionDevice', 'action', 'execMode', 'name'];
+  }
+  if (draft.mode === 'trigger') {
+    const kind = draft.trigger?.kind;
+    if (kind === 'gesture') {
+      return ['type', 'gesture', 'actionDevice', 'action', 'execMode', 'name'];
+    }
+    if (kind === 'device_state') {
+      return ['type', 'device', 'detail', 'actionDevice', 'action', 'execMode', 'name'];
+    }
+    if (kind === 'ir_recv') {
+      return ['type', 'irDetect', 'actionDevice', 'action', 'execMode', 'name'];
+    }
+    return ['type'];
+  }
   return ['type'];
 }
 
 export const STEP_TITLES = {
   type: '무엇을 감지할까요?',
-  device: '어떤 장치를 감지할까요?',
+  gesture: '어떤 레이더로 제스처를 감지할까요?',
+  device: '어떤 장치의 상태를 감지할까요?',
   detail: '세부 조건을 정해주세요',
+  irDetect: '어떤 장치로 적외선 신호를 감지할까요?',
   schedule: '언제 실행할까요?',
-  actionDevice: '어떤 기기를 제어할까요?',
-  action: '무엇을 할까요?',
+  actionDevice: '어떤 가전을 제어할까요?',
+  action: '어떻게 제어할까요?',
   execMode: '실행 방식을 골라주세요',
   name: '이름을 지어주세요',
 };
@@ -97,16 +108,22 @@ export function isStepValid(draft, stepId) {
   switch (stepId) {
     case 'type':
       return draft.mode === 'schedule' || (draft.mode === 'trigger' && !!draft.trigger?.kind);
+    case 'gesture':
+      return !!draft.trigger?.deviceId
+        && !!draft.trigger?.gestureSetPath
+        && draft.trigger.classId !== null
+        && draft.trigger.classId !== undefined
+        && draft.trigger.classId !== '';
     case 'device':
       return !!draft.trigger?.deviceId;
     case 'detail': {
       const t = draft.trigger;
       if (!t) return false;
-      if (t.kind === 'gesture') return t.classId !== null && t.classId !== undefined && t.classId !== '';
       if (t.kind === 'device_state') return !!t.query;
-      if (t.kind === 'ir_recv') return !!t.commandId;
       return false;
     }
+    case 'irDetect':
+      return !!draft.trigger?.deviceId && !!draft.trigger?.commandId;
     case 'schedule': {
       const s = draft.schedule;
       if (!s?.repeat) return false;
@@ -128,10 +145,33 @@ export function isStepValid(draft, stepId) {
   }
 }
 
+/** Steps where picking one item can advance immediately. */
+export function canAutoAdvance(stepId, draft, extra = {}) {
+  if (stepId === 'type') return true;
+  if (stepId === 'actionDevice') return true;
+  if (stepId === 'device') return true;
+  if (stepId === 'gesture' && extra.picked === 'gesture') return isStepValid(draft, 'gesture');
+  if (stepId === 'irDetect' && extra.picked === 'command') return isStepValid(draft, 'irDetect');
+  if (stepId === 'action' && extra.hasParams === false) return !!draft.action.name;
+  return false;
+}
+
 export function suggestDraftName(draft, { triggerDeviceName, actionDeviceName, actionLabel } = {}) {
   const triggerPart = draft.mode === 'schedule'
     ? describeSchedule(draft.schedule)
     : describeTrigger(draft.trigger, { deviceName: triggerDeviceName });
   const actionPart = actionDeviceName && actionLabel ? `${actionDeviceName} ${actionLabel}` : '';
   return [triggerPart, actionPart].filter(Boolean).join(' · ');
+}
+
+export function timeStringToMinutes(time) {
+  const [h, m] = String(time || '00:00').split(':').map((n) => Number(n) || 0);
+  return (h * 60) + m;
+}
+
+export function minutesToTimeString(totalMinutes) {
+  const clamped = Math.max(0, Math.min(23 * 60 + 59, totalMinutes));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }

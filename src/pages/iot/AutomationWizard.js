@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
+import { IS_DEMO_MODE } from '../../api/config';
 import iotApi from '../../api/iotApi';
 import { deviceClassRegistry, getClassInfo, findAction } from '../../api/mock/deviceClassRegistry';
 import { InfoTooltip } from '../alarm/InfoTooltip';
-import { ChevronLeftIcon } from './icons';
+import { TimeWheelPicker, minutesToPickerState, pickerStateToMinutes } from '../alarm/TimeWheelPicker';
+import '../alarm/alarm.css';
 import {
   describeTrigger,
   describeSchedule,
@@ -13,7 +15,7 @@ import {
   DAY_OF_WEEK_LABELS,
   deviceThumbnails,
 } from './iotUtils';
-import { ParamsEditor } from './RuleEditor';
+import { ParamsEditor, actionHasParams } from './RuleEditor';
 import {
   TYPE_OPTIONS,
   DEVICE_STATE_OPS,
@@ -28,33 +30,45 @@ import {
   STEP_TITLES,
   isStepValid,
   suggestDraftName,
+  timeStringToMinutes,
+  minutesToTimeString,
 } from './automationDraft';
 
 const ALL_EXEC_MODES = Object.keys(EXEC_MODE_LABELS);
-const EXEC_MODE_INFO = '한번: 조건이 맞을 때 딱 한 번 실행돼요.\n토글: 실행할 때마다 켬↔끔이 번갈아 바뀌어요.\n연속 실행: 조건이 유지되는 동안 일정 간격으로 계속 실행돼요.';
+const EXEC_MODE_INFO = '한번: 조건이 맞을 때 딱 한 번 실행돼요.\nOn/Off 전환: 실행할 때마다 켜짐↔꺼짐이 번갈아 바뀌어요.\n연속 실행: 조건이 유지되는 동안 일정 간격으로 계속 실행돼요.';
 const COOLDOWN_INFO = '같은 자동화가 다시 실행되기까지 최소한 기다려야 하는 시간이에요. 너무 자주 반복 실행되는 걸 막아줘요.';
 
-function DevicePickList({ devices, value, onChange }) {
+const QUERY_LABELS = {
+  power: '전력',
+  voltage: '전압',
+  current: '전류',
+  lux: '조도',
+  temperature: '온도',
+  humidity: '습도',
+  brightness: '밝기',
+};
+
+function DevicePickGrid({ devices, value, onChange, empty }) {
   if (devices.length === 0) {
-    return <p className="panel-empty">선택 가능한 장치가 없습니다.</p>;
+    return <p className="panel-empty">{empty || '선택 가능한 장치가 없습니다.'}</p>;
   }
   return (
-    <div className="trigger-device-list trigger-scroll automation-wizard-device-list">
+    <div className="automation-device-grid">
       {devices.map((d) => (
         <button
           key={d.id}
           type="button"
-          className={`trigger-device-item${value === d.id ? ' selected' : ''}`}
+          className={`automation-device-tile${value === d.id ? ' selected' : ''}`}
           onClick={() => onChange(d.id)}
         >
-          <span className="trigger-device-thumb" aria-hidden="true">
+          <span className="automation-device-tile-thumb" aria-hidden="true">
             {deviceThumbnails[d.class] ? (
               <img src={deviceThumbnails[d.class]} alt="" />
             ) : (
-              <span className="trigger-device-thumb-fallback">⌁</span>
+              <span>⌁</span>
             )}
           </span>
-          <span className="trigger-device-name">{d.name}</span>
+          <span className="automation-device-tile-name">{d.name}</span>
         </button>
       ))}
     </div>
@@ -84,20 +98,54 @@ function PickerList({ items, getId, getLabel, value, onChange, empty }) {
   );
 }
 
-// "새 자동화" 버튼 또는 목록 카드를 눌렀을 때 뜨는 전체 화면급 모달. 항상
-// 한 화면에 질문 하나만 보여주고(Apple Home 스타일), 뒤로/다음으로만
-// 이동한다 — 예전처럼 감지조건·세부조건·실행동작·실행방식을 한 번에 다
-// 펼쳐두지 않는다.
-export function AutomationWizard({ devices, irCommands, editingRule, onClose, onSaved }) {
-  const [draft, setDraft] = useState(() => (editingRule ? draftFromRule(editingRule) : emptyDraft()));
-  const [stepId, setStepId] = useState('type');
+function SummaryValue({ children }) {
+  return <strong className="automation-wizard-summary-value">{children}</strong>;
+}
+
+function initialDraft(editingRule, initialMode) {
+  if (editingRule) return draftFromRule(editingRule);
+  const next = emptyDraft();
+  if (initialMode === 'schedule') {
+    return {
+      ...next,
+      mode: 'schedule',
+      trigger: null,
+      schedule: { repeat: 'once', delayMinutes: 30 },
+    };
+  }
+  return next;
+}
+
+function initialStep(editingRule, initialMode, draft) {
+  const all = stepsFor(draft);
+  const steps = (initialMode === 'schedule' || editingRule || draft.mode === 'schedule')
+    ? all.filter((s) => s !== 'type')
+    : all;
+  return steps[0] || 'type';
+}
+
+export function AutomationWizard({ devices, irCommands, editingRule, initialMode, onClose, onSaved }) {
+  const [draft, setDraft] = useState(() => initialDraft(editingRule, initialMode));
+  const [stepId, setStepId] = useState(() => initialStep(editingRule, initialMode, initialDraft(editingRule, initialMode)));
   const [gestureClasses, setGestureClasses] = useState([]);
   const [submitError, setSubmitError] = useState('');
   const [saving, setSaving] = useState(false);
   const [nameTouched, setNameTouched] = useState(!!editingRule);
 
-  const steps = stepsFor(draft);
+  const steps = useMemo(() => {
+    const all = stepsFor(draft);
+    // 예약 추가 진입 / 수정 시 type 단계는 숨긴다.
+    if (initialMode === 'schedule' || editingRule || draft.mode === 'schedule') {
+      return all.filter((s) => s !== 'type');
+    }
+    return all;
+  }, [draft, initialMode, editingRule]);
+
   const stepIndex = Math.max(0, steps.indexOf(stepId));
+
+  useEffect(() => {
+    if (!steps.includes(stepId) && steps[0]) setStepId(steps[0]);
+  }, [steps, stepId]);
 
   useEffect(() => {
     document.body.classList.add('automation-wizard-open');
@@ -105,7 +153,10 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
   }, []);
 
   useEffect(() => {
-    if (draft.trigger?.kind !== 'gesture' || !draft.trigger.gestureSetPath) { setGestureClasses([]); return; }
+    if (draft.trigger?.kind !== 'gesture' || !draft.trigger.gestureSetPath) {
+      setGestureClasses([]);
+      return;
+    }
     const setId = draft.trigger.gestureSetPath.split('/')[1];
     if (!setId) { setGestureClasses([]); return; }
     iotApi.getGestureSetDefinition(setId).then((def) => {
@@ -124,10 +175,8 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
   const allowedExecModes = actionDef ? execModesFor(actionDef) : ['once'];
   const gestureClassName = gestureClasses.find((c) => c.classId === draft.trigger?.classId)?.name;
   const irCommandName = irCommands.find((c) => c.id === draft.trigger?.commandId)?.name;
+  const schedulePicker = minutesToPickerState(timeStringToMinutes(draft.schedule?.time || '09:00'));
 
-  // 이름을 아직 직접 건드리지 않았다면(=새로 만드는 중이고 자동 제안 이름을
-  // 그대로 쓰고 있다면), 이전 단계에서 선택이 바뀔 때마다 제안 이름을 최신
-  // 상태로 갱신해서 마지막 "이름" 단계에 미리 채워둔다.
   useEffect(() => {
     if (nameTouched) return;
     const actionLabel = actionDef?.description || draft.action.name;
@@ -140,31 +189,67 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft.mode, draft.trigger, draft.schedule, draft.action.deviceId, draft.action.name, nameTouched]);
 
+  const advanceFrom = (fromStep, nextDraft = draft) => {
+    const nextSteps = (() => {
+      const all = stepsFor(nextDraft);
+      if (initialMode === 'schedule' || editingRule || nextDraft.mode === 'schedule') {
+        return all.filter((s) => s !== 'type');
+      }
+      return all;
+    })();
+    const idx = nextSteps.indexOf(fromStep);
+    if (idx >= 0 && idx < nextSteps.length - 1) setStepId(nextSteps[idx + 1]);
+  };
+
   const setType = (opt) => {
-    if (opt.mode === 'schedule') {
-      setDraft((d) => ({ ...d, mode: 'schedule', trigger: null, schedule: d.schedule || { repeat: 'once', delayMinutes: 30 } }));
-      return;
-    }
+    const nextDraft = opt.mode === 'schedule'
+      ? { ...draft, mode: 'schedule', trigger: null, schedule: draft.schedule || { repeat: 'once', delayMinutes: 30 } }
+      : {
+        ...draft,
+        mode: 'trigger',
+        schedule: null,
+        trigger: opt.kind === 'gesture'
+          ? { kind: opt.kind, deviceId: '', gestureSetPath: '', classId: null }
+          : opt.kind === 'device_state'
+            ? { kind: opt.kind, deviceId: '', query: '', op: '>', value: 0 }
+            : { kind: opt.kind, deviceId: '', commandId: '' },
+      };
+    setDraft(nextDraft);
+    advanceFrom('type', nextDraft);
+  };
+
+  const setTriggerRadar = async (deviceId) => {
+    const assignment = deviceId ? await iotApi.getRadarGestureSet(deviceId).catch(() => null) : null;
+    const gestureSetPath = assignment?.gestureSetId ? `gestures/${assignment.gestureSetId}/set.json` : '';
     setDraft((d) => ({
       ...d,
-      mode: 'trigger',
-      schedule: null,
-      trigger: opt.kind === 'gesture'
-        ? { kind: opt.kind, deviceId: '', gestureSetPath: '', classId: null }
-        : opt.kind === 'device_state'
-          ? { kind: opt.kind, deviceId: '', query: '', op: '>', value: 0 }
-          : { kind: opt.kind, deviceId: '', commandId: '' },
+      trigger: { ...d.trigger, deviceId, gestureSetPath, classId: null },
     }));
   };
 
-  const setTriggerDevice = async (deviceId) => {
-    if (draft.trigger?.kind === 'gesture') {
-      const assignment = deviceId ? await iotApi.getRadarGestureSet(deviceId).catch(() => null) : null;
-      const gestureSetPath = assignment?.gestureSetId ? `gestures/${assignment.gestureSetId}/set.json` : '';
-      setDraft((d) => ({ ...d, trigger: { ...d.trigger, deviceId, gestureSetPath, classId: null } }));
-      return;
-    }
-    setDraft((d) => ({ ...d, trigger: { ...d.trigger, deviceId } }));
+  const setGestureClass = (classId) => {
+    const nextDraft = {
+      ...draft,
+      trigger: { ...draft.trigger, classId },
+    };
+    setDraft(nextDraft);
+    advanceFrom('gesture', nextDraft);
+  };
+
+  const setTriggerDevice = (deviceId) => {
+    const nextDraft = { ...draft, trigger: { ...draft.trigger, deviceId } };
+    setDraft(nextDraft);
+    advanceFrom('device', nextDraft);
+  };
+
+  const setIrDevice = (deviceId) => {
+    setDraft((d) => ({ ...d, trigger: { ...d.trigger, deviceId, commandId: '' } }));
+  };
+
+  const setIrCommand = (commandId) => {
+    const nextDraft = { ...draft, trigger: { ...draft.trigger, commandId } };
+    setDraft(nextDraft);
+    advanceFrom('irDetect', nextDraft);
   };
 
   const setSchedule = (patch) => setDraft((d) => ({ ...d, schedule: { ...d.schedule, ...patch } }));
@@ -174,29 +259,40 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
     setSchedule({ daysOfWeek: next });
   };
 
-  const setActionDevice = (deviceId) => setDraft((d) => ({ ...d, action: { deviceId, name: '', params: {} } }));
+  const setActionDevice = (deviceId) => {
+    const nextDraft = { ...draft, action: { deviceId, name: '', params: {} } };
+    setDraft(nextDraft);
+    advanceFrom('actionDevice', nextDraft);
+  };
+
   const setActionName = (name) => {
     const def = findAction(actionDevice?.class, name);
     const modes = def ? execModesFor(def) : ['once'];
-    setDraft((d) => ({ ...d, action: { ...d.action, name, params: {} }, execMode: modes[0] }));
+    const nextDraft = {
+      ...draft,
+      action: { ...draft.action, name, params: {} },
+      execMode: modes[0],
+    };
+    setDraft(nextDraft);
+    if (!actionHasParams(def)) advanceFrom('action', nextDraft);
   };
 
   const canGoNext = isStepValid(draft, stepId);
   const isLastStep = stepIndex === steps.length - 1;
+  const isFirstStep = stepIndex <= 0;
 
   const goBack = () => {
-    if (stepIndex === 0) { onClose(); return; }
+    if (isFirstStep) return;
     setStepId(steps[stepIndex - 1]);
   };
   const goNext = () => {
-    if (!canGoNext || stepIndex >= steps.length - 1) return;
+    if (!canGoNext || isLastStep) return;
     setStepId(steps[stepIndex + 1]);
   };
   const jumpTo = (target) => {
     const targetIndex = steps.indexOf(target);
-    if (targetIndex < 0) return;
-    const reachable = steps.slice(0, targetIndex).every((s) => isStepValid(draft, s));
-    if (reachable) setStepId(target);
+    if (targetIndex < 0 || targetIndex > stepIndex) return;
+    setStepId(target);
   };
 
   const save = async () => {
@@ -214,12 +310,13 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
       repeatIntervalMs: draft.execMode === 'repeat' ? Number(draft.repeatIntervalMs) || 200 : undefined,
       cooldownMs: Number(draft.cooldownMs) || 0,
     };
-    // "자동 예약"은 받침(ㄱ)으로 끝나 "을", "자동 감지"는 모음으로 끝나 "를".
-    const kindLabelWithParticle = draft.mode === 'schedule' ? '자동 예약을' : '자동 감지를';
+    const kindLabelWithParticle = draft.mode === 'schedule' ? '예약을' : '자동화를';
     try {
       if (editingRule) {
         await iotApi.updateRule(editingRule.id, payload);
         onSaved(`${kindLabelWithParticle} 수정했습니다.`);
+      } else if (IS_DEMO_MODE) {
+        onSaved(`데모에서는 ${kindLabelWithParticle} 추가할 수 없습니다.`);
       } else {
         await iotApi.createRule(payload);
         onSaved(`${kindLabelWithParticle} 추가했습니다.`);
@@ -235,13 +332,12 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
     else goNext();
   };
 
+  const typeOptions = TYPE_OPTIONS;
+
   return (
     <div className="automation-wizard-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="automation-wizard-modal" role="dialog" aria-modal="true" aria-label={STEP_TITLES[stepId]}>
         <div className="automation-wizard-head">
-          <button type="button" className="automation-wizard-nav-btn" onClick={goBack} aria-label={stepIndex === 0 ? '닫기' : '이전'}>
-            {stepIndex === 0 ? <X size={18} /> : <ChevronLeftIcon width={18} height={18} />}
-          </button>
           <div className="automation-wizard-progress">
             {steps.map((s, i) => (
               <button
@@ -250,7 +346,7 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
                 className={`automation-wizard-dot${i === stepIndex ? ' active' : ''}${i < stepIndex ? ' done' : ''}`}
                 onClick={() => jumpTo(s)}
                 aria-label={STEP_TITLES[s]}
-                disabled={i === stepIndex}
+                disabled={i >= stepIndex}
               />
             ))}
           </div>
@@ -264,8 +360,8 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
 
           {stepId === 'type' && (
             <div className="automation-option-list">
-              {TYPE_OPTIONS.map((opt) => {
-                const selected = draft.mode === opt.mode && (opt.mode === 'schedule' || draft.trigger?.kind === opt.kind);
+              {typeOptions.map((opt) => {
+                const selected = draft.mode === opt.mode && draft.trigger?.kind === opt.kind;
                 return (
                   <button
                     key={opt.label}
@@ -281,23 +377,42 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
             </div>
           )}
 
-          {stepId === 'device' && (
-            <DevicePickList devices={triggerDeviceOptions} value={draft.trigger?.deviceId} onChange={setTriggerDevice} />
+          {stepId === 'gesture' && (
+            <div className="automation-wizard-stack">
+              <DevicePickGrid
+                devices={triggerDeviceOptions}
+                value={draft.trigger?.deviceId}
+                onChange={setTriggerRadar}
+                empty="제스처를 감지할 레이더가 없습니다."
+              />
+              <div className="automation-wizard-stack-block">
+                <span className="device-panel-label">어떤 제스처를 사용할까요?</span>
+                {!draft.trigger?.deviceId ? (
+                  <p className="panel-empty">위에서 레이더를 먼저 선택하세요.</p>
+                ) : !draft.trigger.gestureSetPath ? (
+                  <p className="panel-empty automation-wizard-guide">
+                    이 레이더에 제스처 셋이 할당되어 있지 않아요.<br />제어·관리 탭에서 레이더에 제스처 셋을 할당한 뒤 다시 돌아와 주세요.
+                  </p>
+                ) : (
+                  <PickerList
+                    items={gestureClasses}
+                    getId={(c) => c.classId}
+                    getLabel={(c) => c.name}
+                    value={draft.trigger.classId}
+                    onChange={setGestureClass}
+                    empty="감지 가능한 제스처가 없습니다."
+                  />
+                )}
+              </div>
+            </div>
           )}
 
-          {stepId === 'detail' && draft.trigger?.kind === 'gesture' && (
-            !draft.trigger.gestureSetPath ? (
-              <p className="panel-empty">선택한 레이더에 제스처 셋이 없습니다.</p>
-            ) : (
-              <PickerList
-                items={gestureClasses}
-                getId={(c) => c.classId}
-                getLabel={(c) => c.name}
-                value={draft.trigger.classId}
-                onChange={(classId) => setDraft((d) => ({ ...d, trigger: { ...d.trigger, classId } }))}
-                empty="감지 가능한 제스처 클래스가 없습니다."
-              />
-            )
+          {stepId === 'device' && (
+            <DevicePickGrid
+              devices={triggerDeviceOptions}
+              value={draft.trigger?.deviceId}
+              onChange={setTriggerDevice}
+            />
           )}
 
           {stepId === 'detail' && draft.trigger?.kind === 'device_state' && (
@@ -307,7 +422,7 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
                 <PickerList
                   items={getClassInfo(devices.find((d) => d.id === draft.trigger.deviceId)?.class).triggerableQueries || []}
                   getId={(q) => q}
-                  getLabel={(q) => q}
+                  getLabel={(q) => QUERY_LABELS[q] || q}
                   value={draft.trigger.query}
                   onChange={(query) => setDraft((d) => ({ ...d, trigger: { ...d.trigger, query } }))}
                 />
@@ -338,18 +453,34 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
             </>
           )}
 
-          {stepId === 'detail' && draft.trigger?.kind === 'ir_recv' && (
-            <PickerList
-              items={irCommands}
-              getId={(c) => c.id}
-              getLabel={(c) => c.name}
-              value={draft.trigger.commandId}
-              onChange={(commandId) => setDraft((d) => ({ ...d, trigger: { ...d.trigger, commandId } }))}
-            />
+          {stepId === 'irDetect' && (
+            <div className="automation-wizard-stack">
+              <DevicePickGrid
+                devices={triggerDeviceOptions}
+                value={draft.trigger?.deviceId}
+                onChange={setIrDevice}
+                empty="적외선 신호를 받을 Wave Station이 없습니다."
+              />
+              <div className="automation-wizard-stack-block">
+                <span className="device-panel-label">어떤 적외선 명령을 감지할까요?</span>
+                {!draft.trigger?.deviceId ? (
+                  <p className="panel-empty">위에서 장치를 먼저 선택하세요.</p>
+                ) : (
+                  <PickerList
+                    items={irCommands}
+                    getId={(c) => c.id}
+                    getLabel={(c) => c.name}
+                    value={draft.trigger.commandId}
+                    onChange={setIrCommand}
+                    empty="등록된 적외선 명령이 없습니다."
+                  />
+                )}
+              </div>
+            </div>
           )}
 
           {stepId === 'schedule' && (
-            <>
+            <div className="automation-wizard-stack">
               <div className="rule-mode-toggle rule-mode-toggle--sm">
                 {SCHEDULE_REPEATS.map((r) => (
                   <button key={r} type="button" className={draft.schedule?.repeat === r ? 'active' : ''} onClick={() => setSchedule({ repeat: r })}>
@@ -357,18 +488,33 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
                   </button>
                 ))}
               </div>
+
               {draft.schedule?.repeat === 'once' && (
-                <label className="settings-field settings-field--row">
-                  <span>지금부터 (분 후)</span>
-                  <input type="number" min="1" value={draft.schedule.delayMinutes ?? 30} onChange={(e) => setSchedule({ delayMinutes: Number(e.target.value) })} />
-                </label>
+                <p className="automation-inline-delay">
+                  <span>지금부터</span>
+                  <input
+                    type="number"
+                    min="1"
+                    className="automation-inline-delay-input"
+                    value={draft.schedule.delayMinutes ?? 30}
+                    onChange={(e) => setSchedule({ delayMinutes: Number(e.target.value) })}
+                    aria-label="분"
+                  />
+                  <span>분 후</span>
+                </p>
               )}
+
               {(draft.schedule?.repeat === 'daily' || draft.schedule?.repeat === 'weekly') && (
-                <label className="settings-field settings-field--row">
-                  <span>시각</span>
-                  <input type="time" value={draft.schedule.time || '00:00'} onChange={(e) => setSchedule({ time: e.target.value })} />
-                </label>
+                <div className="automation-schedule-time">
+                  <TimeWheelPicker
+                    hour12={schedulePicker.hour12}
+                    minute={schedulePicker.minute}
+                    meridiem={schedulePicker.meridiem}
+                    onChange={(next) => setSchedule({ time: minutesToTimeString(pickerStateToMinutes(next)) })}
+                  />
+                </div>
               )}
+
               {draft.schedule?.repeat === 'weekly' && (
                 <div className="rule-day-picker">
                   {DAYS_OF_WEEK.map((d) => (
@@ -378,18 +524,22 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
                   ))}
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {stepId === 'actionDevice' && (
-            <DevicePickList devices={actionDeviceOptions} value={draft.action.deviceId} onChange={setActionDevice} />
+            <DevicePickGrid
+              devices={actionDeviceOptions}
+              value={draft.action.deviceId}
+              onChange={setActionDevice}
+            />
           )}
 
           {stepId === 'action' && (
             !actionDevice ? (
-              <p className="panel-empty">이전 단계에서 기기를 먼저 선택하세요.</p>
+              <p className="panel-empty">이전 단계에서 가전을 먼저 선택하세요.</p>
             ) : (
-              <>
+              <div className="automation-wizard-stack">
                 <PickerList
                   items={deviceClassRegistry[actionDevice.class]?.actions || []}
                   getId={(a) => a.name}
@@ -397,7 +547,7 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
                   value={draft.action.name}
                   onChange={setActionName}
                 />
-                {actionDef && (
+                {actionDef && actionHasParams(actionDef) && (
                   <ParamsEditor
                     schema={actionDef.paramsSchema}
                     values={draft.action.params}
@@ -405,15 +555,15 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
                     onChange={(params) => setDraft((d) => ({ ...d, action: { ...d.action, params } }))}
                   />
                 )}
-              </>
+              </div>
             )
           )}
 
           {stepId === 'execMode' && (
-            <>
+            <div className="automation-wizard-stack automation-wizard-exec">
               <span className="field-label-with-info automation-wizard-subhead">
                 실행 방식
-                <InfoTooltip text={EXEC_MODE_INFO} />
+                <InfoTooltip text={EXEC_MODE_INFO} panel />
               </span>
               <div className="rule-mode-toggle rule-mode-toggle--sm">
                 {ALL_EXEC_MODES.map((m) => (
@@ -437,41 +587,41 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
               <label className="settings-field settings-field--row">
                 <span className="field-label-with-info">
                   쿨다운 (ms)
-                  <InfoTooltip text={COOLDOWN_INFO} />
+                  <InfoTooltip text={COOLDOWN_INFO} panel />
                 </span>
                 <input type="number" min="0" value={draft.cooldownMs} onChange={(e) => setDraft((d) => ({ ...d, cooldownMs: Number(e.target.value) }))} />
               </label>
-            </>
+            </div>
           )}
 
           {stepId === 'name' && (
             <>
               <label className="settings-field">
-                <span>자동화 이름</span>
+                <span>{draft.mode === 'schedule' ? '예약 이름' : '자동화 이름'}</span>
                 <input
                   type="text"
                   autoFocus
                   value={draft.name}
                   onChange={(e) => { setNameTouched(true); setDraft((d) => ({ ...d, name: e.target.value })); }}
-                  placeholder="자동화 이름"
+                  placeholder={draft.mode === 'schedule' ? '예약 이름' : '자동화 이름'}
                 />
               </label>
               <div className="automation-wizard-summary">
                 <div>
                   <span>조건</span>
-                  <strong>
+                  <SummaryValue>
                     {draft.mode === 'schedule'
                       ? describeSchedule(draft.schedule)
                       : describeTrigger(draft.trigger, { deviceName: triggerDevice?.name, gestureClassName, commandName: irCommandName })}
-                  </strong>
+                  </SummaryValue>
                 </div>
                 <div>
                   <span>동작</span>
-                  <strong>{actionDevice?.name} · {actionDef?.description || draft.action.name}</strong>
+                  <SummaryValue>{actionDevice?.name} · {actionDef?.description || draft.action.name}</SummaryValue>
                 </div>
                 <div>
                   <span>실행 방식</span>
-                  <strong>{EXEC_MODE_LABELS[draft.execMode]}</strong>
+                  <SummaryValue>{EXEC_MODE_LABELS[draft.execMode]}</SummaryValue>
                 </div>
               </div>
             </>
@@ -481,6 +631,11 @@ export function AutomationWizard({ devices, irCommands, editingRule, onClose, on
         </div>
 
         <div className="automation-wizard-footer">
+          {!isFirstStep && (
+            <button type="button" className="settings-btn-ghost automation-wizard-secondary" onClick={goBack}>
+              이전
+            </button>
+          )}
           <button type="button" className="settings-btn-primary automation-wizard-primary" disabled={!canGoNext || saving} onClick={handlePrimary}>
             {isLastStep ? (editingRule ? '저장' : '완료') : '다음'}
           </button>

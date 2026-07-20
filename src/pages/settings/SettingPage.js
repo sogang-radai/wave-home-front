@@ -8,14 +8,12 @@ import { AccountSettings } from './AccountSettings';
 import { GeneralSettings } from './GeneralSettings';
 import { AiAgentSettings } from './AiAgentSettings';
 import { AboutSettings } from './AboutSettings';
-import { SleepSettings } from './SleepSettings';
 import { DeveloperSettings } from './DeveloperSettings';
 import { API_MODE } from '../../api/config';
 
 const settingCategories = [
   { id: 'general', label: '일반', desc: '기본 UI와 시스템 환경' },
   { id: 'account', label: '계정', desc: '구성원 프로필 관리' },
-  { id: 'sleep', label: '수면', desc: '수면 목표와 자동화' },
   { id: 'devices', label: '장치', desc: '연결된 장치 관리' },
   { id: 'rooms', label: '구역', desc: '구역과 장치 배치' },
   { id: 'ai', label: 'AI 에이전트', desc: '프롬프트와 AI 모델' },
@@ -44,8 +42,13 @@ export function SettingPage({
   }, []);
 
   const categories = showDevSettings ? [...settingCategories, devCategory] : settingCategories;
-  const activeLabel = categories.find((c) => c.id === category)?.label || '';
+  const activeCategory = categories.some((c) => c.id === category) ? category : 'general';
+  const activeLabel = categories.find((c) => c.id === activeCategory)?.label || '';
   const tabItems = categories.map((item) => [item.id, item.label]);
+
+  useEffect(() => {
+    if (category === 'sleep') setCategory('general');
+  }, [category, setCategory]);
 
   return (
     <div className="settings-page">
@@ -55,7 +58,7 @@ export function SettingPage({
             <button
               key={item.id}
               type="button"
-              className={`settings-nav-item ${category === item.id ? 'active' : ''}`}
+              className={`settings-nav-item ${activeCategory === item.id ? 'active' : ''}`}
               onClick={() => setCategory(item.id)}
             >
               <strong>{item.label}</strong>
@@ -65,12 +68,12 @@ export function SettingPage({
         </nav>
 
         <div className="settings-nav-tabs">
-          <Tabs active={category} onChange={setCategory} items={tabItems} />
+          <Tabs active={activeCategory} onChange={setCategory} items={tabItems} />
         </div>
 
         <div className="settings-detail">
-          {category === 'general' && <GeneralSettings heading={activeLabel} />}
-          {category === 'account' && (
+          {activeCategory === 'general' && <GeneralSettings heading={activeLabel} />}
+          {activeCategory === 'account' && (
             <AccountSettings
               heading={activeLabel}
               accounts={accounts}
@@ -81,14 +84,13 @@ export function SettingPage({
               onAddAccount={onAddAccount}
             />
           )}
-          {category === 'devices' && <DeviceRegistrationSettings heading={activeLabel} rooms={rooms} />}
-          {category === 'rooms' && <RoomZoneSettings heading={activeLabel} rooms={rooms} setRooms={setRooms} accounts={accounts} />}
-          {category === 'ai' && <AiAgentSettings heading={activeLabel} />}
-          {category === 'sleep' && <SleepSettings />}
-          {category === 'info' && (
+          {activeCategory === 'devices' && <DeviceRegistrationSettings heading={activeLabel} rooms={rooms} />}
+          {activeCategory === 'rooms' && <RoomZoneSettings heading={activeLabel} rooms={rooms} setRooms={setRooms} accounts={accounts} />}
+          {activeCategory === 'ai' && <AiAgentSettings heading={activeLabel} />}
+          {activeCategory === 'info' && (
             <AboutSettings heading={activeLabel} onUnlockDevMenu={onUnlockDevMenu} />
           )}
-          {category === 'dev' && showDevSettings && (
+          {activeCategory === 'dev' && showDevSettings && (
             IS_REAL_API ? (
               <DeveloperSettings heading={activeLabel} />
             ) : (

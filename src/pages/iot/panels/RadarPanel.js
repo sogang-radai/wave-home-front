@@ -36,15 +36,15 @@ export function RadarPanel({ device }) {
 
   return (
     <div className="radar-panel">
-      <label className="settings-field">
-        <span>할당된 제스처 셋</span>
+      <div className="panel-section">
+        <span className="device-panel-label">할당된 제스처 셋</span>
         <select className="settings-select" value={assignment.gestureSetId || ''} onChange={(e) => assign(e.target.value)}>
           <option value="">미지정</option>
           {gestureSets.filter((s) => s.enabled).map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-      </label>
+      </div>
       {definition ? (
         <div className="radar-set-summary">
           <p>{definition.description}</p>

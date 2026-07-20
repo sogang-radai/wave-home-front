@@ -17,7 +17,7 @@ const cards = [
         className="aspect-[2419/1464] w-full rounded-xl object-cover"
       />
     ),
-    target: { page: "home", homeTab: "twin" },
+    target: { page: "twin" },
   },
   {
     eyebrow: "가전 제어",
@@ -65,7 +65,7 @@ export default function SmartHomeSection({ onEnter }) {
       id="smarthome"
       index={5}
       accent={{ text: "#b8860b", from: "#fdf8ee", to: "#f7e9c9" }}
-      eyebrow="가전 관리"
+      eyebrow="IoT 가전 제어"
       title="손짓 하나로 움직이는 우리 집"
       description="제스처로 조명과 가전을 제어하고, 3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인하세요."
       cards={cards}

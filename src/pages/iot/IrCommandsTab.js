@@ -5,6 +5,7 @@ import { InfoTooltip } from '../alarm/InfoTooltip';
 import iotApi from '../../api/iotApi';
 import { parseTimingsText } from '../../data/irCommandData';
 import '../alarm/alarm.css';
+import '../settings/settings.css';
 
 const LEARN_TIMEOUT_MS = 10000;
 
@@ -171,11 +172,20 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
 export function IrCommandsTab() {
   const [commands, setCommands] = useState([]);
   const [waveStations, setWaveStations] = useState([]);
+  const [search, setSearch] = useState('');
   const [modalCommand, setModalCommand] = useState(undefined); // undefined = closed, null = new, object = edit
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [toast, setToast] = useState('');
 
   const load = () => iotApi.getIrCommands().then(setCommands);
+  const query = search.trim().toLowerCase();
+  const filteredCommands = query
+    ? commands.filter((command) => {
+      const name = (command.name || '').toLowerCase();
+      const description = (command.description || '').toLowerCase();
+      return name.includes(query) || description.includes(query);
+    })
+    : commands;
 
   useEffect(() => {
     load();
@@ -208,14 +218,27 @@ export function IrCommandsTab() {
   return (
     <div className="ir-command-page">
       <Card title="적외선 명령" wide>
-        <div className="ir-command-toolbar">
-          <p className="section-description">Wave Station이 리모컨 신호를 직접 받아 등록하거나 직접 입력해서, 에어컨·TV 같은 가전을 리모컨 없이도 제어할 수 있게 만들어요.</p>
-          <button type="button" className="settings-add-btn" onClick={() => setModalCommand(null)}>
-            명령 추가
+        <p className="section-description">
+          에어컨·TV 리모컨의 <strong className="wave-term">적외선 명령</strong>을 등록해서 구형 가전을 WaveHome이 제어하도록 해요.
+        </p>
+
+        <input
+          type="search"
+          className="automation-search-input"
+          placeholder="적외선 명령 검색"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div className="ir-command-section-head">
+          <span>적외선 명령 목록 <em>({filteredCommands.length})</em></span>
+          <button type="button" className="card-action-btn" onClick={() => setModalCommand(null)}>
+            + 새 명령
           </button>
         </div>
+
         <div className="ir-command-list">
-          {commands.map((command) => (
+          {filteredCommands.map((command) => (
             <article className="ir-command-row" key={command.id}>
               <div className="ir-command-main">
                 <strong>{command.name}</strong>
@@ -226,7 +249,9 @@ export function IrCommandsTab() {
                 </div>
               </div>
               <div className="ir-command-actions">
-                <button type="button" className="settings-btn-ghost" onClick={() => testSend(command)}>테스트</button>
+                <button type="button" className="settings-btn-ghost automation-row-test" onClick={() => testSend(command)}>
+                  테스트 ›
+                </button>
                 <button type="button" className="icon-btn" onClick={() => setModalCommand(command)} aria-label="수정" title="수정">
                   <GearIcon width={16} height={16} />
                 </button>
@@ -237,6 +262,9 @@ export function IrCommandsTab() {
             </article>
           ))}
           {commands.length === 0 && <p className="panel-empty">등록된 적외선 명령이 없습니다.</p>}
+          {commands.length > 0 && filteredCommands.length === 0 && (
+            <p className="panel-empty">검색 결과가 없습니다.</p>
+          )}
         </div>
 
         {modalCommand !== undefined && (
@@ -248,7 +276,13 @@ export function IrCommandsTab() {
           />
         )}
         {confirmDelete && (
-          <ConfirmDialog title="적외선 명령 삭제" message={`'${confirmDelete.name}' 명령을 삭제할까요?`} onConfirm={remove} onCancel={() => setConfirmDelete(null)} />
+          <ConfirmDialog
+            title="적외선 명령 삭제"
+            message={`"${confirmDelete.name}" 명령을 삭제할까요?`}
+            confirmLabel="삭제"
+            onConfirm={remove}
+            onCancel={() => setConfirmDelete(null)}
+          />
         )}
         {toast && <div className="iot-toast">{toast}</div>}
       </Card>

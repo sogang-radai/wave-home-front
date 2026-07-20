@@ -1,13 +1,18 @@
 import { useId } from 'react';
 import { motion } from 'framer-motion';
 
-export function Tabs({ items, active, onChange }) {
+export function Tabs({ items, active, onChange, coachMarkPrefix = 'hometab' }) {
   const layoutId = useId();
 
   return (
     <div className="tabs">
       {items.map(([id, label, badge]) => (
-        <button key={id} className={active === id ? 'active' : ''} data-coachmark={`hometab-${id}`} onClick={() => onChange(id)}>
+        <button
+          key={id}
+          className={active === id ? 'active' : ''}
+          data-coachmark={coachMarkPrefix ? `${coachMarkPrefix}-${id}` : undefined}
+          onClick={() => onChange(id)}
+        >
           {active === id && (
             <motion.span
               layoutId={`tabs-pill-${layoutId}`}

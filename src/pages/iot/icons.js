@@ -93,11 +93,13 @@ export function PowerIcon(props) {
 }
 
 export function InputIcon(props) {
+  // Horizontal R/G/Y/B dots — reads as “input source / AV” more clearly than a console glyph.
   return (
-    <svg {...iconBase} {...props}>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M8 9l3 3-3 3" />
-      <path d="M13 15h4" />
+    <svg {...iconBase} {...props} fill="none" stroke="none">
+      <circle cx="4.5" cy="12" r="2.35" fill="#e53935" />
+      <circle cx="9.5" cy="12" r="2.35" fill="#43a047" />
+      <circle cx="14.5" cy="12" r="2.35" fill="#fdd835" />
+      <circle cx="19.5" cy="12" r="2.35" fill="#1e88e5" />
     </svg>
   );
 }

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import iotApi from '../../api/iotApi';
 import { isDemoHiddenDevice } from '../../api/config';
+import { defaultDetailTabFor, detailTabsFor } from './deviceDetail';
 import { isDeviceOffline, sortDevicesForControl } from './iotUtils';
 
 // Shared device-list/detail state — used by the plain IoT 제어 grid
-// (IotControlTab) and by the merged 디지털 트윈 홈 sidebar (HomeTwinPage),
+// (IotControlTab) and by the merged 디지털 트윈 홈 sidebar (TwinPage),
 // so both stay in sync with the same fetch/poll/selection behavior.
 export function useIotDevices() {
   const [rooms, setRooms] = useState([]);
@@ -81,13 +82,21 @@ export function useIotDevices() {
       return;
     }
     if (!filteredDevices.some((d) => d.id === selectedDeviceId)) {
-      setSelectedDeviceId(filteredDevices[0].id);
-      setDetailTab('control');
+      const next = filteredDevices[0];
+      setSelectedDeviceId(next.id);
+      setDetailTab(defaultDetailTabFor(next));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredDevices]);
 
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId) || null;
+
+  useEffect(() => {
+    if (!selectedDevice) return;
+    const tabs = detailTabsFor(selectedDevice);
+    if (!tabs.some(([id]) => id === detailTab))
+      setDetailTab(defaultDetailTabFor(selectedDevice));
+  }, [selectedDevice, detailTab]);
 
   const refreshDeviceRules = (deviceId) => {
     if (!deviceId) return;
@@ -103,12 +112,9 @@ export function useIotDevices() {
 
   const selectDevice = (device) => {
     setSelectedDeviceId(device.id);
-    if (isDeviceOffline(device)) {
-      setDetailTab('log');
+    setDetailTab(defaultDetailTabFor(device));
+    if (isDeviceOffline(device))
       iotApi.getEvents({ deviceId: device.id }).then(setDeviceEvents);
-    } else {
-      setDetailTab('control');
-    }
   };
 
   const showToast = (msg) => {

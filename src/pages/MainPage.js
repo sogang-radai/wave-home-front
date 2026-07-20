@@ -133,7 +133,7 @@ export function MainPage({
 
   const deviceConnectionValue = homeSummary
     ? homeSummary.onlineDeviceCount === homeSummary.totalDeviceCount
-      ? '전부 연결됨'
+      ? '모두 연결'
       : `연결 끊김 (${homeSummary.onlineDeviceCount}/${homeSummary.totalDeviceCount})`
     : '—';
 
@@ -310,9 +310,8 @@ export function MainPage({
                 <Metric
                   label={SLEEP_RADAR.role}
                   value="실행중"
-                  detail={`${SLEEP_RADAR.name}로 모니터링\u00A0중`}
+                  detail={'침실\u00A0하방\u00A0레이더로 모니터링\u00A0중'}
                   dot="online"
-                  dotCorner
                 />
                 <Metric
                   label="연결된 가전 상태"

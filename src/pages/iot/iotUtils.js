@@ -67,12 +67,12 @@ export function formatRelativeTime(iso) {
 }
 
 export function formatTriggeredBy(triggeredBy, rules) {
-  if (!triggeredBy) return '자동 감지';
+  if (!triggeredBy) return '자동화';
   if (triggeredBy === 'manual') return '수동';
   const [kind, id] = triggeredBy.split(':');
   const rule = rules?.find((r) => r.id === id);
-  if (kind === 'rule') return rule ? `자동 감지: ${rule.name}` : `자동 감지: ${id}`;
-  if (kind === 'schedule') return rule ? `자동 예약: ${rule.name}` : `자동 예약: ${id}`;
+  if (kind === 'rule') return rule ? `자동화: ${rule.name}` : `자동화: ${id}`;
+  if (kind === 'schedule') return rule ? `예약: ${rule.name}` : `예약: ${id}`;
   return triggeredBy;
 }
 
@@ -86,7 +86,7 @@ export function execModesFor(action) {
   return modes;
 }
 
-export const EXEC_MODE_LABELS = { once: '한 번 실행', toggle: '켬·끔 전환', repeat: '반복 실행' };
+export const EXEC_MODE_LABELS = { once: '한 번 실행', toggle: 'On/Off 전환', repeat: '반복 실행' };
 
 export const SCHEDULE_REPEAT_LABELS = { once: '한 번만', daily: '매일', weekly: '매주' };
 
@@ -105,7 +105,11 @@ export function describeSchedule(schedule) {
 
 export function describeTrigger(trigger, { deviceName, gestureClassName, commandName } = {}) {
   if (!trigger) return null;
-  if (trigger.kind === 'gesture') return `${deviceName || trigger.deviceId} · ${gestureClassName || `클래스 ${trigger.classId}`}`;
+  if (trigger.kind === 'gesture') {
+    const radar = deviceName || trigger.deviceId || '레이더';
+    const gesture = gestureClassName || (trigger.classId != null ? `제스처 ${trigger.classId}` : '제스처');
+    return `${radar}에서 ${gesture}를 할 때`;
+  }
   if (trigger.kind === 'device_state') return `${deviceName || trigger.deviceId} · ${trigger.query} ${trigger.op} ${trigger.value}`;
   if (trigger.kind === 'ir_recv') return `${deviceName || trigger.deviceId} · 적외선 신호 수신 (${commandName || trigger.commandId})`;
   return trigger.kind;

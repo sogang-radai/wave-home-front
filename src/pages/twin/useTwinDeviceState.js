@@ -3,7 +3,10 @@ import iotApi from '../../api/iotApi';
 import { isTwinDeviceVisible, TWIN_DEVICES } from '../../data/twinSceneConfig';
 import { getTwinDeviceOverrides, subscribeTwinScene } from '../../lib/twinSceneStore';
 
-const TWIN_POLL_MS = 4000;
+// 1s poll — viewModels only re-render when the visual fingerprint changes
+// (power/color/brightness/temp), so wattage jitter and identical snapshots
+// do not thrash React or the 3D materials.
+const TWIN_POLL_MS = 1000;
 
 function isOnForTwin(twin, deviceClass, state) {
   if (!state) return false;
@@ -27,6 +30,14 @@ function hasLivePowerField(state) {
   return state?.on !== undefined || state?.switch !== undefined;
 }
 
+function mergeTwinState(rawState, override) {
+  const merged = { ...rawState, ...(override?.state || {}) };
+  // Optimistic IoT/agent overrides must win over a stale poll snapshot.
+  if (override?.state?.on !== undefined) merged.on = override.state.on;
+  if (override?.state?.switch !== undefined) merged.switch = override.state.switch;
+  return merged;
+}
+
 /** Twin visuals only care about power/color — ignore plug wattage jitter. */
 function visualFingerprint(states, devices, overrides) {
   const deviceById = new Map(devices.map((d) => [d.id, d]));
@@ -34,11 +45,9 @@ function visualFingerprint(states, devices, overrides) {
     const device = deviceById.get(twin.deviceId);
     const rawState = states[twin.deviceId]?.state || {};
     const override = overrides.get(twin.deviceId);
-    const mergedState = { ...rawState, ...(override?.state || {}) };
-    if (rawState.on !== undefined) mergedState.on = rawState.on;
-    if (rawState.switch !== undefined) mergedState.switch = rawState.switch;
+    const mergedState = mergeTwinState(rawState, override);
     const connected = override?.connected ?? device?.connected ?? false;
-    const on = hasLivePowerField(rawState)
+    const on = hasLivePowerField(mergedState)
       ? isOnForTwin(twin, device?.class, mergedState)
       : (override?.on ?? false);
     const color = mergedState.color;
@@ -109,11 +118,9 @@ export function useTwinDeviceState() {
       const override = overrides.get(twin.deviceId);
       const device = apiDevice || { id: twin.deviceId, name: twin.name, connected: false, class: 'unknown' };
       const rawState = entry?.state || {};
-      const mergedState = { ...rawState, ...(override?.state || {}) };
-      if (rawState.on !== undefined) mergedState.on = rawState.on;
-      if (rawState.switch !== undefined) mergedState.switch = rawState.switch;
+      const mergedState = mergeTwinState(rawState, override);
       const connected = override?.connected ?? device.connected ?? false;
-      const on = hasLivePowerField(rawState)
+      const on = hasLivePowerField(mergedState)
         ? isOnForTwin(twin, device.class, mergedState)
         : (override?.on ?? false);
       return {

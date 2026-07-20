@@ -2,9 +2,10 @@ import { Fragment, useState } from 'react';
 import './layout.css';
 import logoDark from '../../img/logo_dark.png';
 import logo from '../../img/logo.png';
-import { pages, upcomingFeatures } from '../../data/appData';
+import { pages, secondaryPages, upcomingFeatures } from '../../data/appData';
 import { ChatBotIcon } from '../icons/ChatBotIcon';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
+import { SHOW_HOME_TWIN } from '../../api/config';
 
 function SidebarIcon({ name }) {
   const common = {
@@ -89,6 +90,25 @@ function SidebarIcon({ name }) {
     );
   }
 
+  if (name === 'twin') {
+    return (
+      <svg {...common}>
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5Z" />
+        <path d="M9 21V12h6v9" />
+      </svg>
+    );
+  }
+
+  if (name === 'planner') {
+    return (
+      <svg {...common}>
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <path d="M16 2v4M8 2v4M3 10h18" />
+        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+      </svg>
+    );
+  }
+
   return (
     <svg {...common}>
       <path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
@@ -117,6 +137,11 @@ export function Sidebar({
 
   const visiblePages = pages.filter((item) => {
     if (isDemoMode && item.id === 'posture') return false;
+    return true;
+  });
+
+  const visibleSecondaryPages = secondaryPages.filter((item) => {
+    if (item.id === 'twin' && !SHOW_HOME_TWIN) return false;
     return true;
   });
 
@@ -182,6 +207,28 @@ export function Sidebar({
             </button>
           </Fragment>
         ))}
+
+        {visibleSecondaryPages.length > 0 && (
+          <>
+            <div className="nav-divider" role="separator" />
+            {visibleSecondaryPages.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item nav-item--compact ${page === item.id ? 'active' : ''}`}
+                data-coachmark={`nav-${item.id}`}
+                onClick={() => {
+                  handleSelect(item.id);
+                  if (collapsed) onCollapsedChange(false);
+                }}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
+                <span className="nav-label">{item.label}</span>
+                {page === item.id && <i />}
+              </button>
+            ))}
+          </>
+        )}
       </nav>
 
       <div className="nav-upcoming">

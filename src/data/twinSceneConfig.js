@@ -53,11 +53,11 @@ const DEVICE_DESCRIPTIONS = {
   "7": "컴퓨터와 연결된 전력 측정이 가능한 스마트 플러그입니다.",
   "8": "에어컨과 연결된 전력 측정이 가능한 스마트 플러그입니다.",
   "9": "인덕션과 연결된 전력 측정이 가능한 스마트 플러그입니다.",
-  "10": "침실에서 PC나 TV겸용으로 사용하는 모니터입니다.",
-  "11": "침실에 있는 RGB색상을 설정 가능한 컬러 조명입니다.",
-  "12": "거실에 있는 색 온도 조절이 가능한 화이트 조명입니다.",
-  "13": "부엌에 있는 색 온도 조절이 가능한 화이트 조명입니다.",
-  "14": "전자레인지와 연결된 전력 측정이 가능한 스마트 플러그입니다.",
+  "10": "전자레인지와 연결된 전력 측정이 가능한 스마트 플러그입니다.",
+  "11": "침실에서 PC나 TV겸용으로 사용하는 모니터입니다.",
+  "12": "침실에 있는 RGB색상을 설정 가능한 컬러 조명입니다.",
+  "13": "거실에 있는 색 온도 조절이 가능한 화이트 조명입니다.",
+  "14": "부엌에 있는 색 온도 조절이 가능한 화이트 조명입니다.",
 };
 
 export const TWIN_DEVICES = [
@@ -80,9 +80,9 @@ export const TWIN_DEVICES = [
     pcLeds: { power: 'bed_pc_led1', blink: ['bed_pc_led2', 'bed_pc_led3'] },
   },
   { deviceId: '0000000000000008', name: '플러그3 - 에어컨', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_ac', labelOffset: [0, 0.22, 0], kind: 'plug', wind: true, windNode: 'bed_ac_outlet_recess', cardDescription: DEVICE_DESCRIPTIONS["8"] },
-  { deviceId: '0000000000000009', name: '플러그4 - 인덕션', roomId: '0000000000000003', gltfRoot: 'kitchen_room', anchor: 'kitchen_induction', labelOffset: [0, 0.35, 0], kind: 'induction', glowNode: 'induction_on', cardDescription: DEVICE_DESCRIPTIONS["9"] },
+  { deviceId: '0000000000000009', name: '플러그4 - 인덕션', roomId: '0000000000000003', gltfRoot: 'kitchen_room', anchor: 'kitchen_induction', labelOffset: [0, 0.35, 0], kind: 'induction', glowNode: 'induction_on', cardDescription: DEVICE_DESCRIPTIONS['9'] },
   {
-    deviceId: '000000000000000e',
+    deviceId: '000000000000000a',
     name: '플러그5 - 전자레인지',
     roomId: '0000000000000003',
     gltfRoot: 'kitchen_room',
@@ -91,12 +91,12 @@ export const TWIN_DEVICES = [
     kind: 'microwave',
     glowNode: 'kitchen_mw_screen_on',
     digitNode: 'kitchen_mw_digit',
-    cardDescription: DEVICE_DESCRIPTIONS['14'],
+    cardDescription: DEVICE_DESCRIPTIONS['10'],
   },
-  { deviceId: '000000000000000a', name: '침실 TV', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_desk_tv_screen', labelOffset: [0, 0.38, 0], kind: 'tv', screenNode: 'bed_desk_tv_screen', cardDescription: DEVICE_DESCRIPTIONS['10'] },
-  { deviceId: '000000000000000b', name: '침실 조명', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade', lightNode: 'bed_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['11'] },
-  { deviceId: '000000000000000c', name: '거실 조명', roomId: '0000000000000001', gltfRoot: 'living_room', anchor: 'living_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade.001', lightNode: 'living_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['12'] },
-  { deviceId: '000000000000000d', name: '부엌 조명', roomId: '0000000000000003', gltfRoot: 'kitchen_room', anchor: 'kitchen_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade.002', lightNode: 'kitchen_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['13'] },
+  { deviceId: '000000000000000b', name: '침실 TV', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_desk_tv_screen', labelOffset: [0, 0.38, 0], kind: 'tv', screenNode: 'bed_desk_tv_screen', cardDescription: DEVICE_DESCRIPTIONS['11'] },
+  { deviceId: '000000000000000c', name: '침실 조명', roomId: '0000000000000002', gltfRoot: 'bed_room', anchor: 'bed_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade', lightNode: 'bed_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['12'] },
+  { deviceId: '000000000000000d', name: '거실 조명', roomId: '0000000000000001', gltfRoot: 'living_room', anchor: 'living_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade.001', lightNode: 'living_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['13'] },
+  { deviceId: '000000000000000e', name: '부엌 조명', roomId: '0000000000000003', gltfRoot: 'kitchen_room', anchor: 'kitchen_lamp', labelOffset: [0, 1.6, 0], kind: 'light', shadeNode: 'lamp_shade.002', lightNode: 'kitchen_lamp_light', cardDescription: DEVICE_DESCRIPTIONS['14'] },
 ];
 
 export const LIVING_CAM_NODE = 'living_cam';

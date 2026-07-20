@@ -4,7 +4,7 @@ import { TtsPanel } from './TtsPanel';
 import { MicVolumeBar } from './MicVolumeBar';
 
 const DASH = '—';
-const POLL_MS = 2000;
+const POLL_MS = 1000;
 
 function formatEnvValue(value, digits = 0) {
   if (value == null || Number.isNaN(value)) return DASH;
@@ -20,6 +20,16 @@ function mapEnvPayload(raw) {
   return { lux, tempC, humidity };
 }
 
+function mergeEnv(prev, raw) {
+  const mapped = mapEnvPayload(raw);
+  if (!mapped) return prev;
+  return {
+    lux: mapped.lux ?? prev?.lux ?? null,
+    tempC: mapped.tempC ?? prev?.tempC ?? null,
+    humidity: mapped.humidity ?? prev?.humidity ?? null,
+  };
+}
+
 export function WaveStationPanel({ device }) {
   const [micLevel, setMicLevel] = useState(null);
   const [env, setEnv] = useState(null);
@@ -28,6 +38,10 @@ export function WaveStationPanel({ device }) {
 
   useEffect(() => {
     let cancelled = false;
+    setEnv(null);
+    setMicLevel(null);
+    setLive(false);
+    setError('');
 
     const applyTelemetry = (payload) => {
       if (cancelled) return;
@@ -35,8 +49,8 @@ export function WaveStationPanel({ device }) {
       setError('');
       if (payload?.micLevel !== undefined)
         setMicLevel(payload.micLevel ?? null);
-      if (payload?.env !== undefined)
-        setEnv(mapEnvPayload(payload.env));
+      if (payload?.env != null)
+        setEnv((prev) => mergeEnv(prev, payload.env));
     };
 
     const pollOnce = async () => {
@@ -46,10 +60,13 @@ export function WaveStationPanel({ device }) {
           iotApi.queryDevice(device.id, 'env').catch(() => null),
         ]);
         if (cancelled) return;
-        applyTelemetry({
-          micLevel: status?.mic_level ?? status?.micLevel ?? null,
-          env: envRaw,
-        });
+        const next = {};
+        if (status)
+          next.micLevel = status?.mic_level ?? status?.micLevel ?? null;
+        if (envRaw)
+          next.env = envRaw;
+        if (Object.keys(next).length > 0)
+          applyTelemetry(next);
       } catch (err) {
         if (!cancelled)
           setError(err?.message || '상태를 불러오지 못했습니다.');
@@ -76,24 +93,28 @@ export function WaveStationPanel({ device }) {
 
   return (
     <div className="wave-station-panel">
-      <div className="wave-station-left">
+      <div className="panel-section">
+        <span className="device-panel-label">실시간 센서</span>
+        {error && <p className="panel-empty panel-empty-inline">{error}</p>}
+        <div className="plug-metrics-card wave-station-metrics-card">
+          <div className="plug-metric">
+            <span>조도</span>
+            <strong>{formatEnvValue(env?.lux, 1)}<small>lux</small></strong>
+          </div>
+          <div className="plug-metric">
+            <span>온도</span>
+            <strong>{formatEnvValue(env?.tempC, 1)}<small>℃</small></strong>
+          </div>
+          <div className="plug-metric">
+            <span>습도</span>
+            <strong>{formatEnvValue(env?.humidity, 1)}<small>%</small></strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="wave-station-controls">
         <TtsPanel deviceId={device.id} />
         <MicVolumeBar level={micLevel} unavailable={!live || micLevel == null} />
-      </div>
-      <div className="wave-station-telemetry">
-        {error && <p className="panel-empty panel-empty-inline">{error}</p>}
-        <div className="telemetry-tile">
-          <span>조도</span>
-          <strong>{formatEnvValue(env?.lux, 1)}<small>lux</small></strong>
-        </div>
-        <div className="telemetry-tile">
-          <span>온도</span>
-          <strong>{formatEnvValue(env?.tempC, 1)}<small>℃</small></strong>
-        </div>
-        <div className="telemetry-tile">
-          <span>습도</span>
-          <strong>{formatEnvValue(env?.humidity, 1)}<small>%</small></strong>
-        </div>
       </div>
     </div>
   );

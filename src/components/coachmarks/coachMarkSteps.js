@@ -21,10 +21,20 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     },
     {
       selector: '[data-coachmark="nav-home"]',
-      title: '가전 관리',
-      description: showHomeTwin
-        ? '조명·에어컨·TV 등 연결된 가전을 직접 켜고 끄거나 세부 설정을 바꿀 수 있어요. 디지털 트윈 홈 탭에서는 3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인할 수 있어요.'
-        : '조명·에어컨·TV 등 연결된 가전을 직접 켜고 끄거나 세부 설정을 바꿀 수 있어요.',
+      title: 'IoT 가전 제어',
+      description: '연결된 가전을 한눈에 보고 제어·관리할 수 있어요. 자동화·예약, 적외선 명령, 제스처 목록도 여기서 관리해요.',
+      placement: 'right',
+    },
+    showHomeTwin && {
+      selector: '[data-coachmark="nav-twin"]',
+      title: '트윈홈',
+      description: '3D로 구현된 우리 집에서 기기 배치와 상태를 한눈에 확인하고 제어할 수 있어요.',
+      placement: 'right',
+    },
+    {
+      selector: '[data-coachmark="nav-weeklyPlan"]',
+      title: '주간 계획',
+      description: '할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인할 수 있어요.',
       placement: 'right',
     },
   ]
@@ -86,15 +96,15 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
   return [...sidebarSteps, ...dashboardSteps];
 }
 
-// 가전 관리의 자동화 관리/적외선 명령/제스처 관리 탭 — 세 탭을 한 번에
+// IoT 가전 제어의 자동화·예약/적외선 명령/제스처 목록 탭 — 세 탭을 한 번에
 // 소개하는 투어가 아니라, 그 탭에 들어갈 때마다 해당 탭의 코치마크 하나만
 // 뜬다(App.js가 tabId로 이 맵을 조회해서 1개짜리 steps 배열을 넘긴다).
 const HOME_CONTROL_COACH_MARK_STEPS = {
   trigger: [
     {
       selector: '[data-coachmark="hometab-trigger"]',
-      title: '자동화 관리',
-      description: '기기 상태·제스처·적외선 신호를 감지해 자동으로 실행하는 자동 감지와, 정해진 시각에 실행하는 자동 예약을 한 화면에서 만들고 관리할 수 있어요.',
+      title: '자동화·예약',
+      description: '장치 상태·제스처·적외선 신호를 감지하는 자동화와, 정해진 시각에 실행하는 예약을 한 화면에서 만들고 관리할 수 있어요.',
       placement: 'bottom',
     },
   ],
@@ -102,15 +112,15 @@ const HOME_CONTROL_COACH_MARK_STEPS = {
     {
       selector: '[data-coachmark="hometab-ir"]',
       title: '적외선 명령',
-      description: 'Wave Station이 리모컨 신호를 직접 받아 등록하거나 직접 입력해서, 에어컨·TV 같은 적외선 기기도 여기서 제어할 수 있게 만들어요.',
+      description: '에어컨·TV와 같은 구형 가전의 리모컨 적외선 신호를 등록해서 직접 제어할 수 있도록 해요.',
       placement: 'bottom',
     },
   ],
   gesture: [
     {
       selector: '[data-coachmark="hometab-gesture"]',
-      title: '제스처 관리',
-      description: '레이더에 구성된 제스처와, 각 동작에 연결된 자동화를 확인하는 화면이에요.',
+      title: '제스처 목록',
+      description: '가전 제어를 위해 레이더에서 사용할 수 있는 제스처들을 확인하는 화면이에요.',
       placement: 'bottom',
     },
   ],

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 /**
- * Click/keyboard toggle info popover.
+ * Hover/focus info popover (click toggles on touch).
  * - default: compact dark tip (short strings)
  * - panel: light card popover for longer structured content
  */
@@ -39,6 +39,8 @@ export function InfoTooltip({ text, children, wide = false, panel = false }) {
         panel ? 'info-tooltip--panel' : '',
         open ? 'is-open' : '',
       ].filter(Boolean).join(' ')}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
     >
       <button
         type="button"
@@ -46,6 +48,7 @@ export function InfoTooltip({ text, children, wide = false, panel = false }) {
         aria-label="설명 보기"
         aria-expanded={open}
         aria-controls={bubbleId}
+        onFocus={() => setOpen(true)}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();

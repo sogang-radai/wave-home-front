@@ -211,8 +211,30 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* ~20% smaller than the default Metric value/dot for the 3-up 홈 현황 row. */
 .state-grid-row .metric strong {
-  font-size: 22px;
+  font-size: 18px;
+}
+
+.state-grid-row .metric-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+}
+
+.state-grid-row .metric-dot.online {
+  box-shadow: 0 0 0 3px var(--good-15);
+}
+
+.state-grid-row .metric-dot.idle {
+  box-shadow: 0 0 0 3px var(--warn-15);
+}
+
+/* Prefer breaking between phrases, not mid-phrase ("침실 하방" / "레이더로"). */
+.state-grid-row .metric-detail {
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-height: 1.4;
 }
 
 

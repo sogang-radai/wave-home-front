@@ -273,6 +273,28 @@ button.brand-group {
   height: 24px;
 }
 
+/* Secondary nav under IoT — tighter spacing, smaller type/icons. */
+.nav-item--compact {
+  height: 38px;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 0 12px 0 18px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav-item--compact .nav-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.nav-item--compact .nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* Upcoming features (dimmed, non-interactive preview) */
 .nav-upcoming {
   padding: 4px 10px 14px;

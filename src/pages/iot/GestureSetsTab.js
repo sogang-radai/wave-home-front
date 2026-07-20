@@ -34,9 +34,9 @@ export function GestureSetsTab() {
 
   return (
     <div className="gesture-management">
-      <Card title="제스처 관리" wide>
+      <Card title="제스처 목록" wide>
         <p className="section-description">
-          레이더에 구성된 제스처 셋을 확인하는 화면이에요. 제스처 셋을 클릭하면 어떤 동작이 정의되어 있고, 어떤 <strong className="wave-term">자동 감지</strong>에 연결돼 있는지 볼 수 있어요.
+          가전 제어를 위해 레이더에서 사용할 수 있는 <strong className="wave-term">제스처 목록</strong>을 확인하는 화면이에요.
         </p>
         <div className="gesture-set-list">
           {sets.map((set) => (

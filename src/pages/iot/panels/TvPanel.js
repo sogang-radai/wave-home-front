@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import iotApi from '../../../api/iotApi';
+import { dispatchTwinDeviceState } from '../../../lib/twinSceneStore';
 import {
   PowerIcon, InputIcon, ChevronUpIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon,
   BackIcon, PlayIcon, HomeIcon,
@@ -25,8 +26,17 @@ export function TvPanel({ device, onChanged }) {
   }, [device.id]);
 
   const invoke = async (name, params = {}) => {
+    if (state && (name === 'toggle' || name === 'on' || name === 'off')) {
+      const optimistic = {
+        ...state,
+        on: name === 'on' ? true : name === 'off' ? false : !state.on,
+      };
+      setState(optimistic);
+      dispatchTwinDeviceState(device.id, optimistic, { deviceName: device.name, action: name });
+    }
     const next = await iotApi.invokeDevice(device.id, name, params);
     setState(next);
+    dispatchTwinDeviceState(device.id, next, { deviceName: device.name, action: name });
     onChanged?.();
     return next;
   };
@@ -46,6 +56,7 @@ export function TvPanel({ device, onChanged }) {
 
   return (
     <div className="tv-remote">
+      <div className="tv-remote-scale">
       <div className="tv-remote-body">
       <div className="tv-remote-row tv-remote-row--top">
         <button type="button" className="tv-remote-btn tv-remote-btn--power" onClick={() => invoke('toggle')} aria-label="전원">
@@ -108,6 +119,7 @@ export function TvPanel({ device, onChanged }) {
             <span>{app.abbr}</span>
           </button>
         ))}
+      </div>
       </div>
       </div>
     </div>

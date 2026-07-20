@@ -165,7 +165,22 @@
 .metric strong {
   display: block;
   margin-bottom: 6px;
+  color: var(--ink);
   font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* Keep status dot glued to the value so it never wraps onto its own line. */
+.metric-value--with-dot {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.metric-value--with-dot .metric-dot {
+  flex: 0 0 auto;
 }
 
 .metric-dot {
@@ -196,7 +211,7 @@
   box-shadow: 0 0 0 4px var(--warn-15);
 }
 
-.metric span {
+.metric-detail {
   display: block;
   color: var(--sub);
   font-size: 12px;
