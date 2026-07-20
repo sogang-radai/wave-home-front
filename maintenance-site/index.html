@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#95d9f8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>서비스 안정화를 위한 점검 안내 | WaveHome</title>
+    <style>
+      :root {
+        --ink: #0b1e2d;
+        --sub: #44596d;
+        --line: #e5f4fb;
+        --bg: #f5fafd;
+        --surface: #fff;
+        --shadow: rgba(67, 111, 137, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        font-family: 'IBM Plex Sans KR', 'Inter', sans-serif;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+      }
+
+      .maintenance-card {
+        width: 100%;
+        max-width: 480px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 48px 36px;
+        box-shadow: 0 8px 32px var(--shadow);
+      }
+
+      .maintenance-image {
+        width: 220px;
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 28px;
+      }
+
+      .maintenance-title {
+        margin: 0 0 16px;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .maintenance-body {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--sub);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="maintenance-card">
+      <img class="maintenance-image" src="./maintenance.png" alt="시스템 점검 안내" />
+      <h1 class="maintenance-title">서비스 안정화를 위한 점검 안내</h1>
+      <p class="maintenance-body">
+        더 나은 서비스 제공을 위해 현재 시스템 점검을 진행하고 있습니다.
+        <br />
+        이용에 불편을 드려 죄송하며, 빠른 시일 내에 정비하여 돌아오겠습니다.
+      </p>
+    </div>
+  </body>
+</html>
