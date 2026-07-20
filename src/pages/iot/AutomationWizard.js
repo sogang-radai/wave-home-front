@@ -50,7 +50,7 @@ const QUERY_LABELS = {
 
 function DevicePickGrid({ devices, value, onChange, empty }) {
   if (devices.length === 0) {
-    return <p className="panel-empty">{empty || '선택 가능한 장치가 없습니다.'}</p>;
+    return <p className="panel-empty">{empty || '선택 가능한 기기가 없습니다.'}</p>;
   }
   return (
     <div className="automation-device-grid">
@@ -464,7 +464,7 @@ export function AutomationWizard({ devices, irCommands, editingRule, initialMode
               <div className="automation-wizard-stack-block">
                 <span className="device-panel-label">어떤 적외선 명령을 감지할까요?</span>
                 {!draft.trigger?.deviceId ? (
-                  <p className="panel-empty">위에서 장치를 먼저 선택하세요.</p>
+                  <p className="panel-empty">위에서 기기를 먼저 선택하세요.</p>
                 ) : (
                   <PickerList
                     items={irCommands}

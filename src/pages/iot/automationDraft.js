@@ -8,7 +8,7 @@ export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 // 자동화(+ 새 자동화) 1단계 — 예약은 별도 진입이라 여기선 제외.
 export const TYPE_OPTIONS = [
   { mode: 'trigger', kind: 'gesture', label: '제스처 감지', desc: '레이더가 특정 제스처를 인식하면 실행해요.' },
-  { mode: 'trigger', kind: 'device_state', label: '장치 상태 감지', desc: '센서의 값이 설정한 조건을 만족하면 실행해요.' },
+  { mode: 'trigger', kind: 'device_state', label: '기기 상태 감지', desc: '센서의 값이 설정한 조건을 만족하면 실행해요.' },
   { mode: 'trigger', kind: 'ir_recv', label: '적외선 신호 감지', desc: '리모컨에서 적외선 신호를 받으면 실행해요.' },
 ];
 
@@ -52,7 +52,7 @@ export function validateDraft(draft) {
   if (!draft.name.trim()) return '이름을 입력하세요.';
   if (draft.mode === 'trigger') {
     if (!draft.trigger?.kind) return '감지 조건 종류를 선택하세요.';
-    if (!draft.trigger.deviceId) return '감지할 장치를 선택하세요.';
+    if (!draft.trigger.deviceId) return '감지할 기기를 선택하세요.';
     if (draft.trigger.kind === 'gesture' && (draft.trigger.classId === null || draft.trigger.classId === undefined || draft.trigger.classId === '')) {
       return '제스처를 선택하세요.';
     }
@@ -66,7 +66,7 @@ export function validateDraft(draft) {
   } else {
     return '무엇을 감지할지 선택하세요.';
   }
-  if (!draft.action.deviceId) return '실행할 장치를 선택하세요.';
+  if (!draft.action.deviceId) return '실행할 기기를 선택하세요.';
   if (!draft.action.name) return '실행할 동작을 선택하세요.';
   return '';
 }
@@ -94,9 +94,9 @@ export function stepsFor(draft) {
 export const STEP_TITLES = {
   type: '무엇을 감지할까요?',
   gesture: '어떤 레이더로 제스처를 감지할까요?',
-  device: '어떤 장치의 상태를 감지할까요?',
+  device: '어떤 기기의 상태를 감지할까요?',
   detail: '세부 조건을 정해주세요',
-  irDetect: '어떤 장치로 적외선 신호를 감지할까요?',
+  irDetect: '어떤 기기로 적외선 신호를 감지할까요?',
   schedule: '언제 실행할까요?',
   actionDevice: '어떤 가전을 제어할까요?',
   action: '어떻게 제어할까요?',

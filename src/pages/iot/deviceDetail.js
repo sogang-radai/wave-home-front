@@ -313,7 +313,7 @@ export function DeviceConnectionLog({ device, events }) {
       {!err && isDeviceOffline(device) && (
         <div className="device-connection-error">
           <strong>오프라인</strong>
-          <span>{device.stateSummary || '장치에 연결할 수 없습니다.'}</span>
+          <span>{device.stateSummary || '기기에 연결할 수 없습니다.'}</span>
         </div>
       )}
       {connectionEvents.length === 0 ? (
@@ -333,13 +333,13 @@ export function DeviceDetailBody({ device, detailTab, onChanged, showToast, devi
     <div className="iot-detail-content">
       {detailTab === 'control' && (
         device.connectionStatus === 'initializing' ? (
-          <p className="panel-empty">장치를 초기화하는 중입니다…</p>
+          <p className="panel-empty">기기를 초기화하는 중입니다…</p>
         ) : !device.connected ? (
-          <p className="panel-empty">장치가 오프라인 상태입니다. 연결 상태를 확인해주세요.</p>
+          <p className="panel-empty">기기가 오프라인 상태입니다. 연결 상태를 확인해주세요.</p>
         ) : PanelComponent ? (
           <PanelComponent device={device} onChanged={onChanged} />
         ) : (
-          <p className="panel-empty">이 장치 클래스에는 아직 제어 UI가 없습니다.</p>
+          <p className="panel-empty">이 기기 종류에는 아직 제어 UI가 없습니다.</p>
         )
       )}
 

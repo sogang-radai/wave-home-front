@@ -18,7 +18,7 @@ export function deviceDotTitle(device) {
     || (device?.connected ? 'online' : 'offline');
   if (status === 'online') return '온라인';
   if (status === 'initializing') return '초기화 중';
-  if (status === 'missing') return '장치 없음';
+  if (status === 'missing') return '기기 없음';
   return '오프라인';
 }
 
@@ -47,7 +47,7 @@ export const EVENT_TYPE_FILTERS = [
 
 export const TRIGGER_KIND_LABELS = {
   gesture: '제스처',
-  device_state: '장치 상태',
+  device_state: '기기 상태',
   ir_recv: '적외선 신호',
 };
 

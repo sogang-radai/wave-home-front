@@ -73,7 +73,7 @@ export function TtsPanel({ deviceId }) {
           ref={textareaRef}
           className={`tts-panel-textarea${toast ? ' has-toast' : ''}`}
           rows={TTS_MIN_ROWS}
-          placeholder="장치에서 재생할 메시지를 입력하세요 (Ctrl/⌘+Enter 전송)"
+          placeholder="기기에서 재생할 메시지를 입력하세요 (Ctrl/⌘+Enter 전송)"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}

@@ -772,17 +772,19 @@
   width: min(100%, 420px);
 }
 
-.light-swatch-grid--side {
+/* Must beat .light-swatch-grid { repeat(5, …) } — same specificity otherwise
+   lets the later 5-column rule win and transpose the swatches. */
+.light-swatch-grid.light-swatch-grid--side {
   display: grid;
   width: fit-content;
   flex: 0 0 auto;
   grid-template-columns: repeat(3, 28px);
-  grid-auto-rows: 28px;
+  grid-template-rows: repeat(5, 28px);
   grid-auto-flow: row;
   gap: 8px;
 }
 
-.light-swatch-grid--side .light-swatch {
+.light-swatch-grid.light-swatch-grid--side .light-swatch {
   width: 28px;
   height: 28px;
   aspect-ratio: auto;
@@ -3204,8 +3206,9 @@ h4.field-label-with-info {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .light-color-section .light-swatch-grid--side {
+  .light-color-section .light-swatch-grid.light-swatch-grid--side {
     grid-template-columns: repeat(3, 28px);
+    grid-template-rows: repeat(5, 28px);
     grid-auto-flow: row;
   }
 

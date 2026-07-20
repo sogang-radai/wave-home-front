@@ -23,14 +23,14 @@ export function IotControlTab() {
     <div className="iot-control-page">
       <Card title="제어·관리" wide>
         <p className="section-description">
-          연결된 모든 장치들을 한눈에 보고 <strong className="wave-term">제어</strong>하고 <strong className="wave-term">관리</strong>해요
+          연결된 모든 기기들을 한눈에 보고 <strong className="wave-term">제어</strong>하고 <strong className="wave-term">관리</strong>해요
         </p>
 
         <div className="iot-control-split">
           <div className="iot-control-pane">
             <div className="iot-control-pane-head">
               <div className="iot-control-pane-head-left">
-                <strong>장치 목록</strong>
+                <strong>기기 목록</strong>
                 {devices.length > 0 && (
                   <span className="iot-online-count">
                     온라인 {onlineCount}/{devices.length}
@@ -48,7 +48,7 @@ export function IotControlTab() {
             </div>
 
             {devicesLoading && devices.length === 0 && (
-              <p className="panel-loading">장치 목록을 불러오는 중…</p>
+              <p className="panel-loading">기기 목록을 불러오는 중…</p>
             )}
             {devicesError && devices.length === 0 && (
               <p className="panel-empty">{devicesError}</p>
@@ -93,13 +93,13 @@ export function IotControlTab() {
                   </button>
                 );
               })}
-              {filteredDevices.length === 0 && <p className="panel-empty">이 구역에 등록된 장치가 없습니다.</p>}
+              {filteredDevices.length === 0 && <p className="panel-empty">이 구역에 등록된 기기가 없습니다.</p>}
             </div>
           </div>
 
           <div className="iot-control-pane iot-control-pane--detail">
             <div className="iot-control-pane-head">
-              <strong>장치 메뉴</strong>
+              <strong>기기 메뉴</strong>
             </div>
 
             <div className="iot-control-menu-card">
@@ -131,7 +131,7 @@ export function IotControlTab() {
                   </div>
                 </>
               ) : (
-                <p className="panel-empty iot-control-detail-empty">장치를 선택하면 제어·관리 메뉴가 여기에 표시돼요.</p>
+                <p className="panel-empty iot-control-detail-empty">기기를 선택하면 제어·관리 메뉴가 여기에 표시돼요.</p>
               )}
             </div>
           </div>

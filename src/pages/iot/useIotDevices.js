@@ -41,7 +41,7 @@ export function useIotDevices() {
       .catch((err) => {
         if (err?.name === 'AbortError')
           return;
-        setDevicesError(err?.message || '장치 목록을 불러오지 못했습니다.');
+        setDevicesError(err?.message || '기기 목록을 불러오지 못했습니다.');
       })
       .finally(() => {
         devicesPollRef.current = null;

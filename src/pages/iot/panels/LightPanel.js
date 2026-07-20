@@ -12,7 +12,7 @@ function unwrapState(payload) {
   return payload;
 }
 
-// Row-major order for a 3×5 grid (가로 3, 세로 5).
+// Row-major for CSS grid 가로 3 × 세로 5 (.light-swatch-grid--side).
 const PRESET_COLORS = [
   { r: 255, g: 255, b: 255 },
   { r: 255, g: 214, b: 170 },

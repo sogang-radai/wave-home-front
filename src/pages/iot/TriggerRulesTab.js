@@ -143,7 +143,7 @@ export function TriggerRulesTab() {
     <div className="automation-page">
       <Card title="자동화·예약" wide>
         <p className="section-description">
-          장치 상태·제스처·적외선 신호를 감지하여 가전을 제어하는 <strong className="wave-term">자동화</strong>와 정해진 시각에 가전을 제어하는 <strong className="wave-term">예약</strong>을 관리해요.
+          기기 상태·제스처·적외선 신호를 감지하여 가전을 제어하는 <strong className="wave-term">자동화</strong>와 정해진 시각에 가전을 제어하는 <strong className="wave-term">예약</strong>을 관리해요.
         </p>
 
         <input

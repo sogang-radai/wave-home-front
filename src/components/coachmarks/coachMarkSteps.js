@@ -104,7 +104,7 @@ const HOME_CONTROL_COACH_MARK_STEPS = {
     {
       selector: '[data-coachmark="hometab-trigger"]',
       title: '자동화·예약',
-      description: '장치 상태·제스처·적외선 신호를 감지하는 자동화와, 정해진 시각에 실행하는 예약을 한 화면에서 만들고 관리할 수 있어요.',
+      description: '기기 상태·제스처·적외선 신호를 감지하는 자동화와, 정해진 시각에 실행하는 예약을 한 화면에서 만들고 관리할 수 있어요.',
       placement: 'bottom',
     },
   ],

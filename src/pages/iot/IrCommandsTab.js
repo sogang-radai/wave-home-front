@@ -62,7 +62,7 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
 
   const startLearn = () => {
     if (!form.deviceId) {
-      setError('Wave Station 장치를 선택해주세요.');
+      setError('Wave Station 기기를 선택해주세요.');
       return;
     }
     setLearning(true);
@@ -127,7 +127,7 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
         />
       </label>
       <label className="settings-field">
-        <span>장치</span>
+        <span>기기</span>
         <select
           className="settings-select"
           value={form.deviceId}
@@ -158,7 +158,7 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
       {learning ? (
         <div className="ir-learn-banner ir-learn-banner--single">
           <span className="ir-learn-banner-dot" aria-hidden="true" />
-          선택한 장치를 향해 리모컨 버튼을 눌러주세요 · {countdown}초 남음
+          선택한 기기를 향해 리모컨 버튼을 눌러주세요 · {countdown}초 남음
         </div>
       ) : (
         <button type="button" className="settings-btn-ghost ir-learn-btn" onClick={startLearn} disabled={!form.deviceId}>
