@@ -216,7 +216,14 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
     setDevices((current) => current.map((device) => (device.id === id ? optimistic : device)));
     setSelectedDevice((current) => (current?.id === id ? optimistic : current));
     settingsApi.updateDevice(id, { enabled: optimistic.enabled })
-      .then((updated) => applyUpdate(updated))
+      .then((updated) => {
+        if (updated) {
+          applyUpdate(updated);
+          return;
+        }
+        setDevices((current) => current.map((device) => (device.id === id ? target : device)));
+        setSelectedDevice((current) => (current?.id === id ? target : current));
+      })
       .catch(() => {
         // Revert to original state on API failure.
         setDevices((current) => current.map((device) => (device.id === id ? target : device)));
@@ -225,11 +232,14 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
   };
 
   const renameDevice = async (id, name) => {
-    applyUpdate(await settingsApi.updateDevice(id, { name }));
+    const updated = await settingsApi.updateDevice(id, { name });
+    applyUpdate(updated);
+    return !!updated;
   };
 
   const deleteDevice = async (id) => {
-    await settingsApi.deleteDevice(id);
+    const result = await settingsApi.deleteDevice(id);
+    if (!result) return;
     setDevices((current) => current.filter((device) => device.id !== id));
     setSelectedDevice(null);
   };
@@ -242,7 +252,14 @@ export function DeviceRegistrationSettings({ heading, rooms }) {
     setDevices((current) => current.map((device) => (device.id === id ? optimistic : device)));
     setSelectedDevice((current) => (current?.id === id ? optimistic : current));
     settingsApi.updateDevice(id, { settings: nextSettings })
-      .then((updated) => applyUpdate(updated))
+      .then((updated) => {
+        if (updated) {
+          applyUpdate(updated);
+          return;
+        }
+        setDevices((current) => current.map((device) => (device.id === id ? target : device)));
+        setSelectedDevice((current) => (current?.id === id ? target : current));
+      })
       .catch(() => {
         setDevices((current) => current.map((device) => (device.id === id ? target : device)));
         setSelectedDevice((current) => (current?.id === id ? target : current));
@@ -465,12 +482,14 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
 
   const patchRoom = async (roomId, patch) => {
     const updated = await settingsApi.updateRoom(roomId, patch);
-    if (!updated) return;
+    if (!updated) return false;
     setRooms((current) => current.map((room) => (room?.id === roomId ? updated : room)).filter(Boolean));
+    return true;
   };
 
   const deleteRoom = async (roomId) => {
-    await settingsApi.deleteRoom(roomId);
+    const result = await settingsApi.deleteRoom(roomId);
+    if (!result) return;
     setRooms((current) => {
       const next = current.filter((room) => room.id !== roomId);
       if (selectedRoomId === roomId) {
@@ -481,8 +500,10 @@ export function RoomZoneSettings({ heading, rooms, setRooms, accounts }) {
   };
 
   const updateMembers = async (nextMembers) => {
+    const prev = members;
     setMembers(nextMembers);
-    await settingsApi.updateRoomMembers(selectedRoomId, nextMembers);
+    const saved = await settingsApi.updateRoomMembers(selectedRoomId, nextMembers);
+    if (!saved) setMembers(prev);
   };
 
   const assignDevice = async (deviceId) => {

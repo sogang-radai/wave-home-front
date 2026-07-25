@@ -135,3 +135,25 @@ button {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Shared toast (demo guard, IoT, alarm, etc.) */
+.iot-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 8px 24px var(--ink-16);
+  z-index: 60;
+  animation: iot-toast-in 0.18s ease;
+}
+
+@keyframes iot-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

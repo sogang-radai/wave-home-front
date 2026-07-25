@@ -20,10 +20,12 @@ export function NotificationSettings({ embedded = false }) {
   }, []);
 
   const patchConfig = async (patch) => {
+    const prev = config;
     const next = { ...config, ...patch };
     setConfig(next);
     const saved = await settingsApi.updateGeneralSettings(next);
     if (saved) setConfig(saved);
+    else setConfig(prev);
   };
 
   const handlePushReceiveToggle = async () => {

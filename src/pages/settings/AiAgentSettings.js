@@ -75,6 +75,7 @@ export function AiAgentSettings({ heading }) {
 
   // Optimistic selection: update UI immediately, then sync with API response.
   const selectModel = (modelId) => {
+    const prev = settings;
     setSettings((current) => (current ? { ...current, selectedModelId: modelId } : current));
     const payload = { selectedModelId: modelId };
     // Persist any in-progress prompt draft with the model change so a partial
@@ -84,7 +85,10 @@ export function AiAgentSettings({ heading }) {
     }
     settingsApi.updateAiAgentSettings(payload)
       .then((saved) => {
-        if (!saved) return;
+        if (!saved) {
+          setSettings(prev);
+          return;
+        }
         setSettings(saved);
         if (typeof saved.personalPrompt === 'string') setPrompt(saved.personalPrompt);
       })
@@ -98,13 +102,17 @@ export function AiAgentSettings({ heading }) {
   };
 
   const patchSettings = (patch) => {
+    const prev = settings;
     const payload = { ...patch };
     if (settings && prompt !== settings.personalPrompt) {
       payload.personalPrompt = prompt;
     }
     setSettings((current) => (current ? { ...current, ...payload } : current));
     settingsApi.updateAiAgentSettings(payload).then((saved) => {
-      if (!saved) return;
+      if (!saved) {
+        setSettings(prev);
+        return;
+      }
       setSettings(saved);
       if (typeof saved.personalPrompt === 'string') setPrompt(saved.personalPrompt);
     }).catch(() => {

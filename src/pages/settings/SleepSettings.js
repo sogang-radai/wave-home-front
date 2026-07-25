@@ -37,10 +37,12 @@ export function SleepSettings() {
   }, []);
 
   const patchConfig = async (patch) => {
+    const prev = config;
     const next = { ...config, ...patch };
     setConfig(next);
     const saved = await settingsApi.updateSleepConfig(next);
     if (saved) setConfig(saved);
+    else setConfig(prev);
   };
 
   if (!config) return null;

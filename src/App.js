@@ -20,6 +20,7 @@ import { HomeControlPage } from './pages/iot/HomeControlPage';
 import { TwinPage } from './pages/twin/TwinPage';
 import { PowerPage } from './pages/power/PowerPage';
 import { SettingPage } from './pages/settings/SettingPage';
+import { ToastHost } from './components/ui/ToastHost';
 import {
   listenPushNavigation,
   resolvePushUrlToPage,
@@ -834,8 +835,9 @@ function App() {
   };
   const renameAccount = async (id, name) => {
     const updated = await settingsApi.updateAccount(id, { name });
-    if (!updated) return;
+    if (!updated) return false;
     setAccounts((current) => current.map((item) => (item?.id === id ? updated : item)).filter(Boolean));
+    return true;
   };
   const addAccount = async (name) => {
     const created = await settingsApi.createAccount({ name });
@@ -1041,6 +1043,7 @@ function App() {
         onFinish={finishHomeCoachMarks}
         onDontShowAgain={dontShowHomeCoachMarksAgain}
       />
+      <ToastHost />
     </div>
   );
 }

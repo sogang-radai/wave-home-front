@@ -99,10 +99,11 @@ export function InlineEditableText({ value, onCommit, ariaLabel, className = '' 
     setDraft(value);
   }, [value]);
 
-  const commit = () => {
+  const commit = async () => {
     const next = draft.trim();
     if (next && next !== value) {
-      onCommit(next);
+      const ok = await onCommit(next);
+      if (ok === false) setDraft(value);
     } else {
       setDraft(value);
     }
