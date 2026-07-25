@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import './settings.css';
 import settingsApi from '../../api/settingsApi';
 import { sortRoomsByLocalOrder } from '../../utils/roomOrder';
@@ -9,7 +9,7 @@ import { GeneralSettings } from './GeneralSettings';
 import { AiAgentSettings } from './AiAgentSettings';
 import { AboutSettings } from './AboutSettings';
 import { DeveloperSettings } from './DeveloperSettings';
-import { API_MODE } from '../../api/config';
+import { API_MODE, IS_DEMO_MODE } from '../../api/config';
 
 const settingCategories = [
   { id: 'general', label: '일반', desc: '기본 UI와 시스템 환경' },
@@ -22,6 +22,11 @@ const settingCategories = [
 
 const devCategory = { id: 'dev', label: '개발자', desc: '개발자 전용 도구' };
 const IS_REAL_API = API_MODE === 'real';
+
+function openDemoManual() {
+  const base = process.env.PUBLIC_URL || '';
+  window.open(`${base}/manual/manual_demo.html`, '_blank', 'noopener,noreferrer');
+}
 
 export function SettingPage({
   accounts,
@@ -55,20 +60,40 @@ export function SettingPage({
       <div className="settings-layout">
         <nav className="settings-nav settings-nav--cards" aria-label="설정 분류">
           {categories.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`settings-nav-item ${activeCategory === item.id ? 'active' : ''}`}
-              onClick={() => setCategory(item.id)}
-            >
-              <strong>{item.label}</strong>
-              <span>{item.desc}</span>
-            </button>
+            <Fragment key={item.id}>
+              <button
+                type="button"
+                className={`settings-nav-item ${activeCategory === item.id ? 'active' : ''}`}
+                onClick={() => setCategory(item.id)}
+              >
+                <strong>{item.label}</strong>
+                <span>{item.desc}</span>
+              </button>
+              {item.id === 'info' && IS_DEMO_MODE && (
+                <button
+                  type="button"
+                  className="settings-nav-item settings-nav-item--manual"
+                  onClick={openDemoManual}
+                >
+                  <strong>매뉴얼</strong>
+                  <span>제품 매뉴얼 열기</span>
+                </button>
+              )}
+            </Fragment>
           ))}
         </nav>
 
         <div className="settings-nav-tabs">
           <Tabs active={activeCategory} onChange={setCategory} items={tabItems} />
+          {IS_DEMO_MODE && (
+            <button
+              type="button"
+              className="settings-manual-mobile-btn"
+              onClick={openDemoManual}
+            >
+              제품 매뉴얼 열기
+            </button>
+          )}
         </div>
 
         <div className="settings-detail">

@@ -108,9 +108,17 @@ export function describeTrigger(trigger, { deviceName, gestureClassName, command
   if (trigger.kind === 'gesture') {
     const radar = deviceName || trigger.deviceId || '레이더';
     const gesture = gestureClassName || (trigger.classId != null ? `제스처 ${trigger.classId}` : '제스처');
-    return `${radar}에서 ${gesture}를 할 때`;
+    return `${radar} · '${gesture}'`;
   }
-  if (trigger.kind === 'device_state') return `${deviceName || trigger.deviceId} · ${trigger.query} ${trigger.op} ${trigger.value}`;
+  if (trigger.kind === 'device_state') {
+    if (trigger.query === 'presence' && trigger.op === '==' && Number(trigger.value) === 0) {
+      return deviceName ? `${deviceName} · 부재중` : '부재중';
+    }
+    if (trigger.query === 'presence' && trigger.op === '==' && Number(trigger.value) === 1) {
+      return deviceName ? `${deviceName} · 재실 중` : '재실 중';
+    }
+    return `${deviceName || trigger.deviceId} · ${trigger.query} ${trigger.op} ${trigger.value}`;
+  }
   if (trigger.kind === 'ir_recv') return `${deviceName || trigger.deviceId} · 적외선 신호 수신 (${commandName || trigger.commandId})`;
   return trigger.kind;
 }

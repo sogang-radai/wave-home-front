@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WaveHome 사용자 매뉴얼</title><style>
+:root {
+  --ink:#0b1e2d; --ink-soft:#41637a; --sub:#44596d; --line:#d7e8f2;
+  --bg:#f5fafd; --paper:#ffffff; --wave:#95d9f8; --wave-deep:#136f9a;
+  --wave-deepest:#0e4862; --wave-15:rgba(149,217,248,.15);
+  --toc-width:240px; --toc-gap:42px; --content-max:820px;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);line-height:1.72;font-size:15px}
+a{color:var(--wave-deep);text-decoration:none} a:hover{text-decoration:underline}
+.layout{display:grid;grid-template-columns:var(--toc-width) minmax(0,var(--content-max));justify-content:center;gap:var(--toc-gap);max-width:calc(var(--toc-width) + var(--toc-gap) + var(--content-max) + 72px);margin:0 auto;padding:0 32px 55vh}
+.toc-side{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;overscroll-behavior:contain;padding:44px 10px 28px 16px;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);border:1px solid var(--line);border-top:0;border-radius:0 0 18px 18px;scrollbar-width:thin;scrollbar-color:#c5d4de transparent}
+.toc-side::-webkit-scrollbar{width:6px}
+.toc-side::-webkit-scrollbar-track{background:transparent}
+.toc-side::-webkit-scrollbar-thumb{background:#c5d4de;border-radius:0}
+.toc-side::-webkit-scrollbar-thumb:hover{background:#9eb3c1}
+.content{min-width:0;padding-top:44px}
+.toc-side-title{margin:0 0 12px;font-size:13px;font-weight:800;letter-spacing:.08em;color:var(--wave-deep)}
+.toc-side ol,.toc-side ul{list-style:none;margin:0;padding:0}.toc-side>nav>ol{border-left:2px solid var(--line);margin:0 0 15px}
+.toc-group{margin:18px 0 8px;padding-top:13px;border-top:1px dashed var(--line);font-size:11.5px;font-weight:850;letter-spacing:.045em;color:var(--wave-deep)}
+.toc-group:first-child{margin-top:0;padding-top:0;border-top:0}
+.toc-group .group-note{display:block;margin-top:2px;font-size:10.5px;font-weight:600;letter-spacing:0;color:var(--ink-soft)}
+.toc-side .toc-l1{margin-top:3px}.toc-side a{display:block;padding:7px 7px 7px 13px;color:var(--sub);font-size:12.5px;font-weight:650;line-height:1.35;border-left:2px solid transparent;margin-left:-2px;border-radius:0 8px 8px 0}
+.toc-side a:hover{color:var(--wave-deepest);background:var(--wave-15);text-decoration:none}.toc-side a.is-active{color:var(--wave-deepest);border-left-color:var(--wave-deep);background:linear-gradient(90deg,var(--wave-15),transparent)}
+.toc-side .toc-sub a{padding-left:25px;font-size:11.5px;font-weight:550}
+.doc-header{position:relative;min-height:410px;margin-bottom:36px;padding:62px 54px 44px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(145deg,#fff 0%,#f8fcff 60%,#eaf8ff 100%);border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:0 18px 45px rgba(14,72,98,.08)}
+.doc-header:before,.doc-header:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(19,111,154,.12)}.doc-header:before{width:260px;height:260px;right:-70px;top:-80px}.doc-header:after{width:150px;height:150px;right:90px;bottom:-85px}
+.cover-mark{position:absolute;top:34px;left:54px;font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--wave-deep)}
+.doc-header h1{margin:0 0 10px;font-size:38px;font-weight:850;color:var(--wave-deepest);letter-spacing:-.035em}.doc-header .subtitle{margin:0;color:var(--sub);font-size:17px}.doc-meta-line{margin:28px 0 0;font-size:13px;color:var(--ink-soft)}.doc-meta-line span+span:before{content:"·";margin:0 8px;color:var(--sub)}
+.chapter{margin:0 0 42px;padding:34px 36px 38px;background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 28px rgba(14,72,98,.045);scroll-margin-top:24px}.chapter.toc-page{padding-bottom:46px}
+.chapter-label{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--wave-deep)}.chapter-rule{height:1px;border:0;margin:0 0 17px;background:linear-gradient(90deg,var(--wave-deep),transparent 72%)}
+.chapter h2{margin:0 0 12px;font-size:26px;color:var(--ink);letter-spacing:-.025em}.chapter h3{margin:31px 0 10px;font-size:18px;color:var(--ink);display:flex;align-items:center;gap:9px;scroll-margin-top:24px}.chapter h3:before{content:"";width:7px;height:7px;border-radius:2px;background:var(--wave-deep);flex-shrink:0}.chapter h4{margin:23px 0 8px;font-size:15px;color:var(--wave-deepest)}
+.chapter p,.chapter li{color:var(--ink)}.lead{color:var(--sub)!important;margin-top:0}.chapter ul,.chapter ol{padding-left:1.25em}.chapter li+li{margin-top:5px}code{padding:.12em .35em;border-radius:5px;background:#eef7fb;color:var(--wave-deepest);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.92em}
+.callout{position:relative;background:#f8fcff;border-left:3px solid var(--wave-deep);padding:13px 15px 13px 16px;margin:17px 0;color:var(--ink-soft);font-size:14px;border-radius:0 10px 10px 0}.callout strong{display:block;margin-bottom:3px;color:var(--wave-deepest)}
+.shot-slot{margin:17px 0 22px;padding:24px 18px;border:1.5px dashed rgba(19,111,154,.42);text-align:center;color:var(--wave-deep);font-size:13px;background:linear-gradient(180deg,rgba(149,217,248,.08),transparent);border-radius:12px}.shot-slot strong{display:block;margin-bottom:5px;font-size:14px}.shot-slot span{display:block;color:var(--ink-soft);font-weight:500}.shot-slot code{display:inline-block;margin-top:6px}.shot{width:80%;max-width:640px;margin:18px auto 0;padding:0;overflow:hidden}.shot img{display:block;width:100%;max-width:100%;height:auto;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff}.shot figcaption{margin:8px 0 0;padding:0 6px;color:var(--sub);font-size:12.5px;text-align:center}.shot-slot:has(.shot){overflow:hidden}.shot-slot:has(.shot) .shot{box-sizing:border-box}.table-wrap{overflow-x:auto;margin:14px 0 21px;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#1a3a4d;color:#fff;text-align:left;padding:11px 12px;font-weight:700}td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}td:first-child{font-weight:700;color:var(--wave-deepest)}
+.steps{counter-reset:step;list-style:none!important;padding:0!important;margin:12px 0 20px}.steps li{position:relative;padding:9px 8px 9px 43px;margin:0;border-bottom:1px solid var(--line)}.steps li:before{counter-increment:step;content:counter(step);position:absolute;left:5px;top:9px;width:23px;height:23px;border-radius:50%;background:var(--wave);color:var(--wave-deepest);font-size:12px;font-weight:850;display:grid;place-items:center}
+.toc-page-groups{display:grid;gap:18px;margin-top:22px}.toc-page-group{padding:16px 18px 18px;border:1px solid var(--line);border-radius:12px;background:#fbfdff}.toc-page-group.is-core{border-left:4px solid var(--wave-deep);background:linear-gradient(90deg,var(--wave-15),#fbfdff 34%)}.toc-page-group.is-extra{border-left:4px solid #8ba6b7}.toc-page-group-title{margin:0 0 11px!important;font-size:13px!important;color:var(--wave-deep)!important;letter-spacing:.045em}.toc-page-group-title:before{display:none}.toc-page-group-note{margin:-5px 0 11px!important;color:var(--ink-soft)!important;font-size:13px}.toc-page-list{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;align-items:start;list-style:none!important;padding:0!important;margin:0}.toc-page-list>li{align-self:start;margin-top:0!important;border-top:1px solid var(--line);padding-top:11px}.toc-page-list>li>a{font-weight:800;color:var(--wave-deepest)}.toc-page-list ul{list-style:none;padding:7px 0 0;margin:0}.toc-page-list li li{margin:2px 0}.toc-page-list li li a{font-size:13px;color:var(--sub)}
+.doc-footer{margin-top:38px;padding:18px 4px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--sub);font-size:13px}.back-top{position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--wave-deepest);font-size:16px;cursor:pointer;box-shadow:0 8px 18px rgba(14,72,98,.12)}
+@media(max-width:920px){.layout{grid-template-columns:minmax(0,1fr);padding:0 14px 45vh}.toc-side{display:none}.content{padding-top:20px}.doc-header{min-height:300px;padding:48px 28px 32px;border-radius:18px}.cover-mark{left:28px;top:24px}.doc-header h1{font-size:31px}.chapter{padding:28px 21px 32px;border-radius:16px}.toc-page-list{grid-template-columns:1fr}.shot{width:100%;max-width:100%}}
+@media print{body{background:#fff}.toc-side,.back-top{display:none}.layout{display:block;max-width:none;padding:0}.doc-header,.chapter{box-shadow:none;break-inside:avoid}.chapter{border-radius:0;border-left:0;border-right:0}.shot-slot{break-inside:avoid}}
+</style></head><body>
+<div class="layout">
+<aside class="toc-side" aria-label="목차"><nav>
+<p class="toc-group">기본 안내</p>
+<ol>
+<li class="toc-l1"><a href="#toc" data-target="toc">목차</a></li>
+<li class="toc-l1"><a href="#ch1" data-target="ch1">1. 서비스 개요</a><ul class="toc-sub">
+<li><a href="#sec1-1" data-target="sec1-1">1.1 WaveHome 서비스 소개</a></li>
+<li><a href="#sec1-2" data-target="sec1-2">1.2 WaveHome의 기능</a></li>
+<li><a href="#sec1-3" data-target="sec1-3">1.3 주요 용어 설명</a></li>
+</ul></li>
+<li class="toc-l1"><a href="#ch2" data-target="ch2">2. 시작하기</a><ul class="toc-sub">
+<li><a href="#sec2-1" data-target="sec2-1">2.1 WaveHome에 접속하기</a></li>
+<li><a href="#sec2-2" data-target="sec2-2">2.2 사용 안내 따라가기</a></li>
+<li><a href="#sec2-3" data-target="sec2-3">2.3 기본 화면 구성</a></li>
+</ul></li>
+</ol>
+
+<p class="toc-group">대시보드 · 채팅</p>
+<ol>
+<li class="toc-l1"><a href="#ch3" data-target="ch3">3. 대시보드</a><ul class="toc-sub">
+<li><a href="#sec3-1" data-target="sec3-1">3.1 어젯밤 수면</a></li>
+<li><a href="#sec3-2" data-target="sec3-2">3.2 예정된 알람</a></li>
+<li><a href="#sec3-3" data-target="sec3-3">3.3 전력 관리</a></li>
+<li><a href="#sec3-4" data-target="sec3-4">3.4 홈 현황</a></li>
+<li><a href="#sec3-5" data-target="sec3-5">3.5 활성화된 제스처 목록</a></li>
+<li><a href="#sec3-6" data-target="sec3-6">3.6 오늘 할 일</a></li>
+</ul></li>
+<li class="toc-l1"><a href="#ch4" data-target="ch4">4. WaveChat</a><ul class="toc-sub">
+<li><a href="#sec4-1" data-target="sec4-1">4.1 WaveChat 화면 열기</a></li>
+<li><a href="#sec4-2" data-target="sec4-2">4.2 새로운 대화 시작하기</a></li>
+<li><a href="#sec4-3" data-target="sec4-3">4.3 이전 대화 관리하기</a></li>
+<li><a href="#sec4-4" data-target="sec4-4">4.4 질문을 잘 작성하는 방법</a></li>
+<li><a href="#sec4-5" data-target="sec4-5">4.5 사용법 예시</a></li>
+</ul></li>
+</ol>
+
+<p class="toc-group">주요 기능</p>
+<ol>
+<li class="toc-l1"><a href="#ch5" data-target="ch5">5. 수면 관리</a><ul class="toc-sub">
+<li><a href="#sec5-1" data-target="sec5-1">5.1 날짜 변경하기</a></li>
+<li><a href="#sec5-2" data-target="sec5-2">5.2 일간 수면 리포트</a></li>
+<li><a href="#sec5-3" data-target="sec5-3">5.3 수면 정보</a></li>
+<li><a href="#sec5-4" data-target="sec5-4">5.4 주간 수면 리포트</a></li>
+<li><a href="#sec5-5" data-target="sec5-5">5.5 수면 인사이트</a></li>
+<li><a href="#sec5-6" data-target="sec5-6">5.6 스마트 알람 추가하기</a></li>
+<li><a href="#sec5-7" data-target="sec5-7">5.7 스마트 알람 관리하기</a></li>
+</ul></li>
+<li class="toc-l1"><a href="#ch6" data-target="ch6">6. 전력 관리</a><ul class="toc-sub">
+<li><a href="#sec6-1" data-target="sec6-1">6.1 전력 상태 확인하기</a></li>
+<li><a href="#sec6-2" data-target="sec6-2">6.2 기기별 전력 사용량 확인하기</a></li>
+<li><a href="#sec6-3" data-target="sec6-3">6.3 전력 인사이트</a></li>
+</ul></li>
+<li class="toc-l1"><a href="#ch7" data-target="ch7">7. 가전 제어</a><ul class="toc-sub">
+<li><a href="#sec7-1" data-target="sec7-1">7.1 가전 직접 제어하기</a></li>
+<li><a href="#sec7-2" data-target="sec7-2">7.2 자동화 규칙 만들기</a></li>
+<li><a href="#sec7-3" data-target="sec7-3">7.3 가전 제어 예약하기</a></li>
+<li><a href="#sec7-4" data-target="sec7-4">7.4 적외선 명령 사용하기</a></li>
+<li><a href="#sec7-5" data-target="sec7-5">7.5 제스처 목록 확인하기</a></li>
+<li><a href="#sec7-6" data-target="sec7-6">7.6 가전 제어 기록 확인하기</a></li>
+</ul></li>
+</ol>
+
+<p class="toc-group">부가 기능</p>
+<ol>
+<li class="toc-l1"><a href="#ch8" data-target="ch8">8. 디지털 트윈홈(데모 버전)</a><ul class="toc-sub">
+<li><a href="#sec8-1" data-target="sec8-1">8.1 디지털 트윈홈 소개</a></li>
+<li><a href="#sec8-2" data-target="sec8-2">8.2 공간과 장치 선택하기</a></li>
+<li><a href="#sec8-3" data-target="sec8-3">8.3 WaveChat으로 제어하기</a></li>
+</ul></li>
+<li class="toc-l1"><a href="#ch9" data-target="ch9">9. 주간 계획</a><ul class="toc-sub">
+<li><a href="#sec9-1" data-target="sec9-1">9.1 일정 추가하기</a></li>
+<li><a href="#sec9-2" data-target="sec9-2">9.2 일정 수정 및 삭제하기</a></li>
+<li><a href="#sec9-3" data-target="sec9-3">9.3 오늘 할 일</a></li>
+<li><a href="#sec9-4" data-target="sec9-4">9.4 목표 코칭</a></li>
+</ul></li>
+</ol>
+
+<p class="toc-group">환경 설정</p>
+<ol>
+<li class="toc-l1"><a href="#ch10" data-target="ch10">10. 설정</a><ul class="toc-sub">
+<li><a href="#sec10-1" data-target="sec10-1">10.1 일반 설정</a></li>
+<li><a href="#sec10-2" data-target="sec10-2">10.2 계정 설정</a></li>
+<li><a href="#sec10-3" data-target="sec10-3">10.3 장치 설정</a></li>
+<li><a href="#sec10-4" data-target="sec10-4">10.4 구역 설정</a></li>
+<li><a href="#sec10-5" data-target="sec10-5">10.5 AI 에이전트 설정</a></li>
+<li><a href="#sec10-6" data-target="sec10-6">10.6 정보 확인하기</a></li>
+</ul></li>
+</ol>
+</nav></aside>
+<main class="content">
+<header class="doc-header" id="cover"><span class="cover-mark">WAVEHOME USER GUIDE</span><h1>WaveHome 사용자 매뉴얼</h1><p class="subtitle">처음 사용하는 사용자도 순서대로 따라 할 수 있는 웹사이트 사용 안내</p><p class="subtitle">※ 본 문서는 데모 버전을 기준으로 작성되었으며, 일부 기능이 정상적으로 작동하지 않을 수 있습니다. 또한, 실제 프로덕션 버전과 화면 및 기능에 차이가 있을 수 있습니다.</p><p class="doc-meta-line"><span>서강대학교 RADAI</span><span>사용자용</span><span>문서 1.0</span></p></header>
+<section class="chapter toc-page" id="toc"><p class="chapter-label">CONTENTS</p><hr class="chapter-rule"><h2>목차</h2><p class="lead">기능의 역할에 따라 기본 안내, 대시보드·채팅, 주요 기능, 부가 기능과 환경 설정으로 구분했습니다.</p>
+<div class="toc-page-groups">
+<div class="toc-page-group"><h3 class="toc-page-group-title">기본 안내</h3><ol class="toc-page-list">
+<li><a href="#ch1">1. 서비스 개요</a><ul><li><a href="#sec1-1">1.1 WaveHome 서비스 소개</a></li><li><a href="#sec1-2">1.2 WaveHome의 기능</a></li><li><a href="#sec1-3">1.3 주요 용어 설명</a></li></ul></li>
+<li><a href="#ch2">2. 시작하기</a><ul><li><a href="#sec2-1">2.1 WaveHome에 접속하기</a></li><li><a href="#sec2-2">2.2 사용 안내 따라가기</a></li><li><a href="#sec2-3">2.3 기본 화면 구성</a></li></ul></li>
+</ol></div>
+<div class="toc-page-group"><h3 class="toc-page-group-title">대시보드 · 채팅</h3><ol class="toc-page-list">
+<li><a href="#ch3">3. 대시보드</a><ul><li><a href="#sec3-1">3.1 어젯밤 수면</a></li><li><a href="#sec3-2">3.2 예정된 알람</a></li><li><a href="#sec3-3">3.3 전력 관리</a></li><li><a href="#sec3-4">3.4 홈 현황</a></li><li><a href="#sec3-5">3.5 활성화된 제스처 목록</a></li><li><a href="#sec3-6">3.6 오늘 할 일</a></li></ul></li>
+<li><a href="#ch4">4. WaveChat</a><ul><li><a href="#sec4-1">4.1 WaveChat 화면 열기</a></li><li><a href="#sec4-2">4.2 새로운 대화 시작하기</a></li><li><a href="#sec4-3">4.3 이전 대화 관리하기</a></li><li><a href="#sec4-4">4.4 질문을 잘 작성하는 방법</a></li><li><a href="#sec4-5">4.5 사용법 예시</a></li></ul></li>
+</ol></div>
+<div class="toc-page-group"><h3 class="toc-page-group-title">주요 기능</h3><p class="toc-page-group-note">WaveHome의 핵심 기능은 수면 관리, 전력 관리, 가전 제어의 세 가지입니다.</p><ol class="toc-page-list">
+<li><a href="#ch5">5. 수면 관리</a><ul><li><a href="#sec5-1">5.1 날짜 변경하기</a></li><li><a href="#sec5-2">5.2 일간 수면 리포트</a></li><li><a href="#sec5-3">5.3 수면 정보</a></li><li><a href="#sec5-4">5.4 주간 수면 리포트</a></li><li><a href="#sec5-5">5.5 수면 인사이트</a></li><li><a href="#sec5-6">5.6 스마트 알람 추가하기</a></li><li><a href="#sec5-7">5.7 스마트 알람 관리하기</a></li></ul></li>
+<li><a href="#ch6">6. 전력 관리</a><ul><li><a href="#sec6-1">6.1 전력 상태 확인하기</a></li><li><a href="#sec6-2">6.2 기기별 전력 사용량 확인하기</a></li><li><a href="#sec6-3">6.3 전력 인사이트</a></li></ul></li>
+<li><a href="#ch7">7. 가전 제어</a><ul><li><a href="#sec7-1">7.1 가전 직접 제어하기</a></li><li><a href="#sec7-2">7.2 자동화 규칙 만들기</a></li><li><a href="#sec7-3">7.3 가전 제어 예약하기</a></li><li><a href="#sec7-4">7.4 적외선 명령 사용하기</a></li><li><a href="#sec7-5">7.5 제스처 목록 확인하기</a></li><li><a href="#sec7-6">7.6 가전 제어 기록 확인하기</a></li></ul></li>
+</ol></div>
+<div class="toc-page-group"><h3 class="toc-page-group-title">부가 기능</h3><p class="toc-page-group-note">디지털 트윈홈과 주간 계획은 WaveHome의 활용 범위를 넓혀 주는 부가 기능입니다.</p><ol class="toc-page-list">
+<li><a href="#ch8">8. 디지털 트윈홈(데모 버전)</a><ul><li><a href="#sec8-1">8.1 디지털 트윈홈 소개</a></li><li><a href="#sec8-2">8.2 공간과 장치 선택하기</a></li><li><a href="#sec8-3">8.3 WaveChat으로 제어하기</a></li></ul></li>
+<li><a href="#ch9">9. 주간 계획</a><ul><li><a href="#sec9-1">9.1 일정 추가하기</a></li><li><a href="#sec9-2">9.2 일정 수정 및 삭제하기</a></li><li><a href="#sec9-3">9.3 오늘 할 일</a></li><li><a href="#sec9-4">9.4 목표 코칭</a></li></ul></li>
+</ol></div>
+<div class="toc-page-group"><h3 class="toc-page-group-title">환경 설정</h3><ol class="toc-page-list">
+<li><a href="#ch10">10. 설정</a><ul><li><a href="#sec10-1">10.1 일반 설정</a></li><li><a href="#sec10-2">10.2 계정 설정</a></li><li><a href="#sec10-3">10.3 장치 설정</a></li><li><a href="#sec10-4">10.4 구역 설정</a></li><li><a href="#sec10-5">10.5 AI 에이전트 설정</a></li><li><a href="#sec10-6">10.6 정보 확인하기</a></li></ul></li>
+</ol></div>
+</div></section>
+<section class="chapter" id="ch1"><p class="chapter-label">1장 서비스 개요</p><hr class="chapter-rule"><h2>서비스 개요</h2><p class="lead">WaveHome이 제공하는 서비스와 주요 기능, 매뉴얼에서 사용하는 용어를 설명합니다.</p>
+<h3 id="sec1-1">1.1 WaveHome 서비스 소개</h3>
+<p>WaveHome은 <strong>수면 관리, 전력 관리, 가전 제어를 하나의 화면에서 확인하고 관리하는 스마트홈 서비스</strong>입니다. 집 안의 센서와 가전에서 수집한 정보를 보기 쉬운 형태로 제공하고, WaveAI가 사용자의 생활 패턴을 분석해 필요한 정보와 행동을 제안합니다.</p>
+<p>사용자는 대시보드에서 현재 상태를 빠르게 확인한 뒤, WaveHome의 <strong>세 가지 주요 기능인 수면 관리·전력 관리·가전 제어</strong> 화면에서 세부 정보를 확인할 수 있습니다. 자연어로 질문하거나 가전을 제어하고 싶을 때는 WaveChat을 사용합니다. <strong>디지털 트윈홈과 주간 계획</strong>은 WaveHome을 더 편리하게 활용하도록 돕는 부가 기능입니다.</p>
+<div class="callout"><strong>알아두기</strong>WaveHome에서 제공하는 수면·생활 분석은 생활 습관 관리를 돕기 위한 참고 정보입니다. 의료 진단이나 공식 전기요금 고지서를 대신하지 않습니다.</div>
+<h3 id="sec1-2">1.2 WaveHome의 기능</h3>
+<h4>공통 화면</h4>
+<div class="table-wrap"><table><thead><tr><th>기능</th><th>설명</th></tr></thead><tbody>
+<tr><td>대시보드</td><td>어젯밤 수면, 예정된 알람, 현재 전력, 홈 현황, 활성 제스처와 오늘 할 일을 한 화면에서 확인합니다.</td></tr>
+<tr><td>WaveChat</td><td>생활 데이터 조회, 가전 제어, 일정·알람 관리 등을 자연어로 요청합니다.</td></tr>
+</tbody></table></div>
+<h4>주요 기능</h4>
+<div class="table-wrap"><table><thead><tr><th>주요 기능</th><th>설명</th></tr></thead><tbody>
+<tr><td>수면 관리</td><td>일간·주간 수면 리포트, 수면 단계와 생체 정보, 수면 인사이트를 확인하고 스마트 알람을 설정합니다.</td></tr>
+<tr><td>전력 관리</td><td>현재 전력·전압·전류·누적 사용량, 기기별 전력과 기간별 추세 및 절약 인사이트를 확인합니다.</td></tr>
+<tr><td>가전 제어</td><td>연결된 가전을 직접 제어하고 자동화·예약·적외선 명령·제스처와 제어 기록을 관리합니다.</td></tr>
+</tbody></table></div>
+<h4>부가 기능</h4>
+<div class="table-wrap"><table><thead><tr><th>부가 기능</th><th>설명</th></tr></thead><tbody>
+<tr><td>디지털 트윈홈</td><td>3D 공간에서 방과 장치의 배치·상태를 확인하고, 공간을 둘러보며 장치를 선택해 제어합니다.</td></tr>
+<tr><td>주간 계획</td><td>일정과 오늘 할 일을 관리하고 AI 추천 계획과 목표 코칭을 확인합니다.</td></tr>
+</tbody></table></div>
+<h4>환경 설정</h4>
+<div class="table-wrap"><table><thead><tr><th>기능</th><th>설명</th></tr></thead><tbody>
+<tr><td>설정</td><td>화면, 계정, 장치, 구역, AI 에이전트와 서비스 정보를 관리합니다.</td></tr>
+</tbody></table></div>
+<h3 id="sec1-3">1.3 주요 용어 설명</h3>
+<div class="table-wrap"><table><thead><tr><th>용어</th><th>설명</th></tr></thead><tbody>
+<tr><td>WaveAI</td><td>사용자의 생활 데이터와 요청을 바탕으로 답변, 분석, 제어와 계획을 지원하는 AI 에이전트입니다.</td></tr>
+<tr><td>WaveChat</td><td>WaveAI와 대화하는 채팅 화면입니다.</td></tr>
+<tr><td>WaveStation</td><td>WaveHome과 집 안의 센서·가전을 연결하는 하드웨어 장치입니다. 환경 및 음성 데이터를 수집하고, 적외선 신호와 음성을 통해 가전을 제어하거나 사용자에게 정보를 전달합니다.</td></tr>
+<tr><td>인사이트</td><td>수면 또는 전력 데이터를 분석해 제안하는 개선 행동입니다.</td></tr>
+<tr><td>리포트</td><td>특정 날짜나 기간의 데이터를 자연어와 그래프로 정리한 분석 결과입니다.</td></tr>
+<tr><td>자동화</td><td>제스처 또는 센서값과 같은 조건이 발생하면 지정한 가전을 동작시키는 규칙입니다.</td></tr>
+<tr><td>예약</td><td>지정한 시간이나 반복 일정에 맞춰 가전을 동작시키는 규칙입니다.</td></tr>
+<tr><td>적외선 명령</td><td>TV·에어컨 리모컨의 적외선 신호를 등록해 WaveStation에서 다시 전송하는 명령입니다.</td></tr>
+<tr><td>제스처 세트</td><td>레이더가 인식할 수 있는 여러 제스처와 각 제스처의 판정 조건을 묶은 목록입니다.</td></tr>
+<tr><td>구역</td><td>침실, 거실, 주방처럼 장치가 배치되는 집 안의 공간입니다.</td></tr>
+</tbody></table></div>
+</section>
+<section class="chapter" id="ch2"><p class="chapter-label">2장 시작하기</p><hr class="chapter-rule"><h2>시작하기</h2><p class="lead">WaveHome 사이트에 접속하고 첫 사용 안내와 기본 화면 구성을 확인합니다.</p>
+<h3 id="sec2-1">2.1 WaveHome에 접속하기</h3>
+<p>WaveHome은 별도의 프로그램을 설치하지 않고 웹 브라우저에서 사용할 수 있습니다.</p>
+<ol class="steps"><li><strong>WaveHome 사이트 주소</strong>를 주소창에 입력합니다.</li><li>처음 방문한 경우 WaveHome 소개 화면을 확인합니다.</li><li>소개 화면의 <strong>시작하기</strong> 버튼을 눌러 서비스 화면으로 이동합니다.</li></ol>
+<figure class="shot"><img src="./img/01_access_wavehome.png" alt="WaveHome 첫 화면"><figcaption>WaveHome 첫 화면</figcaption></figure> 
+<h3 id="sec2-2">2.2 사용 안내 따라가기</h3>
+<p>대시보드에 처음 들어가면 메뉴와 주요 카드를 설명하는 사용 안내가 표시될 수 있습니다.</p>
+<ol class="steps"><li>화면에서 밝게 강조된 카드를 확인합니다.</li><li>안내 문구를 읽고 <strong>다음</strong> 버튼을 누릅니다.</li><li>마지막 안내까지 확인한 뒤 <strong>완료</strong>를 누릅니다.</li><li>안내를 즉시 종료하려면 닫기 버튼을 누릅니다.</li><li>다음 접속부터 안내를 표시하지 않으려면 <strong>다시 보지 않기</strong>를 선택합니다.</li></ol>
+<figure class="shot"><img src="./img/02_onboarding.png" alt="대시보드 위에 표시된 사용 안내 말풍선"><figcaption>대시보드 위에 표시된 사용 안내 말풍선</figcaption></figure>
+<h3 id="sec2-3">2.3 기본 화면 구성</h3>
+<div class="table-wrap"><table><thead><tr><th>영역</th><th>설명</th></tr></thead><tbody>
+<tr><td>왼쪽 메뉴</td><td>대시보드, WaveChat, 수면 관리, 전력 관리, 가전 제어, 디지털 트윈홈, 주간 계획과 설정으로 이동합니다.</td></tr>
+<tr><td>상단 영역</td><td>현재 화면 제목, WaveChat 열기, 알림과 현재 구성원 정보를 확인합니다.</td></tr>
+<tr><td>본문 영역</td><td>선택한 메뉴의 카드, 그래프, 목록과 설정 화면이 표시됩니다.</td></tr>
+<tr><td>설정 버튼</td><td>왼쪽 메뉴 하단에서 일반·계정·장치·구역·AI 에이전트 설정으로 이동합니다.</td></tr>
+</tbody></table></div>
+</section>
+<section class="chapter" id="ch3"><p class="chapter-label">3장 대시보드</p><hr class="chapter-rule"><h2>대시보드</h2><p class="lead">대시보드는 WaveHome에 접속한 뒤 가장 먼저 확인하는 화면으로, 현재 생활 상태와 오늘 필요한 정보를 요약합니다.</p>
+<h3 id="sec3-1">3.1 어젯밤 수면</h3>
+<p>어젯밤 수면 카드에서는 목표 수면 시간과 실제 수면 시간의 비교, 입면 시각, 기상 시각과 오늘 밤 추천 수면 시간을 확인할 수 있습니다.</p>
+<p>수면 점수, 수면 단계, 코골이·심박수·호흡수와 같은 상세 정보와 수면 인사이트를 확인하려면 카드를 눌러 <strong>수면 관리</strong> 페이지로 이동합니다.</p>
+<figure class="shot"><img src="./img/03_dashboard_sleep.png" alt="대시보드의 어젯밤 수면 카드"><figcaption>대시보드의 어젯밤 수면 카드</figcaption></figure>
+<h3 id="sec3-2">3.2 예정된 알람</h3>
+<p>예정된 알람 카드에서는 오늘 또는 다음 날 실행될 알람의 이름, 실행 예정일과 시간을 확인할 수 있습니다.</p>
+<p>새 알람을 추가하거나 기존 알람의 시간·요일·실행 방법을 변경하려면 카드를 눌러 <strong>수면 관리 &gt; 스마트 알람</strong> 페이지로 이동합니다.</p>
+<figure class="shot"><img src="./img/04_dashboard_alarm.png" alt="대시보드의 예정된 알람 카드"><figcaption>대시보드의 예정된 알람 카드</figcaption></figure>
+<h3 id="sec3-3">3.3 전력 관리</h3>
+<p>전력 관리 카드에서는 전체 콘센트의 현재 사용 전력, 전압, 전류, 시간당 예상 비용과 최근 전력 사용 추세를 확인할 수 있습니다.</p>
+<p>기기별 사용량, 기간별 그래프와 전력 절약 인사이트를 확인하려면 카드를 눌러 <strong>전력 관리</strong> 페이지로 이동합니다.</p>
+<figure class="shot"><img src="./img/05_dashboard_power.png" alt="대시보드의 전력 관리 카드"><figcaption>대시보드의 전력 관리 카드</figcaption></figure>
+<h3 id="sec3-4">3.4 홈 현황</h3>
+<p>홈 현황 카드에서는 온도·습도·조도 등의 실내 환경값, 수면 모니터링 레이더의 상태와 연결된 가전의 수 및 연결 상태를 확인할 수 있습니다.</p>
+<p>장치의 활성화 여부나 연결 상태를 관리하려면 <strong>설정 &gt; 장치</strong> 페이지로 이동합니다. 장치를 침실·거실 등 특정 공간에 배치하거나 구역 정보를 변경하려면 <strong>설정 &gt; 구역</strong> 페이지로 이동합니다.</p>
+<figure class="shot"><img src="./img/06_dashboard_home.png" alt="대시보드의 홈 현황 카드"><figcaption>대시보드의 홈 현황 카드</figcaption></figure>
+<h3 id="sec3-5">3.5 활성화된 제스처 목록</h3>
+<p>활성화된 제스처 카드에서는 현재 사용 중인 제스처의 이름과 각 제스처에 연결된 가전 동작을 확인할 수 있습니다. 여러 제스처가 등록된 경우 좌우 이동 버튼으로 다른 항목을 확인합니다.</p>
+<p>제스처 세트와 인식 조건 등 자세한 정보를 보려면 <strong>가전 제어 &gt; 제스처 목록</strong> 페이지로 이동합니다. 제스처를 새로운 가전 동작과 연결하려면 <strong>가전 제어 &gt; 자동화·예약</strong> 페이지에서 자동화 규칙을 만듭니다.</p>
+<figure class="shot"><img src="./img/07_dashboard_gesture.png" alt="대시보드의 활성화된 제스처 카드"><figcaption>대시보드의 활성화된 제스처 카드</figcaption></figure>
+<h3 id="sec3-6">3.6 오늘 할 일</h3>
+<p>오늘 할 일 카드에서는 주간 계획에 등록된 오늘의 일정, 남은 할 일의 수와 각 항목의 완료 여부를 확인할 수 있습니다. 완료한 항목은 카드에서 바로 체크할 수 있습니다.</p>
+<p>일정의 시간대를 확인하거나 새로운 일정을 추가·수정·삭제하려면 카드를 눌러 <strong>주간 계획</strong> 페이지로 이동합니다.</p>
+<div class="callout"><strong>알아두기</strong>대시보드와 주간 계획의 오늘 할 일은 같은 목록을 사용하므로 한쪽에서 변경한 완료 상태가 다른 화면에도 반영됩니다.</div>
+<figure class="shot"><img src="./img/08_dashboard_todo.png" alt="대시보드의 오늘 할 일 카드"><figcaption>대시보드의 오늘 할 일 카드</figcaption></figure>
+</section>
+<section class="chapter" id="ch4"><p class="chapter-label">4장 WaveChat</p><hr class="chapter-rule"><h2>WaveChat</h2><p class="lead">WaveChat은 생활 정보를 질문하고 가전·일정·알람을 자연어로 제어하는 AI 대화 화면입니다.</p>
+<h3 id="sec4-1">4.1 WaveChat 화면 열기</h3>
+<ol class="steps"><li>왼쪽 메뉴에서 <strong>WaveChat</strong>을 선택해 전체 화면 채팅을 엽니다.</li><li>다른 기능을 보고 있는 중에는 상단의 <strong>WaveChat</strong> 버튼을 눌러 작은 채팅창을 열 수 있습니다.</li><li>작은 채팅창에서 전체 화면으로 이동하려면 확대 또는 크게 보기 버튼을 누릅니다.</li><li>전체 화면에서 작은 채팅창으로 전환하려면 작게 보기를 누릅니다.</li></ol>
+<figure class="shot"><img src="./img/09_wavechat_open.png" alt="WaveChat 전체 화면"><figcaption>WaveChat 전체 화면</figcaption></figure>
+<h3 id="sec4-2">4.2 새로운 대화 시작하기</h3>
+<ol class="steps"><li>WaveChat 화면에서 <strong>새 대화</strong>를 누릅니다.</li><li>화면 아래 입력창에 질문이나 요청을 입력하고 전송 버튼을 누릅니다.</li><li>WaveAI가 <code>생각 중</code>, <code>답변 작성 중</code> 또는 데이터 조회·기기 제어 상태를 표시하는 동안 기다립니다.</li><li>답변이 완성되면 내용을 읽고, 제어 요청이었다면 해당 가전의 실제 상태도 확인합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>WaveAI가 데이터 조회나 제어 도구를 사용하면 <code>DB 조회</code>, <code>기기 목록 조회</code>, <code>기기 제어</code>와 같은 실행 상태가 표시됩니다.</div>
+<figure class="shot"><img src="./img/10_wavechat_new.png" alt="WaveChat 입력창과 답변 생성 화면"><figcaption>WaveChat 입력창</figcaption></figure>
+<h3 id="sec4-3">4.3 이전 대화 관리하기</h3>
+<ol class="steps"><li>대화 목록에서 확인할 이전 대화를 선택합니다.</li><li>대화 오른쪽의 더보기 버튼을 누릅니다.</li><li>대화 제목을 바꾸려면 <strong>이름 변경</strong>을 선택하고 새 이름을 입력합니다.</li><li>자주 사용하는 대화를 위쪽에 유지하려면 <strong>상단 고정</strong>을 선택합니다.</li><li>고정을 해제하려면 같은 메뉴에서 <strong>고정 해제</strong>를 선택합니다.</li><li>대화를 삭제하려면 <strong>제거</strong>를 선택합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>삭제한 대화는 목록에서 사라지므로 필요한 내용이 없는지 확인한 뒤 제거합니다.</div>
+<figure class="shot"><img src="./img/11_wavechat_history.png" alt="WaveChat 대화 목록의 더보기 메뉴"><figcaption>WaveChat 대화 목록의 더보기 메뉴</figcaption></figure>
+<h3 id="sec4-4">4.4 질문을 잘 작성하는 방법</h3>
+<div class="table-wrap"><table><thead><tr><th>작성 방법</th><th>좋은 질문 예시</th></tr></thead><tbody>
+<tr><td>대상을 구체적으로 입력</td><td><code>조명 꺼줘</code>보다 <code>침실 조명 꺼줘</code>라고 입력합니다.</td></tr>
+<tr><td>기간을 함께 입력</td><td><code>전력 사용량 알려줘</code>보다 <code>이번 주 전력 사용량 알려줘</code>라고 입력합니다.</td></tr>
+<tr><td>원하는 결과를 명확히 입력</td><td><code>수면 봐줘</code>보다 <code>어젯밤 수면에서 가장 개선할 점 세 가지 알려줘</code>라고 입력합니다.</td></tr>
+<tr><td>한 번에 하나의 핵심 요청</td><td>복잡한 요청은 조회, 확인, 제어 순서로 나누어 입력합니다.</td></tr>
+<tr><td>시간과 반복 조건을 입력</td><td><code>매일 밤 11시에 침실 TV가 꺼지도록 예약해줘</code>처럼 입력합니다.</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>알아두기</strong>장치 이름은 설정에 등록된 이름과 동일하게 작성하면 WaveAI가 장치를 더 정확하게 찾을 수 있습니다.</div>
+<h3 id="sec4-5">4.5 사용법 예시</h3>
+<div class="table-wrap"><table><thead><tr><th>목적</th><th>예시 문장</th></tr></thead><tbody>
+<tr><td>수면 조회</td><td>어젯밤 수면 점수와 가장 오래 깬 시간을 알려줘.</td></tr>
+<tr><td>수면 개선</td><td>이번 주 수면 패턴에서 개선해야 할 점을 알려줘.</td></tr>
+<tr><td>전력 조회</td><td>지금 가장 전력을 많이 사용하는 가전이 뭐야?</td></tr>
+<tr><td>전력 절약</td><td>오늘 전력 사용량 중 줄일 수 있는 부분을 알려줘.</td></tr>
+<tr><td>가전 제어</td><td>거실 조명 밝기를 40으로 낮춰줘.</td></tr>
+<tr><td>전체 제어</td><td>이제 자려고 하니까 모든 전등과 전자제품을 꺼줘.</td></tr>
+<tr><td>예약</td><td>매일 밤 11시에 침실 TV가 꺼지게 예약해줘.</td></tr>
+<tr><td>알람</td><td>내일 아침 7시에 기상 알람을 설정해줘.</td></tr>
+<tr><td>일정</td><td>내일 저녁 8시에 스트레칭 일정을 추가해줘.</td></tr>
+<tr><td>장치 안내</td><td>우리 집에 연결된 장치와 제어할 수 있는 기능을 알려줘.</td></tr>
+</tbody></table></div>
+</section>
+<section class="chapter" id="ch5"><p class="chapter-label">5장 수면 관리</p><hr class="chapter-rule"><h2>수면 관리</h2><p class="lead">수면 관리에서는 날짜별 수면 분석, 주간 리포트, 수면 인사이트와 스마트 알람을 확인하고 관리합니다.</p>
+<h3 id="sec5-1">5.1 날짜 변경하기</h3>
+<ol class="steps"><li>왼쪽 메뉴에서 <strong>수면 관리</strong>를 선택합니다.</li><li>상단에서 <strong>수면 분석</strong> 탭이 선택되어 있는지 확인합니다.</li><li>날짜 왼쪽 또는 오른쪽의 이동 버튼을 눌러 하루 전·다음 날로 이동합니다.</li><li>달력 버튼을 눌러 확인할 날짜를 직접 선택합니다.</li></ol>
+<figure class="shot"><img src="./img/12_sleep_date.png" alt="수면 관리 상단의 날짜 이동 영역"><figcaption>수면 관리 상단의 날짜 이동 영역</figcaption></figure>
+<h3 id="sec5-2">5.2 일간 수면 리포트</h3>
+<p>일간 수면 리포트는 선택한 날짜의 수면 기록을 요약하고 수면 상태에서 눈에 띄는 점을 설명합니다.</p>
+<ol class="steps"><li>확인할 날짜를 선택합니다.</li><li>총 수면 시간, 수면 목표 달성 여부와 수면 점수를 확인합니다.</li><li>일간 리포트를 통해 수면 정보를 확인합니다.</li></ol>
+<figure class="shot"><img src="./img/13_sleep_daily_report.png" alt="일간 수면 리포트 전체"><figcaption>일간 수면 리포트 전체</figcaption></figure>
+<h3 id="sec5-3">5.3 수면 정보</h3>
+<p>수면 정보 영역에서는 수면 단계와 밤사이 측정된 생체 정보의 변화 추세를 확인합니다.</p>
+<div class="table-wrap"><table><thead><tr><th>정보</th><th>확인 방법</th></tr></thead><tbody>
+<tr><td>수면 단계</td><td>각성, 렘수면, 얕은 수면과 깊은 수면이 시간에 따라 어떻게 변했는지 확인합니다.</td></tr>
+<tr><td>코골이</td><td>수면 중 코골이 시간과 구간을 확인합니다.</td></tr>
+<tr><td>심박수</td><td>수면 중 심박수가 급격하게 변한 구간이 있는지 확인합니다.</td></tr>
+<tr><td>호흡수</td><td>수면 중 분당 호흡수의 변화 추세를 확인합니다.</td></tr>
+</tbody></table></div>
+<div class="callout"><strong>알아두기</strong>센서가 연결되지 않았거나 해당 날짜에 측정된 데이터가 없으면 그래프가 비어 있거나 데이터 없음 안내가 표시될 수 있습니다.</div>
+<figure class="shot"><img src="./img/14_sleep_details.png" alt="수면 단계와 생체 정보 차트"><figcaption>수면 단계와 생체 정보 차트</figcaption></figure>
+<h3 id="sec5-4">5.4 주간 수면 리포트</h3>
+<ol class="steps"><li>선택한 날짜가 포함된 주간의 수면 정보 변화를 확인합니다.</li><li>요일별 수면 시간과 수면 점수의 차이를 확인합니다.</li><li>점수 변화와 수면 부채 등을 확인하고 한 주간의 수면 패턴을 확인합니다.</li></ol>
+<figure class="shot"><img src="./img/15_sleep_weekly_report.png" alt="주간 수면 리포트"><figcaption>주간 수면 리포트</figcaption></figure>
+<h3 id="sec5-5">5.5 수면 인사이트</h3>
+<p>수면 인사이트는 일간 또는 주간 수면 데이터를 바탕으로 WaveAI가 제안하는 개선 행동입니다.</p>
+<ol class="steps"><li>수면 분석 화면의 <strong>수면 인사이트</strong> 영역으로 이동합니다.</li><li>인사이트의 제목과 제안 이유를 읽습니다.</li><li>적용할 제안은 실행 또는 적용 버튼을 누릅니다.</li></ol>
+<figure class="shot"><img src="./img/16_sleep_insight.png" alt="수면 인사이트 카드"><figcaption>수면 인사이트 카드</figcaption></figure>
+<h3 id="sec5-6">5.6 스마트 알람 추가하기</h3>
+<ol class="steps"><li>수면 관리 상단에서 <strong>스마트 알람</strong> 탭을 선택합니다.</li><li>알람 편집 영역에 알람 이름을 입력합니다. (예: 평일 기상)</li><li>오전·오후, 시와 분을 선택해 알람 시간을 설정합니다.</li><li>알람을 실행할 요일을 선택합니다.</li><li>매주 같은 요일에 반복하려면 <strong>매 주 반복</strong>을 켭니다.</li><li>수면 상태에 맞춰 목표 시각 전 깨우기를 원하면 <strong>기상 맞춤 알람</strong>을 켭니다.</li><li>알람을 실행할 장치를 선택합니다.</li><li>알림, 조명, 음성 등 선택한 장치에서 사용할 수 있는 알람 방법을 고릅니다.</li><li><strong>추가</strong>를 눌러 알람을 저장합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>기상 맞춤 알람은 목표 시각 30분 전부터 얕은 수면·렘수면·각성 구간을 찾고, 적절한 구간이 없으면 설정 시각에 실행됩니다.</div>
+<figure class="shot"><img src="./img/17_alarm_add.png" alt="스마트 알람 추가 화면"><figcaption>스마트 알람 추가 화면</figcaption></figure>
+<h3 id="sec5-7">5.7 스마트 알람 관리하기</h3>
+<ol class="steps"><li>스마트 알람 화면에서 등록된 알람 카드를 확인합니다.</li><li>알람 오른쪽 스위치로 알람을 켜거나 끕니다.</li><li>수정할 알람 카드를 선택합니다.</li><li>이름, 시간, 요일, 장치 또는 알람 방법을 변경합니다.</li><li><strong>수정</strong>을 눌러 변경사항을 저장합니다.</li><li>알람을 제거하려면 편집 영역의 <strong>삭제</strong>를 누르고 확인합니다.</li></ol>
+<figure class="shot"><img src="./img/18_alarm_manage.png" alt="스마트 알람 목록과 편집 화면"><figcaption>스마트 알람 목록과 편집 화면</figcaption></figure>
+</section>
+<section class="chapter" id="ch6"><p class="chapter-label">6장 전력 관리</p><hr class="chapter-rule"><h2>전력 관리</h2><p class="lead">전력 관리에서는 전체 또는 개별 전력 소스의 실시간 상태, 기간별 사용량과 WaveAI 인사이트를 확인합니다.</p>
+<h3 id="sec6-1">6.1 전력 상태 확인하기</h3>
+<ol class="steps"><li>왼쪽 메뉴에서 <strong>전력 관리</strong>를 선택합니다.</li><li>상단 요약 카드에서 현재 전력, 전압, 누적 사용량과 예상 요금을 확인합니다.</li><li>그래프 위의 <code>W</code>, <code>V</code>, <code>A</code>, <code>Wh</code> 중 확인할 항목을 선택합니다.</li><li>실시간 변화를 보려면 1분, 10분, 30분 또는 1시간 범위를 선택합니다.</li><li>누적 사용량을 보려면 <code>Wh</code>를 선택한 뒤 일간, 주간, 월간 또는 연간을 선택합니다.</li><li>그래프 위에 마우스를 올려 해당 시점의 값을 확인합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>
+<ul>
+<li><code>W</code>(와트): 현재 순간적으로 사용하고 있는 전력의 크기입니다. 값이 클수록 해당 시점에 더 많은 전력을 사용하고 있다는 뜻입니다.</li>
+<li><code>V</code>(볼트): 전기를 흐르게 하는 전압의 크기입니다.</li>
+<li><code>A</code>(암페어): 현재 흐르고 있는 전류의 크기입니다.</li>
+<li><code>Wh</code>(와트시): 일정 시간 동안 사용한 전력량입니다. 예를 들어 100 W 기기를 1시간 사용하면 100 Wh를 사용한 것입니다.</li>
+</ul>
+전력량과 예상 비용은 선택한 전력 소스와 조회 구간을 기준으로 계산됩니다. 실제 요금은 기본요금과 계절별·구간별 요금에 따라 달라질 수 있습니다.</div>
+<figure class="shot"><img src="./img/19_power_status.png" alt="전력 관리 전체 화면"><figcaption>전력 관리 전체 화면</figcaption></figure>
+<h3 id="sec6-2">6.2 기기별 전력 사용량 확인하기</h3>
+<ol class="steps"><li>전력 관리 화면 아래의 <strong>전력 소스</strong> 목록으로 이동합니다.</li><li>전체 사용량을 보려면 <strong>전체</strong>를 선택합니다.</li><li>개별 기기의 사용량을 보려면 원하는 기기를 선택합니다.</li><li>선택한 기기의 현재 전력, 전압, 전류와 시간당 예상 비용을 확인합니다.</li><li>전력 집계에서 제외할 기기는 해당 전력 소스의 스위치를 끕니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>전력 소스 스위치는 집계 포함 여부를 변경합니다. 장치의 실제 전원을 끄거나 연결 상태를 바꾸는 스위치가 아닙니다.</div>
+<figure class="shot"><img src="./img/20_power_sources.png" alt="전력 소스 목록"><figcaption>전력 소스 목록</figcaption></figure>
+<h3 id="sec6-3">6.3 전력 인사이트</h3>
+<ol class="steps"><li>확인할 전력 소스와 조회 기간을 선택합니다.</li><li>화면 아래의 <strong>전력 인사이트</strong> 영역으로 이동합니다.</li><li>절약 제안의 근거와 예상 효과를 확인합니다.</li><li>적용할 제안은 실행 또는 적용 버튼을 누릅니다.</li></ol>
+<figure class="shot"><img src="./img/21_power_insight.png" alt="전력 리포트와 인사이트 카드"><figcaption>전력 리포트와 인사이트 카드</figcaption></figure>
+</section>
+<section class="chapter" id="ch7"><p class="chapter-label">7장 가전 제어</p><hr class="chapter-rule"><h2>가전 제어</h2><p class="lead">가전 제어에서는 연결된 장치를 직접 조작하고 자동화·예약·적외선 명령·제스처와 제어 기록을 관리합니다.</p>
+<h3 id="sec7-1">7.1 가전 직접 제어하기</h3>
+<ol class="steps"><li>왼쪽 메뉴에서 <strong>가전 제어</strong>를 선택합니다.</li><li>상단에서 <strong>제어</strong> 탭을 선택합니다.</li><li>기기 목록 위에서 전체 또는 침실·거실 등 구역 필터를 선택합니다.</li><li>제어할 기기 카드를 선택합니다.</li><li><strong>기기 메뉴</strong>에서 전원, 밝기, 색상, 채널 등 장치가 지원하는 기능을 변경합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>장치마다 사용할 수 있는 제어 항목이 다릅니다. 기기를 선택했을 때 표시되는 메뉴만 사용할 수 있습니다.</div>
+<figure class="shot"><img src="./img/22_iot_control.png" alt="가전 제어의 제어 탭"><figcaption>가전 제어의 제어 탭</figcaption></figure>
+<h3 id="sec7-2">7.2 자동화 규칙 만들기</h3>
+<p>자동화는 제스처, 장치 상태, 센서값 또는 적외선 신호가 조건에 맞을 때 가전을 실행합니다.</p>
+<ol class="steps"><li>가전 제어에서 <strong>자동화·예약</strong> 탭을 선택합니다.</li><li>자동화 영역의 <strong>+ 새 자동화</strong>를 누릅니다.</li><li>자동화 종류를 선택합니다. 예: 제스처, 장치 상태, 적외선 감지.</li><li>선택한 자동화 종류에 따라 조건 장치와 세부 조건을 설정합니다.</li><li>동작시킬 가전과 실행할 동작을 선택합니다.</li><li>한 번, On/Off 전환 또는 연속 실행 중 실행 방식을 선택합니다.</li><li>필요하면 반복 간격과 쿨다운 시간을 설정합니다.</li><li>자동화 이름과 요약을 입력한 뒤 <strong>완료</strong>를 누릅니다.</li></ol>
+<h4>자동화 관리</h4>
+<ul><li>목록의 스위치로 자동화를 활성화하거나 비활성화합니다.</li><li>특정 자동화 규칙을 선택해 조건과 동작을 수정하거나 삭제합니다.</li><li><strong>테스트</strong>를 눌러 조건 없이 동작을 시험합니다.</li></ul>
+<figure class="shot"><img src="./img/23_automation.png" alt="새 자동화 버튼과 자동화 목록"><figcaption>새 자동화 버튼과 자동화 목록</figcaption></figure>
+<h3 id="sec7-3">7.3 가전 제어 예약하기</h3>
+<p>예약은 한 번 또는 반복되는 특정 시간에 가전을 실행합니다.</p>
+<ol class="steps"><li>가전 제어의 <strong>자동화·예약</strong> 탭에서 예약 영역을 찾습니다.</li><li><strong>+ 새 예약</strong>을 누릅니다.</li><li>한 번, 매일 또는 매주 중 반복 방식과 시간을 선택합니다.</li><li>동작시킬 가전과 실행할 동작을 선택합니다.</li><li>한 번, On/Off 전환 또는 연속 실행 중 실행 방식을 선택합니다.</li><li>예약 이름과 요약을 입력한 뒤 <strong>완료</strong>를 누릅니다.</li></ol>
+<h4>예약 관리</h4>
+<ul><li>목록의 스위치로 예약을 활성화하거나 비활성화합니다.</li><li>특정 예약을 선택해 시간과 동작을 수정하거나 삭제합니다.</li><li><strong>테스트</strong>를 눌러 조건 없이 동작을 시험합니다.</li></ul>
+<figure class="shot"><img src="./img/24_schedule.png" alt="가전 제어 예약 생성 화면"><figcaption>가전 제어 예약 생성 화면</figcaption></figure>
+<h3 id="sec7-4">7.4 적외선 명령 사용하기</h3>
+<p>적외선 명령을 등록하면 IoT 기능이 없는 TV·에어컨과 같은 리모컨 가전을 WaveStation을 통해 제어할 수 있습니다.</p>
+<ol class="steps"><li>가전 제어에서 <strong>적외선 명령</strong> 탭을 선택합니다.</li><li>새 명령을 등록하려면 <strong>+ 새 명령</strong>을 누릅니다.</li><li>명령 이름과 설명을 입력합니다. (예: 에어컨 전원)</li><li>적외선 신호를 받을 WaveStation을 선택하고 <strong>리모컨 신호 받기</strong>를 누릅니다.</li><li>남은 시간이 표시되는 동안 WaveStation을 향해 등록할 리모컨 버튼을 한 번 누릅니다.</li><li>신호 패턴이 자동으로 입력되었는지 확인합니다. 필요한 경우 측정값을 직접 입력할 수도 있습니다.</li><li><strong>저장</strong>을 눌러 명령을 등록합니다.</li><li>목록의 <strong>테스트</strong>를 눌러 실제 가전이 동작하는지 확인합니다.</li><li>설정 버튼으로 수정하거나 휴지통 버튼으로 삭제합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>리모컨 신호를 받을 때는 WaveStation의 적외선 수신부를 향해 가까운 거리에서 버튼을 누릅니다.</div>
+<figure class="shot"><img src="./img/25_ir_command.png" alt="적외선 명령 등록 창과 명령 목록"><figcaption>적외선 명령 등록 창과 명령 목록</figcaption></figure>
+<h3 id="sec7-5">7.5 제스처 목록 확인하기</h3>
+<ol class="steps"><li>가전 제어에서 <strong>제스처 목록</strong> 탭을 선택합니다.</li><li>제스처 세트 목록에서 확인할 세트를 선택합니다.</li><li>각 제스처의 행동과 구분을 확인할 수 있습니다.</li><li>제스처로 가전을 동작시키려면 자동화·예약 탭에서 해당 제스처를 조건으로 새 자동화를 만듭니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>제스처 목록은 인식 가능한 동작을 확인하는 화면입니다. 제스처와 가전 동작의 연결은 자동화 규칙에서 설정합니다.</div>
+<figure class="shot"><img src="./img/26_gesture_list.png" alt="제스처 세트와 제스처 클래스 목록"><figcaption>제스처 세트와 제스처 클래스 목록</figcaption></figure>
+<h3 id="sec7-6">7.6 가전 제어 기록 확인하기</h3>
+<ol class="steps"><li>가전 제어에서 <strong>기록</strong> 탭을 선택합니다.</li><li>상단 필터에서 전체 또는 확인할 이벤트 유형을 선택합니다.</li><li>인식된 제스처의 유형, 장치 이름, 발생 시점 등을 확인할 수 있습니다.</li></ol>
+<figure class="shot"><img src="./img/27_iot_log.png" alt="가전 제어 기록 타임라인"><figcaption>가전 제어 기록 타임라인</figcaption></figure>
+</section>
+<section class="chapter" id="ch8"><p class="chapter-label">8장 디지털 트윈홈(데모 버전)</p><hr class="chapter-rule"><h2>디지털 트윈홈(데모 버전)</h2><p class="lead">디지털 트윈홈은 실제 집의 공간과 연결된 장치를 3D로 표현해 배치와 상태를 직관적으로 확인하는 화면입니다.</p>
+<h3 id="sec8-1">8.1 디지털 트윈홈 소개</h3>
+<p>기기 목록에서 장치를 직접 선택해 제어할 수 있고, WaveChat으로 실행한 제어 결과도 트윈홈 상태에 반영됩니다.</p>
+<ol class="steps"><li>왼쪽 메뉴에서 <strong>디지털 트윈홈</strong>을 선택합니다.</li><li>처음 표시되는 사용 안내를 확인한 뒤 <strong>둘러보기</strong>를 눌러 3D 공간으로 이동합니다.</li><li>마우스를 드래그해 시점을 회전하고, 마우스 휠로 화면을 확대하거나 축소합니다.</li><li>특정 방을 선택해 내부를 확인하고, 집 전체로 돌아가려면 <strong>전체 보기</strong> 또는 돌아가기 버튼을 누릅니다.</li></ol>
+<figure class="shot"><img src="./img/28_twin_intro_explore.png" alt="디지털 트윈홈 3D 전체 보기"><figcaption>디지털 트윈홈 3D 전체 보기</figcaption></figure>
+<h3 id="sec8-2">8.2 공간과 장치 선택하기</h3>
+<ol class="steps"><li><strong>연결된 기기</strong> 목록을 확인합니다.</li><li>목록 위에서 전체 또는 특정 구역 필터를 선택합니다.</li><li>확인할 장치를 목록에서 선택합니다.</li><li>장치 상세 화면에서 현재 상태와 사용할 수 있는 제어 기능을 확인합니다.</li></ol>
+<figure class="shot"><img src="./img/29_twin_device.png" alt="디지털 트윈홈의 연결된 기기 목록과 장치 상세"><figcaption>디지털 트윈홈의 연결된 기기 목록과 장치 상세</figcaption></figure>
+<h3 id="sec8-3">8.3 WaveChat으로 제어하기</h3>
+<ol class="steps"><li>디지털 트윈홈의 안내창 또는 상단에서 WaveChat을 엽니다.</li><li>제어할 방, 장치와 동작을 구체적으로 입력합니다. (예: 부엌 인덕션 꺼줘)</li><li>WaveAI의 기기 조회·제어 상태와 최종 답변을 확인합니다.</li><li>채팅을 닫고 3D 화면에서 장치 상태가 변경되었는지 확인합니다.</li></ol>
+<figure class="shot"><img src="./img/30_twin_chat.png" alt="디지털 트윈홈과 WaveChat 팝업"><figcaption>디지털 트윈홈과 WaveChat 팝업</figcaption></figure>
+</section>
+<section class="chapter" id="ch9"><p class="chapter-label">9장 주간 계획</p><hr class="chapter-rule"><h2>주간 계획</h2><p class="lead">주간 계획에서는 시간표 형태로 일정을 추가하고 오늘 할 일을 확인하며 AI 추천과 목표 코칭을 관리합니다.</p>
+<h3 id="sec9-1">9.1 일정 추가하기</h3>
+<ol class="steps"><li>왼쪽 메뉴에서 <strong>주간 계획</strong>을 선택합니다.</li><li>상단에서 확인할 주를 선택합니다. 이전·다음 날짜, 이전·다음 주 또는 달력을 사용할 수 있습니다.</li><li>일정을 추가할 요일과 시간대의 빈 영역에 마우스를 올리고 표시되는 <strong>+</strong> 버튼을 누릅니다.</li><li>일정 제목과 시작 시간, 종료 시간을 입력합니다.</li><li>일정을 추가할 요일과 매주 반복 여부를 선택합니다.</li><li>수면, 자세, 일정, 일상 등 일정 분류를 선택합니다.</li><li>저장 버튼을 눌러 일정을 추가합니다.</li></ol>
+<figure class="shot"><img src="./img/31_weekly_add.png" alt="주간 계획 시간표에서 일정 추가"><figcaption>주간 계획 시간표에서 일정 추가</figcaption></figure>
+<h3 id="sec9-2">9.2 일정 수정 및 삭제하기</h3>
+<ol class="steps"><li>시간표에서 수정할 일정 블록을 선택합니다.</li><li>제목, 분류, 시작·종료 시간과 요일을 변경합니다.</li><li>저장 버튼을 눌러 변경사항을 반영합니다.</li><li>특정 일정을 빠르게 옮기려면 해당 블록을 원하는 요일과 시간대로 드래그합니다.</li><li>일정을 삭제하려면 편집창의 삭제 버튼을 누릅니다.</li></ol>
+<figure class="shot"><img src="./img/32_weekly_edit.png" alt="주간 계획 일정 편집창"><figcaption>주간 계획 일정 편집창</figcaption></figure>
+<h3 id="sec9-3">9.3 오늘 할 일</h3>
+<ol class="steps"><li><strong>오늘 할 일</strong> 영역에서 남은 할 일을 확인합니다.</li><li>완료한 항목은 클릭하여 완료 표시를 합니다.</li><li>다른 날짜의 할 일을 보려면 시간표 위의 날짜를 선택합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>오늘 할 일의 완료 상태는 대시보드의 오늘 할 일 카드와 함께 갱신됩니다.</div>
+<figure class="shot"><img src="./img/33_weekly_todo.png" alt="오늘 할 일"><figcaption>오늘 할 일</figcaption></figure>
+<h3 id="sec9-4">9.4 목표 코칭</h3>
+<p>목표 코칭은 사용자가 입력한 하나의 활성 목표를 기준으로 WaveAI가 현재 추세와 실천 행동을 제안하는 기능입니다.</p>
+<ol class="steps"><li>주간 계획의 <strong>목표 코칭</strong> 영역으로 이동합니다.</li><li>수면, 자세, 멘탈, 생활 또는 식습관 중 목표 분류를 선택합니다.</li><li>이루고 싶은 목표를 구체적으로 입력합니다. (예: 평일에는 밤 11시 30분 전에 잠들기)</li><li>목표 설정 버튼을 눌러 코칭을 요청합니다.</li><li>WaveAI가 제시한 과거 요약, 예상 흐름과 추천 행동을 확인합니다.</li><li>일정에 반영할 추천은 적용 버튼을 누릅니다.</li></ol>
+<figure class="shot"><img src="./img/34_goal_coaching.png" alt="목표 코칭 입력"><figcaption>목표 코칭 입력</figcaption></figure>
+</section>
+<section class="chapter" id="ch10"><p class="chapter-label">10장 설정</p><hr class="chapter-rule"><h2>설정</h2><p class="lead">설정에서는 화면과 알림, 구성원 계정, 장치와 구역, AI 에이전트와 서비스 정보를 관리합니다.</p>
+<h3 id="sec10-1">10.1 일반 설정</h3>
+<ol class="steps"><li>왼쪽 메뉴 아래의 <strong>설정</strong>을 선택합니다.</li><li>설정 메뉴에서 <strong>일반</strong>을 선택합니다.</li><li>라이트, 다크 또는 시스템 중 화면 테마를 선택합니다.</li><li>사용할 언어를 선택합니다.</li><li>음성 안내에 사용할 음성과 재생 속도를 선택합니다.</li><li>브라우저 푸시 알림을 사용하려면 알림 스위치를 켭니다.</li></ol>
+<figure class="shot"><img src="./img/35_settings_general.png" alt="설정의 일반 화면"><figcaption>설정의 일반 화면</figcaption></figure>
+<h3 id="sec10-2">10.2 계정 설정</h3>
+<ol class="steps"><li>설정에서 <strong>계정</strong>을 선택합니다.</li><li>구성원 목록에서 현재 사용 중인 계정을 확인합니다.</li><li>다른 구성원의 데이터를 보려면 해당 계정을 선택합니다.</li><li>새 구성원을 만들려면 <strong>계정 추가</strong>를 누르고 이름을 입력합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>계정을 전환하면 수면, 계획과 AI 분석 등 구성원별 데이터가 선택한 계정을 기준으로 표시됩니다.</div>
+<figure class="shot"><img src="./img/36_settings_account.png" alt="설정의 계정 화면"><figcaption>설정의 계정 화면</figcaption></figure>
+<h3 id="sec10-3">10.3 장치 설정</h3>
+<ol class="steps"><li>설정에서 <strong>장치</strong>를 선택합니다.</li><li>장치 이름을 변경하려면 장치 이름을 선택해 수정합니다.</li><li>장치를 사용할지 여부는 오른쪽 스위치로 변경합니다.</li><li>톱니바퀴 버튼을 눌러 장치 상세 설정을 엽니다.</li><li>사용하지 않는 장치는 <strong>기기 제거</strong>를 누른 뒤 확인합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>WaveStation의 동반자 모드를 켜면 WaveStation에 연결된 마이크의 음성으로 WaveAI를 호출할 수 있습니다.</div>
+<figure class="shot"><img src="./img/37_settings_devices.png" alt="설정의 장치 화면"><figcaption>설정의 장치 화면</figcaption></figure>
+<h3 id="sec10-4">10.4 구역 설정</h3>
+<ol class="steps"><li>설정에서 <strong>구역</strong>을 선택합니다.</li><li>새 공간을 만들려면 <strong>구역 추가</strong>를 누릅니다.</li><li>구역 이름과 설명을 입력한 뒤 추가합니다.</li><li>구역 목록에서 관리할 구역을 선택합니다.</li><li>구역 이름과 설명을 수정합니다.</li><li>구성원 영역에서 해당 구역을 사용하는 구성원을 추가하거나 제거합니다.</li><li>연결된 장치 영역에서 장치를 구역에 배치하거나 연결을 해제합니다.</li><li>휴지통 버튼을 눌러 구역을 삭제합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>장치가 연결된 구역은 바로 삭제할 수 없습니다. 먼저 해당 장치를 다른 구역으로 옮기거나 구역 연결을 해제합니다.</div>
+<figure class="shot"><img src="./img/38_settings_rooms.png" alt="설정의 구역 화면"><figcaption>설정의 구역 화면</figcaption></figure>
+<h3 id="sec10-5">10.5 AI 에이전트 설정</h3>
+<ol class="steps"><li>설정에서 <strong>AI 에이전트</strong>를 선택합니다.</li><li>개인 프롬프트에 WaveAI가 항상 참고할 사용자 선호나 답변 방식을 입력합니다.</li><li>AI 모델 목록에서 사용할 모델을 선택하고, 선택한 모델의 제공자, 모델명과 연결 정보를 확인합니다.</li><li>스위치를 통해 전송 방식과 효과음 여부를 선택합니다.</li></ol>
+<div class="callout"><strong>알아두기</strong>개인 프롬프트에는 주민등록번호, 비밀번호, API 키와 같은 민감한 정보를 입력하지 않습니다.</div>
+<figure class="shot"><img src="./img/39_settings_ai.png" alt="설정의 AI 에이전트 화면"><figcaption>설정의 AI 에이전트 화면</figcaption></figure>
+<h3 id="sec10-6">10.6 정보 확인하기</h3>
+<ol class="steps"><li>설정에서 <strong>정보</strong>를 선택합니다.</li><li>소프트웨어 이름, 제작자, 버전과 빌드 날짜를 확인할 수 있습니다.</li><li>서비스 이용약관과 개인정보 처리방침에서 수집 정보와 이용 목적을 확인할 수 있습니다.</li><li>오픈소스 라이선스 목록에서 프론트엔드, 서버와 AI 에이전트에 사용된 라이브러리를 확인할 수 있습니다.</li></ol>
+<figure class="shot"><img src="./img/40_settings_info.png" alt="설정의 정보 화면"><figcaption>설정의 정보 화면</figcaption></figure>
+</section>
+<footer class="doc-footer"><span>서강대학교 RADAI · WaveHome 사용자 매뉴얼</span><a href="#cover">맨 위로</a></footer></main></div>
+<button type="button" class="back-top" aria-label="맨 위로" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script>
+(function(){
+  var toc=document.querySelector('.toc-side');
+  var links=[].slice.call(document.querySelectorAll('.toc-side a[data-target]'));
+  var targets=links.map(function(a){return document.getElementById(a.getAttribute('data-target'));}).filter(Boolean);
+  var currentId=null;
+
+  function scrollTocToActive(link){
+    if(!toc||!link)return;
+    var pad=28;
+    var tocRect=toc.getBoundingClientRect();
+    var linkRect=link.getBoundingClientRect();
+    if(linkRect.top>=tocRect.top+pad&&linkRect.bottom<=tocRect.bottom-pad)return;
+    var delta=(linkRect.top+linkRect.bottom)/2-(tocRect.top+tocRect.bottom)/2;
+    toc.scrollTo({top:toc.scrollTop+delta,behavior:'smooth'});
+  }
+
+  function active(id){
+    if(!id||id===currentId)return;
+    currentId=id;
+    var activeLink=null;
+    links.forEach(function(a){
+      var on=a.getAttribute('data-target')===id;
+      a.classList.toggle('is-active',on);
+      if(on)activeLink=a;
+    });
+    scrollTocToActive(activeLink);
+  }
+
+  function update(){
+    var current=targets[0]&&targets[0].id;
+    if(document.documentElement.scrollHeight-(window.scrollY+window.innerHeight)<48){
+      active(targets[targets.length-1].id);
+      return;
+    }
+    targets.forEach(function(t){if(t.getBoundingClientRect().top<=96)current=t.id;});
+    if(current)active(current);
+  }
+
+  links.forEach(function(a){a.addEventListener('click',function(){active(a.getAttribute('data-target'));});});
+  window.addEventListener('scroll',update,{passive:true});
+  update();
+})();
+</script></body></html>

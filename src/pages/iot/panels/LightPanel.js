@@ -13,22 +13,27 @@ function unwrapState(payload) {
 }
 
 // Row-major for CSS grid 가로 3 × 세로 5 (.light-swatch-grid--side).
+// 좌상단 흰색 고정, 나머지는 구분 쉬운 조명용 팔레트.
 const PRESET_COLORS = [
-  { r: 255, g: 255, b: 255 },
-  { r: 255, g: 214, b: 170 },
-  { r: 255, g: 99, b: 99 },
-  { r: 255, g: 176, b: 59 },
-  { r: 255, g: 235, b: 59 },
-  { r: 96, g: 219, b: 108 },
-  { r: 59, g: 201, b: 219 },
-  { r: 89, g: 125, b: 255 },
-  { r: 167, g: 89, b: 255 },
-  { r: 255, g: 89, b: 199 },
-  { r: 255, g: 140, b: 66 },
-  { r: 120, g: 255, b: 214 },
-  { r: 64, g: 158, b: 255 },
-  { r: 232, g: 67, b: 147 },
-  { r: 186, g: 104, b: 200 },
+  { r: 255, g: 255, b: 255 }, // white
+  { r: 255, g: 214, b: 170 }, // warm peach
+  { r: 255, g: 120, b: 120 }, // soft red
+
+  { r: 255, g: 160, b: 60 },  // amber
+  { r: 255, g: 230, b: 80 },  // yellow
+  { r: 110, g: 210, b: 90 },  // leaf green
+
+  { r: 60, g: 210, b: 200 },  // teal
+  { r: 70, g: 140, b: 255 },  // blue
+  { r: 150, g: 100, b: 255 }, // violet
+
+  { r: 255, g: 100, b: 190 }, // pink
+  { r: 255, g: 90, b: 50 },   // vermillion
+  { r: 90, g: 230, b: 170 },  // mint
+
+  { r: 80, g: 180, b: 255 },  // sky
+  { r: 255, g: 60, b: 140 },  // rose
+  { r: 190, g: 130, b: 255 }, // lilac
 ];
 
 const TEMP_GRADIENT = 'linear-gradient(to right, #ff9329, #ffcf94, #fff6ea, #d8ecff, #9dc4ff)';

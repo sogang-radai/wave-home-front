@@ -83,11 +83,12 @@ function PickerList({ items, getId, getLabel, value, onChange, empty }) {
     <div className="trigger-picker-list trigger-scroll">
       {items.map((item) => {
         const id = getId(item);
+        const selected = value != null && id != null && String(value) === String(id);
         return (
           <button
             key={id}
             type="button"
-            className={`trigger-picker-item${value === id ? ' selected' : ''}`}
+            className={`trigger-picker-item${selected ? ' selected' : ''}`}
             onClick={() => onChange(id)}
           >
             <span className="trigger-picker-item-label">{getLabel(item)}</span>
@@ -160,7 +161,8 @@ export function AutomationWizard({ devices, irCommands, editingRule, initialMode
     const setId = draft.trigger.gestureSetPath.split('/')[1];
     if (!setId) { setGestureClasses([]); return; }
     iotApi.getGestureSetDefinition(setId).then((def) => {
-      setGestureClasses(def.classes.filter((c) => c.kind === 'trigger'));
+      // status(부재중/앉음 등)도 자동화 트리거로 쓰이므로 전부 모두 표시.
+      setGestureClasses(def.classes || []);
     }).catch(() => setGestureClasses([]));
   }, [draft.trigger?.kind, draft.trigger?.gestureSetPath]);
 
@@ -173,7 +175,9 @@ export function AutomationWizard({ devices, irCommands, editingRule, initialMode
   const actionDevice = devices.find((d) => d.id === draft.action.deviceId);
   const actionDef = actionDevice ? findAction(actionDevice.class, draft.action.name) : null;
   const allowedExecModes = actionDef ? execModesFor(actionDef) : ['once'];
-  const gestureClassName = gestureClasses.find((c) => c.classId === draft.trigger?.classId)?.name;
+  const gestureClassName = gestureClasses.find(
+    (c) => c.classId != null && String(c.classId) === String(draft.trigger?.classId),
+  )?.name;
   const irCommandName = irCommands.find((c) => c.id === draft.trigger?.commandId)?.name;
   const schedulePicker = minutesToPickerState(timeStringToMinutes(draft.schedule?.time || '09:00'));
 
@@ -391,7 +395,7 @@ export function AutomationWizard({ devices, irCommands, editingRule, initialMode
                   <p className="panel-empty">위에서 레이더를 먼저 선택하세요.</p>
                 ) : !draft.trigger.gestureSetPath ? (
                   <p className="panel-empty automation-wizard-guide">
-                    이 레이더에 제스처 셋이 할당되어 있지 않아요.<br />제어·관리 탭에서 레이더에 제스처 셋을 할당한 뒤 다시 돌아와 주세요.
+                    이 레이더에 제스처 셋이 할당되어 있지 않아요.<br />제어 탭에서 레이더에 제스처 셋을 할당한 뒤 다시 돌아와 주세요.
                   </p>
                 ) : (
                   <PickerList

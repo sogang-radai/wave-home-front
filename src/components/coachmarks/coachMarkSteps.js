@@ -22,7 +22,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     {
       selector: '[data-coachmark="nav-home"]',
       title: 'IoT 가전 제어',
-      description: '연결된 가전을 한눈에 보고 제어·관리할 수 있어요. 자동화·예약, 적외선 명령, 제스처 목록도 여기서 관리해요.',
+      description: '연결된 가전을 한눈에 보고 개별적으로 제어할 수 있어요. 자동화·예약, 적외선 명령, 제스처 목록도 여기서 관리해요.',
       placement: 'right',
     },
     showHomeTwin && {

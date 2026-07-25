@@ -16,7 +16,7 @@ export function HomeControlPage({ tab, setTab }) {
           active={tab}
           onChange={setTab}
           items={[
-            ['control', '제어·관리'],
+            ['control', '제어'],
             ['trigger', '자동화·예약'],
             ['ir', '적외선 명령'],
             ['gesture', '제스처 목록'],

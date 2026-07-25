@@ -25,11 +25,17 @@ function matchesSearch(rule, devices, query) {
   return haystack.includes(query.toLowerCase());
 }
 
-function AutomationRow({ rule, devices, onOpen, onToggle, onDelete, onExecute }) {
+function AutomationRow({ rule, devices, gestureNameByKey, onOpen, onToggle, onDelete, onExecute }) {
   const triggerDevice = devices.find((d) => d.id === rule.trigger?.deviceId);
+  const gestureKey = rule.trigger?.kind === 'gesture'
+    ? `${rule.trigger.gestureSetPath}:${rule.trigger.classId}`
+    : null;
   const conditionText = rule.schedule
     ? describeSchedule(rule.schedule)
-    : describeTrigger(rule.trigger, { deviceName: triggerDevice?.name });
+    : describeTrigger(rule.trigger, {
+      deviceName: triggerDevice?.name,
+      gestureClassName: gestureKey ? gestureNameByKey[gestureKey] : undefined,
+    });
   const metaText = rule.schedule ? '예약' : (TRIGGER_KIND_LABELS[rule.trigger?.kind] || '감지');
 
   return (
@@ -59,7 +65,7 @@ function AutomationRow({ rule, devices, onOpen, onToggle, onDelete, onExecute })
   );
 }
 
-function AutomationSection({ section, rules, devices, onOpen, onToggle, onDelete, onExecute, onAdd }) {
+function AutomationSection({ section, rules, devices, gestureNameByKey, onOpen, onToggle, onDelete, onExecute, onAdd }) {
   return (
     <div className="automation-section">
       <div className="automation-section-head">
@@ -75,6 +81,7 @@ function AutomationSection({ section, rules, devices, onOpen, onToggle, onDelete
             key={rule.id}
             rule={rule}
             devices={devices}
+            gestureNameByKey={gestureNameByKey}
             onOpen={onOpen}
             onToggle={onToggle}
             onDelete={onDelete}
@@ -90,6 +97,7 @@ export function TriggerRulesTab() {
   const [devices, setDevices] = useState([]);
   const [rules, setRules] = useState([]);
   const [irCommands, setIrCommands] = useState([]);
+  const [gestureNameByKey, setGestureNameByKey] = useState({});
   const [search, setSearch] = useState('');
   const [wizardTarget, setWizardTarget] = useState(null); // null | { kind: 'new', mode } | rule
   const [toast, setToast] = useState('');
@@ -100,6 +108,21 @@ export function TriggerRulesTab() {
     iotApi.getDevices().then(setDevices);
     iotApi.getIrCommands().then(setIrCommands);
     load();
+    iotApi.getGestureSets().then(async (sets) => {
+      const map = {};
+      await Promise.all((sets || []).map(async (set) => {
+        try {
+          const def = await iotApi.getGestureSetDefinition(set.id);
+          const path = set.path || `gestures/${set.id}/set.json`;
+          (def.classes || []).forEach((c) => {
+            map[`${path}:${c.classId}`] = c.name;
+          });
+        } catch {
+          /* ignore missing set */
+        }
+      }));
+      setGestureNameByKey(map);
+    }).catch(() => setGestureNameByKey({}));
   }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2000); };
@@ -161,6 +184,7 @@ export function TriggerRulesTab() {
               section={section}
               rules={sectionRules}
               devices={devices}
+              gestureNameByKey={gestureNameByKey}
               onOpen={(rule) => setWizardTarget(rule)}
               onToggle={toggleRule}
               onDelete={deleteRule}

@@ -183,6 +183,28 @@
   line-height: 1.4;
 }
 
+.settings-nav-item--manual {
+  background: linear-gradient(135deg, rgba(149, 217, 248, 0.14), var(--surface));
+}
+
+.settings-nav-item--manual:hover {
+  border-color: rgba(19, 111, 154, 0.35);
+}
+
+.settings-manual-mobile-btn {
+  display: none;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(149, 217, 248, 0.14), var(--surface));
+  color: var(--wave-deepest, #0e4862);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ── Device registration ────────────────────────────────────────────────── */
 
 .device-summary-row {
@@ -2178,6 +2200,10 @@
   .settings-nav-tabs {
     display: block;
     margin-bottom: 4px;
+  }
+
+  .settings-manual-mobile-btn {
+    display: block;
   }
 
   .settings-nav-tabs .tabs {
