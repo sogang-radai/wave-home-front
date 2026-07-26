@@ -129,7 +129,7 @@ function dismissHomeTabCoachMarkForever(tabId) {
   }
 }
 
-const LANDING_SEEN_KEY = 'wavehome_landing_seen';
+const LANDING_SEEN_KEY = 'wavehome_landing_visited';
 
 function hasSeenLanding() {
   try {
