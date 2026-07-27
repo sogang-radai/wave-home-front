@@ -21,9 +21,9 @@ export function IotControlTab() {
 
   return (
     <div className="iot-control-page">
-      <Card title="제어" wide>
+      <Card title="수동 제어" wide>
         <p className="section-description">
-          연결된 모든 기기들을 한눈에 보고 개별적으로 <strong className="wave-term">제어</strong>할 수 있어요.
+          연결된 모든 기기들을 한눈에 보고 <strong className="wave-term">개별적으로 제어</strong>할 수 있어요.
         </p>
 
         <div className="iot-control-split">

@@ -137,6 +137,8 @@
   margin: 8px 0 12px;
   font-size: 26px;
   line-height: 1.28;
+  font-weight: 700;
+  color: var(--ink);
   letter-spacing: 0;
 }
 
@@ -144,8 +146,8 @@
   max-width: 900px;
   margin: 0;
   color: var(--sub);
-  font-size: 15px;
-  line-height: 1.75;
+  font-size: 13px;
+  line-height: 1.7;
   letter-spacing: -0.01em;
 }
 
@@ -623,8 +625,8 @@
 
   .hero p {
     max-width: none;
-    font-size: 14px;
-    line-height: 1.7;
+    font-size: 13px;
+    line-height: 1.6;
   }
 
   .state-grid,

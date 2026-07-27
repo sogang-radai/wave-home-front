@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { Metric } from '../components/ui/Metric';
@@ -185,6 +185,11 @@ export function MainPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeGestureRules]);
 
+  const powerChartData = useMemo(
+    () => (powerTrend.length > 0 ? powerTrend : totalPower?.trend?.tenSec || totalPower?.trend?.hour || []),
+    [powerTrend, totalPower]
+  );
+
   const weekWh = sumWh(weekTrend);
   const weekCostWon = (weekWh / 1000) * TIER2_WON_PER_KWH;
 
@@ -367,10 +372,10 @@ export function MainPage({
           >
             <div className="dashboard-power-summary-row">
               <span className="dashboard-power-summary-label">실시간 사용량</span>
-              {powerTrend.length > 0 && (
+              {powerChartData.length > 0 && (
                 <div className="dashboard-power-chart">
                   <ResponsiveContainer width="100%" height={140}>
-                    <LineChart data={powerTrend} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+                    <LineChart data={powerChartData} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
                       <XAxis dataKey="label" hide />
                       <Tooltip
                         {...POWER_CHART_TOOLTIP_STYLE}

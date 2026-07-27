@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import './layout.css';
 import logoDark from '../../img/logo_dark.png';
 import logo from '../../img/logo.png';
@@ -152,6 +152,8 @@ function SidebarIcon({ name }) {
 export function Sidebar({
   page,
   onSelect,
+  activeTab,
+  onSelectTab,
   onNavigateToChat,
   today,
   collapsed,
@@ -179,6 +181,11 @@ export function Sidebar({
 
   const handleSelect = (id) => {
     onSelect(id);
+    onMobileClose?.();
+  };
+
+  const handleSelectTab = (tabId) => {
+    onSelectTab?.(tabId);
     onMobileClose?.();
   };
 
@@ -218,20 +225,35 @@ export function Sidebar({
 
       <nav className="nav-list">
         {visiblePages.map((item) => (
-          <button
-            key={item.id}
-            className={`nav-item ${page === item.id ? 'active' : ''}`}
-            data-coachmark={`nav-${item.id}`}
-            onClick={() => {
-              handleSelect(item.id);
-              if (collapsed) onCollapsedChange(false);
-            }}
-            title={collapsed ? item.label : undefined}
-          >
-            <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
-            <span className="nav-label">{item.label}</span>
-            {page === item.id && <i />}
-          </button>
+          <Fragment key={item.id}>
+            <button
+              className={`nav-item ${page === item.id ? 'active' : ''}`}
+              data-coachmark={`nav-${item.id}`}
+              onClick={() => {
+                handleSelect(item.id);
+                if (collapsed) onCollapsedChange(false);
+              }}
+              title={collapsed ? item.label : undefined}
+            >
+              <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
+              <span className="nav-label">{item.label}</span>
+              {page === item.id && <i />}
+            </button>
+            {item.tabs && page === item.id && (
+              <div className="nav-subtabs">
+                {item.tabs.map(([tabId, tabLabel]) => (
+                  <button
+                    type="button"
+                    key={tabId}
+                    className={`nav-subtab-item ${activeTab === tabId ? 'active' : ''}`}
+                    onClick={() => handleSelectTab(tabId)}
+                  >
+                    {tabLabel}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Fragment>
         ))}
       </nav>
 

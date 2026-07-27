@@ -33,7 +33,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     },
     {
       selector: '[data-coachmark="nav-weeklyPlan"]',
-      title: '주간 계획',
+      title: '루틴 플래너',
       description: '할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인할 수 있어요.',
       placement: 'right',
     },
@@ -82,38 +82,4 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
   ];
 
   return [...sidebarSteps, ...dashboardSteps];
-}
-
-// IoT 가전 제어의 자동화·예약/적외선 명령/제스처 목록 탭 — 세 탭을 한 번에
-// 소개하는 투어가 아니라, 그 탭에 들어갈 때마다 해당 탭의 코치마크 하나만
-// 뜬다(App.js가 tabId로 이 맵을 조회해서 1개짜리 steps 배열을 넘긴다).
-const HOME_CONTROL_COACH_MARK_STEPS = {
-  trigger: [
-    {
-      selector: '[data-coachmark="hometab-trigger"]',
-      title: '자동화·예약',
-      description: '기기 상태·제스처·적외선 신호를 감지하는 자동화와, 정해진 시각에 실행하는 예약을 한 화면에서 만들고 관리할 수 있어요.',
-      placement: 'bottom',
-    },
-  ],
-  ir: [
-    {
-      selector: '[data-coachmark="hometab-ir"]',
-      title: '적외선 명령',
-      description: '에어컨·TV와 같은 구형 가전의 리모컨 적외선 신호를 등록해서 직접 제어할 수 있도록 해요.',
-      placement: 'bottom',
-    },
-  ],
-  gesture: [
-    {
-      selector: '[data-coachmark="hometab-gesture"]',
-      title: '제스처 목록',
-      description: '가전 제어를 위해 레이더에서 사용할 수 있는 제스처들을 확인하는 화면이에요.',
-      placement: 'bottom',
-    },
-  ],
-};
-
-export function buildHomeControlCoachMarkSteps(tabId) {
-  return HOME_CONTROL_COACH_MARK_STEPS[tabId] || [];
 }

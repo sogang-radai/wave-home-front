@@ -16,6 +16,19 @@
   margin-top: 0;
 }
 
+/* The same tabs now live in the sidebar (as sub-items under 수면 관리) — on
+   desktop that's enough, so the in-page row is redundant. Mobile keeps it,
+   since the sidebar collapses into a drawer there. */
+@media (min-width: 761px) {
+  .sleep-tabs-row .tabs {
+    display: none;
+  }
+
+  .sleep-tabs-row {
+    justify-content: flex-end;
+  }
+}
+
 /* ── Daily report date transition ─────────────────────────────────────────── */
 
 .sleep-report-viewport {

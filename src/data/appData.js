@@ -1,16 +1,42 @@
 export const pages = [
   { id: 'main', label: '대시보드', icon: 'dashboard' },
-  { id: 'sleep', label: '수면 관리', icon: 'moon' },
+  {
+    id: 'sleep',
+    label: '수면 관리',
+    icon: 'moon',
+    tabs: [
+      ['analysis', '수면 분석'],
+      ['insight', '수면 인사이트'],
+      ['alarm', '수면 및 장치 알람'],
+    ],
+  },
   // { id: 'posture', label: '자세 관리', icon: 'posture' },
-  { id: 'power', label: '전력 관리', icon: 'lightning' },
-  { id: 'home', label: '가전 제어', icon: 'remote' },
+  {
+    id: 'power',
+    label: '전력 관리',
+    icon: 'lightning',
+    tabs: [
+      ['analysis', '전력 분석'],
+      ['insight', '전력 인사이트'],
+    ],
+  },
+  {
+    id: 'home',
+    label: '가전 제어',
+    icon: 'remote',
+    tabs: [
+      ['trigger', '규칙 설정'],
+      ['ir', '리모컨 등록'],
+      ['control', '수동 제어'],
+    ],
+  },
 ];
 
 /** Compact secondary nav items rendered under the upcoming-features block, with a separator. */
 export const secondaryPages = [
   { id: 'chat', label: 'WaveChat', icon: 'waveai' },
   { id: 'twin', label: '디지털 트윈홈', icon: 'twin' },
-  { id: 'weeklyPlan', label: '주간 계획', icon: 'planner' },
+  { id: 'weeklyPlan', label: '루틴 플래너', icon: 'planner' },
 ];
 
 export const upcomingFeatures = [
@@ -40,7 +66,7 @@ export const upcomingFeatures = [
 export const pageTitles = {
   main: '대시보드',
   chat: 'WaveChat',
-  weeklyPlan: '주간 계획',
+  weeklyPlan: '루틴 플래너',
   twin: '디지털 트윈홈',
   sleep: '수면 관리',
   // posture: '자세 관리',

@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { Tabs } from '../../components/ui/Tabs';
 import powerApi from '../../api/powerApi';
 import settingsApi from '../../api/settingsApi';
 import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
@@ -130,11 +131,8 @@ function PowerReportBanner({ header, report, loading }) {
 
   return (
     <div className={`power-report-banner${report.supported ? '' : ' unsupported'}${loading ? ' loading' : ''}`}>
-      <span className="power-report-icon">✦</span>
-      <div className="power-report-content">
-        <h3 className="power-report-header">{display.header}</h3>
-        <p className={`power-report-body${visible ? ' visible' : ''}`}>{display.text}</p>
-      </div>
+      <h3 className="power-report-header">{display.header}</h3>
+      <p className={`power-report-body${visible ? ' visible' : ''}`}>{display.text}</p>
     </div>
   );
 }
@@ -169,7 +167,7 @@ function PeakLabel({ viewBox, value }) {
   );
 }
 
-export function PowerPage() {
+export function PowerPage({ tab = 'analysis', setTab }) {
   const isMobile = useMobileLayout();
   const [plugs, setPlugs] = useState([]);
   const [plugsLoading, setPlugsLoading] = useState(true);
@@ -555,130 +553,149 @@ export function PowerPage() {
 
   return (
     <div className={`page-stack power-page${mounted ? ' mounted' : ''}`}>
-      {/* ── Stat cards: 전력 | 전압 | 누적 | 예상 요금 ─────────────────────── */}
-      <div className="power-stat-row">
-        <StatCard label="전력" value={fmtNum(live.w, 1)} unit="W" accent live sub="현재 사용량" />
-        <StatCard label="전압" value={fmtNum(live.v, 1)} unit="V" live sub={`${fmtNum(live.a, 3)} A`} />
-        <StatCard
-          label="누적"
-          value={totalIsKwh ? totalWh.toFixed(1) : (totalWh > 1000 ? (totalWh / 1000).toFixed(2) : totalWh.toFixed(1))}
-          unit={totalIsKwh ? 'kWh' : (totalWh > 1000 ? 'kWh' : 'Wh')}
-          sub="선택 구간 합계"
-        />
-        <StatCard
-          label="예상 요금"
-          value={estimatedCostWon.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-          unit="원"
-          sub="누진 2단계 기준"
-        />
-      </div>
+      <Tabs
+        active={tab}
+        onChange={setTab}
+        items={[
+          ['analysis', '전력 분석'],
+          ['insight', '전력 인사이트'],
+        ]}
+      />
 
-      {powerReport && (
-        <PowerReportBanner header={reportHeader} report={powerReport} loading={reportLoading} />
+      {tab === 'analysis' && (
+        <>
+          {powerReport && (
+            <PowerReportBanner header={reportHeader} report={powerReport} loading={reportLoading} />
+          )}
+
+          {/* ── Chart card ───────────────────────────────────────────────── */}
+          <div className="power-chart-card">
+            <div className="power-chart-head">
+              <div className="power-chart-title">
+                <strong>{selectedPlug.name}</strong>
+                <span>{selectedPlug.room}</span>
+              </div>
+            </div>
+
+            <div className="power-chart-stage">
+              <div className="power-chart-controls-bar">
+                <div className="power-chart-controls-slot power-chart-controls-slot--metrics">
+                  {metricTabControls}
+                </div>
+                <div className="power-chart-controls-slot power-chart-controls-slot--range">
+                  {rangeToolbarControls}
+                </div>
+              </div>
+              <PowerChart
+                key={isCombo ? 'combo' : rangeTab}
+                data={chartData}
+                metricTab={metricTab}
+                peakW={peakW}
+                animate={animateChart}
+                animToken={chartAnimToken}
+                barSelectable={barSelectable}
+                selectedBarIndex={selectedBarIndex}
+                onBarSelect={setSelectedBarIndex}
+                isMobile={isMobile}
+              />
+            </div>
+
+            {/* ── Stat cards: 전력 | 전압 | 누적 | 예상 요금 ─────────────── */}
+            <div className="power-stat-row">
+              <StatCard label="전력" value={fmtNum(live.w, 1)} unit="W" accent live sub="현재 사용량" />
+              <StatCard label="전압" value={fmtNum(live.v, 1)} unit="V" live sub={`${fmtNum(live.a, 3)} A`} />
+              <StatCard
+                label="누적"
+                value={totalIsKwh ? totalWh.toFixed(1) : (totalWh > 1000 ? (totalWh / 1000).toFixed(2) : totalWh.toFixed(1))}
+                unit={totalIsKwh ? 'kWh' : (totalWh > 1000 ? 'kWh' : 'Wh')}
+                sub="선택 구간 합계"
+              />
+              <StatCard
+                label="예상 요금"
+                value={estimatedCostWon.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                unit="원"
+                sub="누진 2단계 기준"
+              />
+            </div>
+          </div>
+
+          {/* ── Power sources ────────────────────────────────────────────── */}
+          <h3 className="power-source-heading">전력 소스</h3>
+          <div className="power-device-grid">
+            {plugs.map((device) => {
+              const isSelected = selectedPlugId === device.id;
+              const isEnabled = !disabledSources.includes(device.id);
+              const dLive = liveValues[device.id] || {
+                w: device.powerW ?? null,
+                v: device.voltageV ?? null,
+                a: device.currentMa != null ? device.currentMa / 1000 : null,
+              };
+              const hourlyCost = dLive.w != null ? (dLive.w / 1000) * 250 : null;
+              return (
+                <div
+                  key={device.id}
+                  className={`power-device-card${isSelected ? ' selected' : ''}${!isEnabled ? ' disabled' : ''}`}
+                >
+                  {/* Toggle controls whether this source counts toward stats — it does
+                      NOT reflect connectivity, so the online dot below it stays green
+                      as long as the device is connected, regardless of toggle state. */}
+                  <div className="power-device-side">
+                    <button
+                      type="button"
+                      className={`toggle-switch toggle-switch--sm power-device-toggle${isEnabled ? ' on' : ''}`}
+                      onClick={(e) => { e.stopPropagation(); toggleSourceEnabled(device.id); }}
+                      aria-label={isEnabled ? `${device.name} 비활성화` : `${device.name} 활성화`}
+                      title={isEnabled ? '비활성화' : '활성화'}
+                    >
+                      <i />
+                    </button>
+                    <ConnectionDot device={device} />
+                  </div>
+                  <button
+                    type="button"
+                    className="power-device-body"
+                    disabled={!isEnabled}
+                    onClick={() => setSelectedPlugId(device.id)}
+                  >
+                    <div className="power-device-top">
+                      <div className="power-device-thumb">
+                        {device.id === 'all' ? <LightningIcon /> : <img src={thumbTuya} alt="" />}
+                      </div>
+                      <div className="power-device-info">
+                        <span className="power-device-room">{device.room}</span>
+                        <strong className="power-device-name" title={device.name}>{device.name}</strong>
+                      </div>
+                    </div>
+                    <div className="power-device-center">
+                      <strong className="power-device-w-big">{fmtNum(dLive.w, 1)}</strong>
+                      <small>W</small>
+                    </div>
+                    <div className="power-device-bottom">
+                      <span className="power-device-va">{fmtNum(dLive.v, 1)}V · {fmtNum(dLive.a, 3)}A</span>
+                      <span className="power-device-cost">{hourlyCost != null ? `~${hourlyCost.toFixed(1)}원/h` : '—'}</span>
+                    </div>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
-      {/* ── Chart card ───────────────────────────────────────────────────── */}
-      <div className="power-chart-card">
-        <div className="power-chart-head">
-          <div className="power-chart-title">
-            <strong>{selectedPlugId === 'all' ? '전체 콘센트' : selectedPlug.name}</strong>
-            <span>{selectedPlug.room}</span>
-          </div>
-        </div>
-
-        <div className="power-chart-stage">
-          <div className="power-chart-controls-bar">
-            <div className="power-chart-controls-slot power-chart-controls-slot--metrics">
-              {metricTabControls}
-            </div>
-            <div className="power-chart-controls-slot power-chart-controls-slot--range">
-              {rangeToolbarControls}
-            </div>
-          </div>
-          <PowerChart
-            key={isCombo ? 'combo' : rangeTab}
-            data={chartData}
-            metricTab={metricTab}
-            peakW={peakW}
-            animate={animateChart}
-            animToken={chartAnimToken}
-            barSelectable={barSelectable}
-            selectedBarIndex={selectedBarIndex}
-            onBarSelect={setSelectedBarIndex}
-            isMobile={isMobile}
-          />
-        </div>
-      </div>
-
-      {/* ── Power sources ────────────────────────────────────────────────── */}
-      <h3 className="power-source-heading">전력 소스</h3>
-      <div className="power-device-grid">
-        {plugs.map((device) => {
-          const isSelected = selectedPlugId === device.id;
-          const isEnabled = !disabledSources.includes(device.id);
-          const dLive = liveValues[device.id] || {
-            w: device.powerW ?? null,
-            v: device.voltageV ?? null,
-            a: device.currentMa != null ? device.currentMa / 1000 : null,
-          };
-          const hourlyCost = dLive.w != null ? (dLive.w / 1000) * 250 : null;
-          return (
-            <div
-              key={device.id}
-              className={`power-device-card${isSelected ? ' selected' : ''}${!isEnabled ? ' disabled' : ''}`}
-            >
-              {/* Toggle controls whether this source counts toward stats — it does
-                  NOT reflect connectivity, so the online dot below it stays green
-                  as long as the device is connected, regardless of toggle state. */}
-              <div className="power-device-side">
-                <button
-                  type="button"
-                  className={`toggle-switch toggle-switch--sm power-device-toggle${isEnabled ? ' on' : ''}`}
-                  onClick={(e) => { e.stopPropagation(); toggleSourceEnabled(device.id); }}
-                  aria-label={isEnabled ? `${device.name} 비활성화` : `${device.name} 활성화`}
-                  title={isEnabled ? '비활성화' : '활성화'}
-                >
-                  <i />
-                </button>
-                <ConnectionDot device={device} />
-              </div>
-              <button
-                type="button"
-                className="power-device-body"
-                disabled={!isEnabled}
-                onClick={() => setSelectedPlugId(device.id)}
-              >
-                <div className="power-device-top">
-                  <div className="power-device-thumb">
-                    {device.id === 'all' ? <LightningIcon /> : <img src={thumbTuya} alt="" />}
-                  </div>
-                  <div className="power-device-info">
-                    <span className="power-device-room">{device.room}</span>
-                    <strong className="power-device-name" title={device.name}>{device.name}</strong>
-                  </div>
-                </div>
-                <div className="power-device-center">
-                  <strong className="power-device-w-big">{fmtNum(dLive.w, 1)}</strong>
-                  <small>W</small>
-                </div>
-                <div className="power-device-bottom">
-                  <span className="power-device-va">{fmtNum(dLive.v, 1)}V · {fmtNum(dLive.a, 3)}A</span>
-                  <span className="power-device-cost">{hourlyCost != null ? `~${hourlyCost.toFixed(1)}원/h` : '—'}</span>
-                </div>
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {insights.length > 0 && (
+      {tab === 'insight' && (
         <div className="insight-section">
           <h3 className="insight-section-title">전력 인사이트</h3>
-          <div className="insight-list">
-            {insights.map((item) => (
-              <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} plainFooter />
-            ))}
-          </div>
+          <p className="insight-section-desc">AI가 전력 사용 기록을 분석해 바로 실행할 수 있는 제안과 절약 팁을 알려드려요.</p>
+          {insights.length === 0 && (
+            <p className="panel-empty">아직 표시할 인사이트가 없어요.</p>
+          )}
+          {insights.length > 0 && (
+            <div className="insight-list">
+              {insights.map((item) => (
+                <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} onToggle={toggleInsight} plainFooter />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

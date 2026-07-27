@@ -9,29 +9,22 @@
   margin-top: 40px;
 }
 
+/* Matches the alarm page's intro title+description pattern (see
+   .alarm-page-intro-title / .alarm-page-intro-desc) — no card box,
+   just the same type scale/color/spacing. */
 .insight-section-title {
-  margin: 0 0 16px;
-  color: var(--ink-soft);
-  font-size: 15px;
-  font-weight: 800;
-}
-
-/* When a one-line description follows the title, tighten the title's own
-   gap, indent it and the description together, and make the title read
-   as clearly as "수면 단계" — scoped so pages without a description
-   (e.g. 전력 인사이트) keep the original spacing/size. */
-.insight-section-title:has(+ .insight-section-desc) {
-  margin-bottom: 4px;
-  padding-left: 10px;
+  margin: 0 0 4px;
+  padding-left: 2px;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .insight-section-desc {
   margin: 0 0 16px;
-  padding-left: 10px;
-  color: var(--sub);
-  font-size: 13px;
+  padding-left: 2px;
+  color: var(--ink);
+  font-size: 15px;
   line-height: 1.5;
 }
 

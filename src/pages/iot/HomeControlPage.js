@@ -2,11 +2,9 @@ import { Tabs } from '../../components/ui/Tabs';
 import { IotControlTab } from './IotControlTab';
 import { TriggerRulesTab } from './TriggerRulesTab';
 import { IrCommandsTab } from './IrCommandsTab';
-import { GestureSetsTab } from './GestureSetsTab';
-import { EventLogTab } from './EventLogTab';
 import './HomeControlPage.css';
 
-const FIXED_HEIGHT_TABS = ['control', 'trigger'];
+const FIXED_HEIGHT_TABS = ['control'];
 
 export function HomeControlPage({ tab, setTab }) {
   return (
@@ -16,11 +14,9 @@ export function HomeControlPage({ tab, setTab }) {
           active={tab}
           onChange={setTab}
           items={[
-            ['control', '제어'],
-            ['trigger', '자동화·예약'],
-            ['ir', '적외선 명령'],
-            ['gesture', '제스처 목록'],
-            ['log', '기록'],
+            ['trigger', '규칙 설정'],
+            ['ir', '리모컨 등록'],
+            ['control', '수동 제어'],
           ]}
         />
       </div>
@@ -28,8 +24,6 @@ export function HomeControlPage({ tab, setTab }) {
       {tab === 'control' && <IotControlTab />}
       {tab === 'trigger' && <TriggerRulesTab />}
       {tab === 'ir' && <IrCommandsTab />}
-      {tab === 'gesture' && <GestureSetsTab />}
-      {tab === 'log' && <EventLogTab />}
     </div>
   );
 }
