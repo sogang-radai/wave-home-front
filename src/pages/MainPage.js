@@ -14,6 +14,7 @@ import { useElementHeight } from '../hooks/useElementHeight';
 import './main.css';
 
 const GESTURES_PER_PAGE = 1;
+const ALARMS_PER_PAGE = 2;
 const POWER_SUMMARY_POLL_MS = 60000;
 const POWER_TREND_POLL_MS = 5000;
 
@@ -104,6 +105,7 @@ export function MainPage({
   const [activeGestureRules, setActiveGestureRules] = useState([]);
   const [gestureSetDefsById, setGestureSetDefsById] = useState({});
   const [gesturePage, setGesturePage] = useState(0);
+  const [alarmPage, setAlarmPage] = useState(0);
   // 카드 세로 길이를 서로 맞추기 위해 기준이 되는 카드/컬럼의 실제 렌더 높이를 추적한다:
   // 홈 현황 ← 어젯밤 수면, 활성화된 제스처 목록 ← 예정된 알람, 전력 관리 ← 가전 제어 컬럼 전체.
   const [sleepCardRef, sleepCardHeight] = useElementHeight();
@@ -211,6 +213,13 @@ export function MainPage({
     currentGesturePage * GESTURES_PER_PAGE + GESTURES_PER_PAGE
   );
 
+  const alarmPageCount = Math.max(1, Math.ceil(upcomingAlarms.length / ALARMS_PER_PAGE));
+  const currentAlarmPage = Math.min(alarmPage, alarmPageCount - 1);
+  const visibleAlarms = upcomingAlarms.slice(
+    currentAlarmPage * ALARMS_PER_PAGE,
+    currentAlarmPage * ALARMS_PER_PAGE + ALARMS_PER_PAGE
+  );
+
   return (
     <div className="page-stack dashboard-page">
       <section className="hero card">
@@ -286,17 +295,17 @@ export function MainPage({
           </div>
 
           <div className="dashboard-sleep-card" ref={alarmsCardRef}>
-            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms">
+            <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms" className="dashboard-alarms-card">
               <div className="mt-2 flex flex-col gap-1">
                 {upcomingAlarms.length === 0 && (
                   <p className="text-sm" style={{ color: 'var(--sub)' }}>오늘·내일 아침으로 예정된 알람이 없어요.</p>
                 )}
-                {upcomingAlarms.map((alarm) => {
+                {visibleAlarms.map((alarm) => {
                   const { hour12, minute, meridiem } = formatClock12(alarm.timeMinute);
                   return (
                     <div
                       key={alarm.id}
-                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-1"
+                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-0.25"
                       style={{ background: 'var(--wave-05)' }}
                     >
                       <div className="flex min-w-0 items-baseline gap-2">
@@ -313,6 +322,33 @@ export function MainPage({
                   );
                 })}
               </div>
+              {alarmPageCount > 1 && (
+                <div className="mt-1 flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--wave-10)] disabled:opacity-30"
+                    style={{ color: 'var(--ink)' }}
+                    onClick={(event) => { event.stopPropagation(); setAlarmPage((p) => Math.max(0, p - 1)); }}
+                    disabled={currentAlarmPage === 0}
+                    aria-label="이전 알람"
+                  >
+                    <NavChevronIcon direction="prev" />
+                  </button>
+                  <span className="text-xs" style={{ color: 'var(--sub)' }}>
+                    {currentAlarmPage + 1} / {alarmPageCount}
+                  </span>
+                  <button
+                    type="button"
+                    className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--wave-10)] disabled:opacity-30"
+                    style={{ color: 'var(--ink)' }}
+                    onClick={(event) => { event.stopPropagation(); setAlarmPage((p) => Math.min(alarmPageCount - 1, p + 1)); }}
+                    disabled={currentAlarmPage === alarmPageCount - 1}
+                    aria-label="다음 알람"
+                  >
+                    <NavChevronIcon direction="next" />
+                  </button>
+                </div>
+              )}
             </Card>
           </div>
         </div>
@@ -399,7 +435,7 @@ export function MainPage({
           <p className="dashboard-col-title">가전 제어</p>
           <div className="dashboard-posture-card">
             <Card
-              title="홈 현황"
+              title="실시간 홈 현황"
               data-coachmark="card-status"
               className="dashboard-status-card"
               style={sleepCardHeight ? { minHeight: `${sleepCardHeight}px` } : undefined}
@@ -446,14 +482,14 @@ export function MainPage({
                   return (
                     <div
                       key={rule.id}
-                      className="flex items-center gap-3 rounded-xl px-3 py-1"
+                      className="flex items-center gap-3 rounded-xl px-3 py-0.5"
                       style={{ background: 'var(--wave-05)' }}
                     >
                       {gestureClass?.thumbnail && (
                         <img
                           src={gestureClass.thumbnail}
                           alt=""
-                          className="h-9 w-9 shrink-0 rounded-lg object-cover"
+                          className="h-10 w-10 shrink-0 rounded-lg object-cover"
                           style={{ background: 'var(--wave-10)' }}
                         />
                       )}

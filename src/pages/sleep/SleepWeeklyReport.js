@@ -16,6 +16,7 @@ export function SleepWeeklyReport({ weeklyReport, sleepGoalHours = 7.5 }) {
     <CareReport
       type="weekly"
       title="지난 한 주 수면 리포트"
+      titleClassName="sleep-weekly-title"
       score={`${metrics.averageScore}점`}
       summary={summary}
       showSummary={Boolean(summary)}

@@ -17,8 +17,18 @@
 .content.dashboard-active {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
   background-color: #f2f2f7;
+}
+
+/* No-scroll only applies on desktop, where the dashboard is sized to fit
+   the viewport in one screen. On mobile the same content doesn't fit, so
+   .content needs to keep scrolling there (see layout.css's mobile
+   overflow-y: auto) — scoping this behind min-width keeps it from
+   out-specificity-ing that rule and locking the mobile page in place. */
+@media (min-width: 761px) {
+  .content.dashboard-active {
+    overflow: hidden;
+  }
 }
 
 .content.dashboard-active::before {
@@ -60,6 +70,13 @@
 
 .dashboard-sleep-card .card-head {
   margin-bottom: 8px;
+}
+
+/* "예정된 알람" only — shorter bottom padding than "어젯밤 수면" shares by
+   default, since 활성화된 제스처 목록 dynamically matches this card's height.
+   Matches the specificity of the rule above (3 classes) so it actually wins. */
+.dashboard-page .dashboard-sleep-card .dashboard-alarms-card {
+  padding-bottom: 8px;
 }
 
 .calendar-popup-grid button.muted-day {
@@ -107,7 +124,7 @@
 /* Pull the dashboard's hero card up closer to the topbar — .content's
    standard 28px top padding otherwise leaves it looking too far down. */
 .dashboard-page .hero {
-  margin-top: -14px;
+  margin-top: -20px;
 }
 
 .hero > div:first-child {

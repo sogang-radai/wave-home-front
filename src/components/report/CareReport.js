@@ -91,6 +91,7 @@ export function CareReport({
   dateNav,
   extra,
   header,
+  titleClassName,
 }) {
   const isWeekly = type === 'weekly';
 
@@ -109,7 +110,7 @@ export function CareReport({
         </>
       )}
       {isWeekly && (
-        <Card title={title} wide>
+        <Card title={title} wide className={titleClassName}>
           {showSummary && summary?.trim() && (
             <p className="report-summary-only">{summary}</p>
           )}
