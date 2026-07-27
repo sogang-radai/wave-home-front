@@ -18,16 +18,11 @@ import { IS_DEMO_MODE, USE_CLIENT_POWER_SIM } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
 import { InsightCard } from '../../components/report/InsightCard';
 import { getNow } from '../../lib/demoClock';
-import { formatAnchorDate, resolvePowerReportRequest } from './powerReportUtils';
+import { TIER2_WON_PER_KWH, formatAnchorDate, resolvePowerReportRequest } from './powerReportUtils';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
 import thumbTuya from '../../img/device/thumbnail_tuya_ep2h.png';
 import '../../components/report/report.css';
 import './PowerPage.css';
-
-// 한국전력 주택용(저압) 누진제 2단계(201~400kWh) 근사 단가 — 데모용 상수.
-// 실제 요금은 기본요금·단계 구간·계절별 조정이 있으나, 여기서는 "선택 구간
-// 누적 사용량 × 2단계 전력량요금"의 단순 근사치로 예상 요금을 보여준다.
-const TIER2_WON_PER_KWH = 214.6;
 
 const COMBO_OPTIONS = [
   { id: 'min1', label: '1분' },

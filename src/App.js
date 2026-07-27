@@ -379,18 +379,6 @@ function App() {
     setPage('sleep');
   };
 
-  const goToChatWithDraft = (text) => {
-    setActiveChatId(null);
-    setChatMode('page');
-    setPendingChatDraft(text);
-    setPrevPage(page);
-    playBubbleTransitionSound();
-    setPage('chat');
-    setWaveTransition(true);
-    setTimeout(() => {
-      setWaveTransition(false);
-    }, 750);
-  };
   const [chatConversations, setChatConversations] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
 
@@ -956,10 +944,7 @@ function App() {
           {page === 'main' && (
             <MainPage
               onNavigate={setPage}
-              todos={todos}
-              onToggleTodo={toggleTodo}
               onGoToPowerAnalysis={goToPowerAnalysis}
-              onOpenChatWithDraft={goToChatWithDraft}
               onGoToGestures={goToGestureManagement}
               onGoToAlarms={goToAlarmTab}
             />

@@ -179,8 +179,14 @@ button.brand-group {
 
 /* Nav */
 .nav-list {
+  flex: 0 0 auto;
+  padding: 18px 10px 0;
+}
+
+.nav-list--secondary {
   flex: 1;
-  padding: 18px 10px;
+  padding-top: 0;
+  padding-bottom: 18px;
 }
 
 .nav-divider {
@@ -297,7 +303,7 @@ button.brand-group {
 
 /* Upcoming features (dimmed, non-interactive preview) */
 .nav-upcoming {
-  padding: 4px 10px 14px;
+  padding: 0 10px 14px;
 }
 
 .nav-upcoming-title {
@@ -316,15 +322,22 @@ button.brand-group {
   cursor: default;
 }
 
+.nav-item--upcoming .nav-icon {
+  color: inherit;
+}
+
 .nav-item--upcoming:hover {
   color: rgba(255, 255, 255, 0.45);
+}
+
+.nav-item--upcoming:hover .nav-icon {
+  color: inherit;
 }
 
 .nav-info {
   position: relative;
   display: inline-flex;
   align-items: center;
-  cursor: help;
 }
 
 .nav-info-icon {

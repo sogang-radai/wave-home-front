@@ -1,20 +1,34 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Line, LineChart, ResponsiveContainer } from 'recharts';
+import { useEffect, useState } from 'react';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { Metric } from '../components/ui/Metric';
 import { Donut } from '../components/ui/Donut';
 import { formatClock12, formatNextFireLabel } from './alarm/alarmUtils';
-import { koreanWeekdayLabels } from '../data/weeklyPlanData';
-import { getNow } from '../lib/demoClock';
 import sleepApi from '../api/sleepApi';
 import iotApi from '../api/iotApi';
 import dashboardApi from '../api/dashboardApi';
 import powerApi from '../api/powerApi';
 import { findAction } from '../api/mock/deviceClassRegistry';
+import { TIER2_WON_PER_KWH, formatAnchorDate } from './power/powerReportUtils';
+import { useElementHeight } from '../hooks/useElementHeight';
 import './main.css';
 
 const GESTURES_PER_PAGE = 1;
-const POWER_POLL_MS = 5000;
+const POWER_SUMMARY_POLL_MS = 60000;
+const POWER_TREND_POLL_MS = 5000;
+
+const POWER_CHART_TOOLTIP_STYLE = {
+  contentStyle: {
+    background: 'var(--surface)',
+    border: '1px solid var(--line)',
+    borderRadius: 10,
+    padding: '8px 10px',
+    boxShadow: '0 4px 14px var(--shadow)',
+  },
+  labelStyle: { color: 'var(--sub)', fontSize: 11, fontWeight: 600, marginBottom: 2 },
+  itemStyle: { color: 'var(--ink)', fontSize: 12, fontWeight: 700, padding: 0 },
+  isAnimationActive: false,
+};
 
 const SLEEP_RADAR = {
   name: '침실 하방 레이더',
@@ -35,6 +49,33 @@ function actionLabelFor(rule, devices) {
   return `${rule.actionDeviceName} ${actionDef?.description || rule.actionName}`;
 }
 
+function sumWh(trend) {
+  return (trend || []).reduce((sum, point) => sum + (point.wh ?? 0), 0);
+}
+
+function formatWh(wh) {
+  return wh > 1000 ? `${(wh / 1000).toFixed(2)}kWh` : `${wh.toFixed(1)}Wh`;
+}
+
+// 콤보 트렌드 라벨("-1분", "지금" 등)에서 부호를 떼어 "1분"처럼 보여준다.
+function formatAgoTooltipLabel(label) {
+  if (label == null) return '';
+  const str = String(label).trim();
+  return str.startsWith('-') ? str.slice(1) : str;
+}
+
+const WEEKDAY_FULL_LABEL = {
+  일: '일요일', 월: '월요일', 화: '화요일', 수: '수요일', 목: '목요일', 금: '금요일', 토: '토요일',
+};
+
+function formatWeekdayTooltipLabel(label) {
+  return WEEKDAY_FULL_LABEL[label] || label;
+}
+
+function formatWon(costWon) {
+  return `${costWon.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`;
+}
+
 function NavChevronIcon({ direction }) {
   const points = direction === 'prev' ? '15 18 9 12 15 6' : '9 18 15 12 9 6';
   return (
@@ -46,21 +87,15 @@ function NavChevronIcon({ direction }) {
 
 export function MainPage({
   onNavigate,
-  todos,
-  onToggleTodo,
   onGoToPowerAnalysis,
-  onOpenChatWithDraft,
   onGoToGestures,
   onGoToAlarms,
 }) {
-  const todayLabel = koreanWeekdayLabels[getNow().getDay()];
-  const todayTodos = todos.filter((t) => t.day === todayLabel);
-  const remaining = todayTodos.filter((todo) => !todo.done).length;
-
   const [sleepSummary, setSleepSummary] = useState(null);
   const [todayPlan, setTodayPlan] = useState(null);
   const [totalPower, setTotalPower] = useState(null);
   const [powerTrend, setPowerTrend] = useState([]);
+  const [weekTrend, setWeekTrend] = useState([]);
   const [dailyMessage, setDailyMessage] = useState(null);
   const [currentState, setCurrentState] = useState(null);
   const [homeSummary, setHomeSummary] = useState(null);
@@ -69,6 +104,11 @@ export function MainPage({
   const [activeGestureRules, setActiveGestureRules] = useState([]);
   const [gestureSetDefsById, setGestureSetDefsById] = useState({});
   const [gesturePage, setGesturePage] = useState(0);
+  // 카드 세로 길이를 서로 맞추기 위해 기준이 되는 카드/컬럼의 실제 렌더 높이를 추적한다:
+  // 홈 현황 ← 어젯밤 수면, 활성화된 제스처 목록 ← 예정된 알람, 전력 관리 ← 가전 제어 컬럼 전체.
+  const [sleepCardRef, sleepCardHeight] = useElementHeight();
+  const [alarmsCardRef, alarmsCardHeight] = useElementHeight();
+  const [gestureColRef, gestureColHeight] = useElementHeight();
 
   useEffect(() => {
     // 데모/실서버 모두 /sleep/today/summary → sleep_session DB 조회.
@@ -82,10 +122,10 @@ export function MainPage({
     dashboardApi.getActiveGestureRules().then(setActiveGestureRules);
   }, []);
 
-  // 전력 카드: DemoPowerMeter(/power/plugs) + 콤보 트렌드를 주기적으로 갱신.
+  // 전력 카드 "실시간" 구간: DemoPowerMeter(/power/plugs) 실시간 값 + 최근 10분 그래프를 주기적으로 갱신.
   useEffect(() => {
     let cancelled = false;
-    const loadPower = () => {
+    const loadLive = () => {
       Promise.all([
         powerApi.getPlugs(),
         powerApi.getComboTrend({ deviceId: 'all', range: 'min10', metric: 'w' }).catch(() => []),
@@ -101,8 +141,25 @@ export function MainPage({
         }
       });
     };
-    loadPower();
-    const timer = setInterval(loadPower, POWER_POLL_MS);
+    loadLive();
+    const timer = setInterval(loadLive, POWER_TREND_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  // 전력 카드 "이번 주" 구간: 최근 7일 기간 트렌드(그래프 + 사용량·예상 요금 합계).
+  useEffect(() => {
+    let cancelled = false;
+    const loadWeek = () => {
+      const { dateStr } = formatAnchorDate();
+      powerApi.getPeriodTrend({ deviceId: 'all', period: 'week', refDate: dateStr })
+        .then((trend) => { if (!cancelled) setWeekTrend(Array.isArray(trend) ? trend : []); })
+        .catch(() => { if (!cancelled) setWeekTrend([]); });
+    };
+    loadWeek();
+    const timer = setInterval(loadWeek, POWER_SUMMARY_POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(timer);
@@ -126,10 +183,8 @@ export function MainPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeGestureRules]);
 
-  const powerChartData = useMemo(
-    () => (powerTrend.length > 0 ? powerTrend : totalPower?.trend?.tenSec || totalPower?.trend?.hour || []),
-    [powerTrend, totalPower]
-  );
+  const weekWh = sumWh(weekTrend);
+  const weekCostWon = (weekWh / 1000) * TIER2_WON_PER_KWH;
 
   const deviceConnectionValue = homeSummary
     ? homeSummary.onlineDeviceCount === homeSummary.totalDeviceCount
@@ -168,12 +223,13 @@ export function MainPage({
       </section>
 
       {/* Overview grid: each column is its own independent stack, so a
-          shorter column (e.g. 전력 관리 + 예정된 알람) never gets stretched
-          down to match a taller one (어젯밤 수면) — the card below just
-          sits directly against the card above it. */}
+          shorter column (e.g. 전력 관리) never gets stretched down to match
+          a taller one (수면 관리) — the card below just sits directly
+          against the card above it. */}
       <section className="dashboard-overview-grid">
         <div className="dashboard-overview-col">
-          <div className="dashboard-sleep-card">
+          <p className="dashboard-col-title">수면 관리</p>
+          <div className="dashboard-sleep-card" ref={sleepCardRef}>
             <Card title="어젯밤 수면" onClick={() => onNavigate('sleep')} data-coachmark="card-sleep">
               {sleepSummary && (
                 <div className="flex items-center gap-6">
@@ -218,7 +274,7 @@ export function MainPage({
               {todayPlan && (
                 <div className="mt-1 border-t pt-1" style={{ borderColor: 'var(--wave-10)' }}>
                   <p className="text-[15px] font-bold" style={{ color: 'var(--ink-soft)' }}>오늘 밤 추천 수면 시간</p>
-                  <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>
+                  <span className="text-lg font-bold" style={{ color: 'var(--ink)' }}>
                     {todayPlan.bedtime} 취침 · {todayPlan.wakeTime} 기상
                   </span>
                   {todayPlan.rationale && (
@@ -229,7 +285,7 @@ export function MainPage({
             </Card>
           </div>
 
-          <div className="dashboard-sleep-card">
+          <div className="dashboard-sleep-card" ref={alarmsCardRef}>
             <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms">
               <div className="mt-2 flex flex-col gap-1">
                 {upcomingAlarms.length === 0 && (
@@ -261,22 +317,30 @@ export function MainPage({
           </div>
         </div>
 
-        <div className="dashboard-overview-col">
+        <div
+          className="dashboard-overview-col"
+          style={gestureColHeight ? { minHeight: `${gestureColHeight}px` } : undefined}
+        >
+          <p className="dashboard-col-title">전력 관리</p>
           <button
             type="button"
             className="dashboard-power-card"
             data-coachmark="card-power"
             onClick={onGoToPowerAnalysis}
-            disabled={!totalPower}
+            disabled={!totalPower && weekTrend.length === 0}
           >
-            {totalPower && (
-              <>
-                <span>전력 관리</span>
-                <strong>{Number(totalPower.powerW ?? 0).toFixed(1)}W</strong>
-                <p>전체 콘센트 현재 사용량</p>
-                <div className="dashboard-power-chart" aria-hidden="true">
-                  <ResponsiveContainer width="100%" height={96}>
-                    <LineChart data={powerChartData} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+            <div className="dashboard-power-summary-row">
+              <span className="dashboard-power-summary-label">실시간 사용량</span>
+              {powerTrend.length > 0 && (
+                <div className="dashboard-power-chart">
+                  <ResponsiveContainer width="100%" height={140}>
+                    <LineChart data={powerTrend} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+                      <XAxis dataKey="label" hide />
+                      <Tooltip
+                        {...POWER_CHART_TOOLTIP_STYLE}
+                        labelFormatter={formatAgoTooltipLabel}
+                        formatter={(value) => [`${Number(value).toFixed(1)}W`, '전력']}
+                      />
                       <Line
                         type="monotone"
                         dataKey="value"
@@ -288,17 +352,58 @@ export function MainPage({
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="dashboard-power-meta">
-                  <span>{Number(totalPower.voltageV ?? 0).toFixed(1)}V</span>
-                  <span>{(Number(totalPower.currentMa ?? 0) / 1000).toFixed(3)}A</span>
-                  <span className="dashboard-power-cost">시간당 약 {Number(totalPower.hourlyCostWon ?? 0).toFixed(1)}원</span>
+              )}
+              {totalPower && (
+                <div className="dashboard-power-summary-values">
+                  <span>전력 <strong>{Number(totalPower.powerW ?? 0).toFixed(1)}W</strong></span>
+                  <span>시간당 예상 요금 <strong>{Number(totalPower.hourlyCostWon ?? 0).toFixed(1)}원</strong></span>
                 </div>
-              </>
-            )}
-          </button>
+              )}
+            </div>
 
+            <div className="dashboard-power-summary-row">
+              <span className="dashboard-power-summary-label">이번 주 사용량</span>
+              {weekTrend.length > 0 && (
+                <div className="dashboard-power-chart">
+                  <ResponsiveContainer width="100%" height={140}>
+                    <LineChart data={weekTrend} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
+                      <XAxis dataKey="label" hide />
+                      <Tooltip
+                        {...POWER_CHART_TOOLTIP_STYLE}
+                        labelFormatter={formatWeekdayTooltipLabel}
+                        formatter={(value) => [formatWh(Number(value)), '사용량']}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="wh"
+                        stroke="var(--wave)"
+                        strokeWidth={2.5}
+                        dot={false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              {weekTrend.length > 0 && (
+                <div className="dashboard-power-summary-values">
+                  <span>사용량 <strong>{formatWh(weekWh)}</strong></span>
+                  <span>예상 요금 <strong>{formatWon(weekCostWon)}</strong></span>
+                </div>
+              )}
+            </div>
+          </button>
+        </div>
+
+        <div className="dashboard-overview-col" ref={gestureColRef}>
+          <p className="dashboard-col-title">가전 제어</p>
           <div className="dashboard-posture-card">
-            <Card title="홈 현황" data-coachmark="card-status">
+            <Card
+              title="홈 현황"
+              data-coachmark="card-status"
+              className="dashboard-status-card"
+              style={sleepCardHeight ? { minHeight: `${sleepCardHeight}px` } : undefined}
+            >
               <div className="state-grid state-grid-row">
                 {currentState && (
                   <Metric
@@ -322,12 +427,17 @@ export function MainPage({
               </div>
             </Card>
           </div>
-        </div>
 
-        <div className="dashboard-overview-col">
           <div className="dashboard-posture-card">
-            <Card title="활성화된 제스처 목록" action={`${activeGestureRules.length}개 사용 중`} onClick={onGoToGestures} data-coachmark="card-gestures">
-              <div className="mt-3 flex flex-col gap-2">
+            <Card
+              title="활성화된 제스처 목록"
+              action={`${activeGestureRules.length}개 사용 중`}
+              onClick={onGoToGestures}
+              data-coachmark="card-gestures"
+              className="dashboard-gestures-card"
+              style={alarmsCardHeight ? { minHeight: `${alarmsCardHeight}px` } : undefined}
+            >
+              <div className="mt-1 flex flex-col gap-1">
                 {activeGestureRules.length === 0 && (
                   <p className="text-sm" style={{ color: 'var(--sub)' }}>아직 활성화된 제스처가 없어요.</p>
                 )}
@@ -336,7 +446,7 @@ export function MainPage({
                   return (
                     <div
                       key={rule.id}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2"
+                      className="flex items-center gap-3 rounded-xl px-3 py-1"
                       style={{ background: 'var(--wave-05)' }}
                     >
                       {gestureClass?.thumbnail && (
@@ -360,7 +470,7 @@ export function MainPage({
                 })}
               </div>
               {gesturePageCount > 1 && (
-                <div className="mt-3 flex items-center justify-end gap-1">
+                <div className="mt-1 flex items-center justify-end gap-1">
                   <button
                     type="button"
                     className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-[var(--wave-10)] disabled:opacity-30"
@@ -389,94 +499,6 @@ export function MainPage({
             </Card>
           </div>
 
-          <div className="dashboard-todo-card">
-            <Card title="오늘 할일" action={`${remaining}개 남음`} onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-todos">
-              <div className="todo-list">
-                {todayTodos.length === 0 && (
-                  <p className="todo-empty">오늘 일정이 없습니다</p>
-                )}
-                {todayTodos.map((todo) => (
-                  <button
-                    type="button"
-                    className={`todo ${todo.done ? 'done' : ''}`}
-                    key={todo.id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleTodo(todo.id);
-                    }}
-                  >
-                    <span className={todo.done ? 'checked' : ''}>{todo.done ? '✓' : ''}</span>
-                    <p>{todo.title}</p>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Row 4+: everything else. */}
-      <section className="dashboard-remaining-grid">
-        <div className="dashboard-weeklyplan-row">
-          <div className="dashboard-weeklyplan-card">
-            <Card onClick={() => onNavigate('weeklyPlan')} data-coachmark="card-weeklyplan">
-              <p className="weekly-plan-nav-desc">
-                할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인해보세요.
-              </p>
-              <span className="weekly-plan-nav-cta">주간 계획으로 이동 →</span>
-            </Card>
-          </div>
-
-          <div className="dashboard-weeklyplan-stack">
-            <Card title="WaveChat에게 이런 질문을 해보세요">
-              <div className="dashboard-promo-grid">
-                <button
-                  type="button"
-                  className="dashboard-promo-block cursor-pointer border-0 text-left"
-                  onClick={() => onOpenChatWithDraft?.('서카디안 리듬 기반으로 나에게 맞는 취침 시간을 추천해줘')}
-                >
-                  <strong>취침 가이드</strong>
-                  <p>나의 수면 패턴을 분석하고, 상쾌하게 깨어날 수 있는 취침 시간을 추천받아보세요.</p>
-                </button>
-
-                <button
-                  type="button"
-                  className="dashboard-promo-block cursor-pointer border-0 text-left"
-                  onClick={() => onOpenChatWithDraft?.('내일 아침 7시 알람 맞춰주고, 주간 계획에 스트레칭도 추가해줘')}
-                >
-                  <strong>일정·알람도 말해보세요</strong>
-                  <p>기상 알람 맞추기, 할 일 추가처럼 일정 관리도 채팅으로 할 수 있어요.</p>
-                </button>
-
-                <button
-                  type="button"
-                  className="dashboard-promo-block cursor-pointer border-0 text-left"
-                  onClick={() => onOpenChatWithDraft?.('우리 집 수면 환경을 더 쾌적하게 만들려면 어떻게 해야 할까?')}
-                >
-                  <strong>수면 환경</strong>
-                  <p>최적의 수면 환경을 만드는 방법을 알아보세요.</p>
-                </button>
-
-                <button
-                  type="button"
-                  className="dashboard-promo-block cursor-pointer border-0 text-left"
-                  onClick={() => onOpenChatWithDraft?.('집에 어떤 장치가 있고 각각 어떤 기능을 제어할 수 있는지 알려줘')}
-                >
-                  <strong>장치 제어 가이드</strong>
-                  <p>조명·TV·플러그 등 어떤 기기가 있고 무엇을 바꿀 수 있는지 물어보세요.</p>
-                </button>
-
-                <button
-                  type="button"
-                  className="dashboard-promo-block dashboard-power-insight cursor-pointer border-0 text-left"
-                  onClick={() => onOpenChatWithDraft?.('오늘 전력 사용량 중에서 줄일 수 있는 부분을 알려줘')}
-                >
-                  <strong>전력 절약 팁</strong>
-                  <p>오늘 전력 사용량 중 줄일 수 있는 부분을 물어보세요.</p>
-                </button>
-              </div>
-            </Card>
-          </div>
         </div>
       </section>
     </div>
