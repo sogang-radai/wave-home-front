@@ -15,6 +15,10 @@ export class IotApi {
     return httpClient.get('/iot/devices', undefined, options);
   }
 
+  async getApplianceBanner() {
+    return httpClient.get('/iot/appliance-banner');
+  }
+
   async getDeviceCapabilities(deviceId) {
     return httpClient.get(`/iot/devices/${deviceId}/capabilities`);
   }

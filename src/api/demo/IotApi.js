@@ -92,6 +92,10 @@ export class IotApi extends MockIotApi {
     );
   }
 
+  async getApplianceBanner() {
+    return preferReal(() => realIotApi.getApplianceBanner(), () => super.getApplianceBanner());
+  }
+
   async getRooms() {
     return preferReal(() => realIotApi.getRooms(), () => super.getRooms());
   }

@@ -16,10 +16,12 @@ export function Card({ title, action, children, wide, onClick, className, ...res
       }
       {...rest}
     >
-      <div className="card-head">
-        <h3>{title}</h3>
-        {action && <span>{action}</span>}
-      </div>
+      {(title || action) && (
+        <div className="card-head">
+          <h3>{title}</h3>
+          {action && <span>{action}</span>}
+        </div>
+      )}
       {children}
     </section>
   );

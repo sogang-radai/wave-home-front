@@ -1,9 +1,40 @@
+import { useEffect, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Tabs } from '../../components/ui/Tabs';
 import { deviceDotClass, deviceDotTitle, isDeviceOffline } from './iotUtils';
 import { ReconnectIcon } from './icons';
 import { DeviceThumb, DeviceDetailBody, detailTabsFor } from './deviceDetail';
 import { useIotDevices } from './useIotDevices';
+import iotApi from '../../api/iotApi';
+
+// 가전 제어 배너("침실 조명 1/2개 켜짐")는 더 이상 프런트에서 계산하지 않는다 -
+// 백엔드가 다른 배너들과 동일하게 서버에서 계산해 GET /iot/appliance-banner 로
+// 내려준다(iot_controller.cpp::buildApplianceBannerJson). 장치 on/off 는 실시간으로
+// 바뀌므로 이 배너는 야간 캐시가 아니라 useIotDevices 와 같은 3초 주기로 갱신한다.
+function useApplianceBanner() {
+  const [text, setText] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      iotApi.getApplianceBanner()
+        .then((banner) => {
+          if (!cancelled) setText(banner?.text ?? null);
+        })
+        .catch(() => {
+          if (!cancelled) setText(null);
+        });
+    };
+    load();
+    const timer = setInterval(load, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  return text;
+}
 
 export function IotControlTab() {
   const iot = useIotDevices();
@@ -18,9 +49,17 @@ export function IotControlTab() {
   } = iot;
 
   const detailTabs = detailTabsFor(selectedDevice);
+  const lightStatusMessage = useApplianceBanner();
 
   return (
     <div className="iot-control-page">
+      {lightStatusMessage && (
+        <div className="iot-status-banner">
+          <h3 className="iot-status-banner-header">가전 제어</h3>
+          <p className="iot-status-banner-body">{lightStatusMessage}</p>
+        </div>
+      )}
+
       <Card title="수동 제어" wide>
         <p className="section-description">
           연결된 모든 기기들을 한눈에 보고 <strong className="wave-term">개별적으로 제어</strong>할 수 있어요.
