@@ -11,7 +11,7 @@ import { ChatPage } from './pages/chat/ChatPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { CoachMarks } from './components/coachmarks/CoachMarks';
-import { buildDashboardCoachMarkSteps, buildHomeControlCoachMarkSteps } from './components/coachmarks/coachMarkSteps';
+import { buildDashboardCoachMarkSteps } from './components/coachmarks/coachMarkSteps';
 import { MainPage } from './pages/MainPage';
 import { SleepPage } from './pages/sleep/SleepPage';
 import { PosturePage } from './pages/posture/PosturePage';
@@ -103,34 +103,7 @@ function dismissCoachMarksForever() {
   }
 }
 
-  // IoT 가전 제어의 자동화 관리/적외선 명령/제스처 관리 세 탭은 각각 개별
-// 코치마크를 갖는다 — "다시 보지 않기"를 누르지 않는 한, 그 탭에 들어갈
-// 때마다(재방문마다) 매번 다시 뜬다. 탭별로 dismiss 여부를 따로 저장한다.
-const HOME_TAB_COACH_MARK_KEYS = {
-  trigger: 'wavehome_coachmark_hometab_trigger_dismissed',
-  ir: 'wavehome_coachmark_hometab_ir_dismissed',
-  gesture: 'wavehome_coachmark_hometab_gesture_dismissed',
-};
-
-function isHomeTabCoachMarkDismissed(tabId) {
-  try {
-    const key = HOME_TAB_COACH_MARK_KEYS[tabId];
-    return !!key && localStorage.getItem(key) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function dismissHomeTabCoachMarkForever(tabId) {
-  try {
-    const key = HOME_TAB_COACH_MARK_KEYS[tabId];
-    if (key) localStorage.setItem(key, '1');
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
-
-const LANDING_SEEN_KEY = 'wavehome_landing_seen';
+const LANDING_SEEN_KEY = 'wavehome_landing_visited';
 
 function hasSeenLanding() {
   try {
@@ -152,8 +125,17 @@ function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSeenLanding());
   const [page, setPage] = useState('main');
   const [postureTab, setPostureTab] = useState('current');
-  const [homeTab, setHomeTab] = useState('control');
+  const [homeTab, setHomeTab] = useState('trigger');
   const [sleepTab, setSleepTab] = useState('analysis');
+  const [powerTab, setPowerTab] = useState('analysis');
+
+  // Lets the sidebar show/select the current page's sub-tabs without knowing
+  // each page's tab state variable by name.
+  const sidebarTabState = {
+    sleep: [sleepTab, setSleepTab],
+    power: [powerTab, setPowerTab],
+    home: [homeTab, setHomeTab],
+  };
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
@@ -367,11 +349,12 @@ function App() {
   const [settingCategory, setSettingCategory] = useState('general');
   const [showDevSettings, setShowDevSettings] = useState(false);
   const goToPowerAnalysis = () => {
+    setPowerTab('analysis');
     setPage('power');
   };
 
   const goToGestureManagement = () => {
-    setHomeTab('gesture');
+    setHomeTab('trigger');
     setPage('home');
   };
 
@@ -380,18 +363,6 @@ function App() {
     setPage('sleep');
   };
 
-  const goToChatWithDraft = (text) => {
-    setActiveChatId(null);
-    setChatMode('page');
-    setPendingChatDraft(text);
-    setPrevPage(page);
-    playBubbleTransitionSound();
-    setPage('chat');
-    setWaveTransition(true);
-    setTimeout(() => {
-      setWaveTransition(false);
-    }, 750);
-  };
   const [chatConversations, setChatConversations] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
 
@@ -779,36 +750,6 @@ function App() {
     setShowCoachMarks(false);
   };
 
-  // IoT 가전 제어 페이지의 자동화 관리/적외선 명령/제스처 관리 탭 전용 안내 —
-  // 대시보드 투어와는 별개의 상태·localStorage 키를 쓴다. 세 탭을 한 번에
-  // 소개하는 투어 대신, 해당 탭에 들어갈 때마다(재방문 포함) 그 탭만의
-  // 코치마크가 하나씩 뜬다.
-  const [activeHomeTabCoachMark, setActiveHomeTabCoachMark] = useState(null);
-  const lastHomeTabCoachMarkRef = useRef(null);
-  const homeTabCoachMarkSteps = useMemo(
-    () => buildHomeControlCoachMarkSteps(activeHomeTabCoachMark),
-    [activeHomeTabCoachMark],
-  );
-
-  useEffect(() => {
-    if (!account || page !== 'home') {
-      lastHomeTabCoachMarkRef.current = null;
-      return;
-    }
-    if (!HOME_TAB_COACH_MARK_KEYS[homeTab]) return;
-    if (lastHomeTabCoachMarkRef.current === homeTab) return;
-    lastHomeTabCoachMarkRef.current = homeTab;
-    if (isHomeTabCoachMarkDismissed(homeTab)) return;
-    setActiveHomeTabCoachMark(homeTab);
-  }, [account, page, homeTab]);
-
-  const closeHomeCoachMarks = () => setActiveHomeTabCoachMark(null);
-  const finishHomeCoachMarks = () => setActiveHomeTabCoachMark(null);
-  const dontShowHomeCoachMarksAgain = () => {
-    if (activeHomeTabCoachMark) dismissHomeTabCoachMarkForever(activeHomeTabCoachMark);
-    setActiveHomeTabCoachMark(null);
-  };
-
   // Sidebar-anchored steps target nav buttons that sit translated off-screen
   // behind `.sidebar` until the mobile drawer is open — open it only for
   // those steps (dashboard-card steps would otherwise be hidden behind it).
@@ -917,6 +858,8 @@ function App() {
       <Sidebar
         page={page}
         onSelect={setPage}
+        activeTab={sidebarTabState[page]?.[0]}
+        onSelectTab={(tabId) => sidebarTabState[page]?.[1]?.(tabId)}
         onNavigateToChat={handleNavigateToChat}
         onShowLanding={() => setShowLanding(true)}
         today={today}
@@ -958,10 +901,7 @@ function App() {
           {page === 'main' && (
             <MainPage
               onNavigate={setPage}
-              todos={todos}
-              onToggleTodo={toggleTodo}
               onGoToPowerAnalysis={goToPowerAnalysis}
-              onOpenChatWithDraft={goToChatWithDraft}
               onGoToGestures={goToGestureManagement}
               onGoToAlarms={goToAlarmTab}
             />
@@ -981,7 +921,7 @@ function App() {
               onRefreshTodos={refreshTodos}
             />
           )}
-          {page === 'power' && <PowerPage />}
+          {page === 'power' && <PowerPage tab={powerTab} setTab={setPowerTab} />}
           {page === 'home' && (
             <HomeControlPage
               tab={homeTab}
@@ -1036,14 +976,6 @@ function App() {
         onDontShowAgain={dontShowCoachMarksAgain}
         onStepChange={handleCoachMarkStepChange}
       />
-      <CoachMarks
-        steps={homeTabCoachMarkSteps}
-        active={!!activeHomeTabCoachMark}
-        onClose={closeHomeCoachMarks}
-        onFinish={finishHomeCoachMarks}
-        onDontShowAgain={dontShowHomeCoachMarksAgain}
-      />
-      <ToastHost />
     </div>
   );
 }

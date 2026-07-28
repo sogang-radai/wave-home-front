@@ -1,10 +1,38 @@
-/* ── Banner ──────────────────────────────────────────────────────────────── */
+/* ── Intro / banner ──────────────────────────────────────────────────────── */
 
-.alarm-banner {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 900;
+/* Matches 가전 제어("제어") page's title+description pattern (see
+   .iot-control-page .card-head h3 / .section-description) — no card box,
+   just the same type scale/color/spacing. */
+.alarm-page-intro-title {
+  margin: 0 0 4px;
+  padding-left: 2px;
   color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.alarm-page-intro-desc {
+  margin: 0;
+  padding-left: 2px;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Status line right under the "알람 목록" title (e.g. "8시간 38분 후에
+   알람이 울립니다.") — a quiet note, not the page's headline banner. */
+.alarm-banner {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sub);
+}
+
+/* "알람 목록" / "알람 설정" titles — clearer/darker than the shared default
+   card title, scoped to just these two cards via className="alarm-section-card". */
+.alarm-section-card .card-head h3 {
+  color: var(--ink);
+  font-size: 18px;
 }
 
 /* ── Editor header ───────────────────────────────────────────────────────── */
@@ -18,9 +46,23 @@
 }
 
 .alarm-editor-header .settings-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex: 1;
   min-width: 200px;
   margin: 0;
+}
+
+.alarm-editor-header .settings-field > span {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.alarm-editor-header .settings-field input {
+  width: auto;
+  flex: 1;
+  min-width: 0;
 }
 
 .alarm-editor-save-btn {
@@ -298,11 +340,12 @@
   font-family: Georgia, 'Times New Roman', serif;
 }
 
+/* Rendered through a portal into document.body (see InfoTooltip.js) with
+   position:fixed — top/left/transform are set inline from the trigger's
+   own getBoundingClientRect(), so this is never clipped by an ancestor's
+   overflow:hidden/auto no matter where the trigger lives. */
 .info-tooltip-bubble {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
   width: 220px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -314,19 +357,21 @@
   white-space: pre-line;
   text-align: left;
   box-shadow: 0 10px 28px rgba(11, 30, 45, 0.22);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.14s ease, visibility 0.14s ease;
-  z-index: 60;
+  z-index: 300;
+  animation: info-tooltip-fade-in 0.14s ease;
 }
 
-.info-tooltip--wide .info-tooltip-bubble {
+@keyframes info-tooltip-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.info-tooltip-bubble--wide {
   width: min(320px, calc(100vw - 40px));
   font-weight: 500;
 }
 
-.info-tooltip--panel .info-tooltip-bubble {
+.info-tooltip-bubble--panel {
   width: min(340px, calc(100vw - 40px));
   max-height: min(380px, 62vh);
   overflow-x: hidden;
@@ -341,12 +386,6 @@
   line-height: 1.5;
   white-space: normal;
   box-shadow: 0 14px 36px rgba(11, 30, 45, 0.16);
-}
-
-.info-tooltip.is-open .info-tooltip-bubble {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
 }
 
 /* 레이더 콤보가 같은 줄 오른쪽에 붙고, 체크 여부와 무관하게 줄 높이를

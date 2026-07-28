@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tabs } from '../../components/ui/Tabs';
 import { GestureDevTab } from './dev/GestureDevTab';
+import { EventLogTab } from '../iot/EventLogTab';
 import './dev/developer.css';
 
 const DEV_TABS = [
@@ -26,9 +27,7 @@ export function DeveloperSettings({ heading }) {
         {tab === 'sleep' && (
           <p className="settings-panel-desc">수면 디버그 탭은 준비 중입니다.</p>
         )}
-        {tab === 'log' && (
-          <p className="settings-panel-desc">로그 디버그 탭은 준비 중입니다.</p>
-        )}
+        {tab === 'log' && <EventLogTab />}
       </div>
     </section>
   );

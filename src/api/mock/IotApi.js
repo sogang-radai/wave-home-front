@@ -273,6 +273,32 @@ export class IotApi {
     return sortDevicesForControl(getAllDevices().map(toDeviceView));
   }
 
+  // Mock 모드엔 백엔드가 없으므로, 실제/데모 모드에서 서버가 계산해주는 가전 제어
+  // 배너 문구를 여기서 그대로 클라이언트에서 재현한다(옛 IotControlTab.js
+  // buildLightStatusMessage 와 동일한 로직 — "침실 조명 1/2개 켜짐"처럼 방별 요약).
+  async getApplianceBanner() {
+    const devices = await this.getDevices();
+    const lights = devices.filter((d) => d.panel === 'light' && d.connected);
+    if (lights.length === 0) return { text: null };
+
+    const byRoom = new Map();
+    lights.forEach((d) => {
+      const roomName = d.room?.name || '기타';
+      if (!byRoom.has(roomName)) byRoom.set(roomName, []);
+      byRoom.get(roomName).push(d);
+    });
+
+    const clauses = [...byRoom.entries()].map(([roomName, list]) => {
+      const onCount = list.filter((d) => d.stateSummary?.startsWith('켜짐')).length;
+      const total = list.length;
+      if (onCount === 0) return `${roomName} 조명 꺼짐`;
+      if (onCount === total) return `${roomName} 조명 ${total}개 켜짐`;
+      return `${roomName} 조명 ${onCount}/${total}개 켜짐`;
+    });
+
+    return { text: `현재 ${clauses.join(' · ')}` };
+  }
+
   async getDeviceCapabilities(deviceId) {
     await delay();
     requireActiveAccount();

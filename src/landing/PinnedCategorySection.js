@@ -91,7 +91,7 @@ export default function PinnedCategorySection({
     <section
       id={id}
       ref={sectionRef}
-      className={`relative isolate overflow-hidden lg:h-screen${
+      className={`relative isolate overflow-hidden lg:h-[130vh]${
         overlapPrevious ? " lg:-mt-[100vh]" : ""
       }`}
       style={{

@@ -99,7 +99,7 @@ function IrCommandModal({ command, waveStations, onSave, onClose }) {
 
   return (
     <SettingsModal
-      title={command ? '적외선 명령 수정' : '적외선 명령 추가'}
+      title={command ? '적외선 제어 수정' : '적외선 제어 추가'}
       onClose={onClose}
       footer={
         <Fragment>
@@ -217,23 +217,26 @@ export function IrCommandsTab() {
 
   return (
     <div className="ir-command-page">
-      <Card title="적외선 명령" wide>
+      <Card title="리모컨 등록" wide>
         <p className="section-description">
-          에어컨·TV 리모컨의 <strong className="wave-term">적외선 명령</strong>을 등록해서 구형 가전을 WaveHome이 제어하도록 해요.
+          에어컨·TV 리모컨의 <strong className="wave-term">적외선 리모컨</strong>을 등록해서 리모컨 없이도 WaveHome이 제어하도록 해요.
+        </p>
+        <p className="section-description">
+          <strong className="wave-term">WaveChat</strong>에게 말로 설명해도 등록할 수 있어요. 예를 들어 "삼성 에어컨 리모컨 등록해줘"처럼 말해보세요.
         </p>
 
         <input
           type="search"
           className="automation-search-input"
-          placeholder="적외선 명령 검색"
+          placeholder="적외선 제어 검색"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
         <div className="ir-command-section-head">
-          <span>적외선 명령 목록 <em>({filteredCommands.length})</em></span>
+          <span>적외선 제어 목록 <em>({filteredCommands.length})</em></span>
           <button type="button" className="card-action-btn" onClick={() => setModalCommand(null)}>
-            + 새 명령
+            + 새 제어
           </button>
         </div>
 
@@ -261,7 +264,7 @@ export function IrCommandsTab() {
               </div>
             </article>
           ))}
-          {commands.length === 0 && <p className="panel-empty">등록된 적외선 명령이 없습니다.</p>}
+          {commands.length === 0 && <p className="panel-empty">등록된 적외선 제어가 없습니다.</p>}
           {commands.length > 0 && filteredCommands.length === 0 && (
             <p className="panel-empty">검색 결과가 없습니다.</p>
           )}
@@ -277,7 +280,7 @@ export function IrCommandsTab() {
         )}
         {confirmDelete && (
           <ConfirmDialog
-            title="적외선 명령 삭제"
+            title="적외선 제어 삭제"
             message={`"${confirmDelete.name}" 명령을 삭제할까요?`}
             confirmLabel="삭제"
             onConfirm={remove}

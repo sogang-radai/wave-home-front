@@ -3,6 +3,15 @@
   justify-content: center;
 }
 
+/* The same tabs now live in the sidebar (as sub-items under 가전 제어) — on
+   desktop that's enough, so the in-page row is redundant. Mobile keeps it,
+   since the sidebar collapses into a drawer there. */
+@media (min-width: 761px) {
+  .home-control-tabs-row {
+    display: none;
+  }
+}
+
 /* 디지털 트윈 홈 / 자동화 탭: 페이지 전체가 스크롤되지 않도록 .content의
    가용 높이(뷰포트 - 상단바 64px - .content 상하 패딩 56px)에 정확히
    맞추고, 내부 목록만 자체적으로 스크롤되게 한다. */
@@ -241,6 +250,35 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Same visual treatment as the power page's AI report banner
+   (.power-report-banner), just with a locally computed light on/off
+   summary instead of a fetched report. */
+.iot-status-banner {
+  flex: none;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--wave-20), var(--wave-08));
+  border: 1px solid var(--wave-35);
+}
+
+.iot-status-banner-header {
+  margin: 8px 0 12px;
+  font-size: 26px;
+  line-height: 1.28;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.iot-status-banner-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--sub);
+  letter-spacing: -0.01em;
 }
 
 .iot-control-page > .card {
@@ -1793,6 +1831,10 @@
   min-height: 0;
 }
 
+.automation-page > .gesture-management {
+  margin-top: 32px;
+}
+
 .automation-sections-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2886,6 +2928,19 @@ h4.field-label-with-info {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.gesture-set-definition {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.gesture-set-definition-title {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .gesture-set-card {

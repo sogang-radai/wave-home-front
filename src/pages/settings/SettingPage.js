@@ -9,7 +9,7 @@ import { GeneralSettings } from './GeneralSettings';
 import { AiAgentSettings } from './AiAgentSettings';
 import { AboutSettings } from './AboutSettings';
 import { DeveloperSettings } from './DeveloperSettings';
-import { API_MODE, IS_DEMO_MODE } from '../../api/config';
+import { IS_DEMO_MODE } from '../../api/config';
 
 const settingCategories = [
   { id: 'general', label: '일반', desc: '기본 UI와 시스템 환경' },
@@ -21,7 +21,6 @@ const settingCategories = [
 ];
 
 const devCategory = { id: 'dev', label: '개발자', desc: '개발자 전용 도구' };
-const IS_REAL_API = API_MODE === 'real';
 
 function openDemoManual() {
   const base = process.env.PUBLIC_URL || '';
@@ -116,14 +115,7 @@ export function SettingPage({
             <AboutSettings heading={activeLabel} onUnlockDevMenu={onUnlockDevMenu} />
           )}
           {activeCategory === 'dev' && showDevSettings && (
-            IS_REAL_API ? (
-              <DeveloperSettings heading={activeLabel} />
-            ) : (
-              <section className="settings-panel card">
-                <h2 className="settings-tab-heading">{activeLabel}</h2>
-                <p className="settings-panel-desc">개발자 전용 메뉴입니다. 준비 중입니다.</p>
-              </section>
-            )
+            <DeveloperSettings heading={activeLabel} />
           )}
         </div>
       </div>

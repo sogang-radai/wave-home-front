@@ -1,9 +1,9 @@
 import './ui.css';
 
-export function Card({ title, action, children, wide, onClick, ...rest }) {
+export function Card({ title, action, children, wide, onClick, className, ...rest }) {
   return (
     <section
-      className={`card ${wide ? 'wide' : ''} ${onClick ? 'clickable' : ''}`}
+      className={`card ${wide ? 'wide' : ''} ${onClick ? 'clickable' : ''} ${className || ''}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -16,10 +16,12 @@ export function Card({ title, action, children, wide, onClick, ...rest }) {
       }
       {...rest}
     >
-      <div className="card-head">
-        <h3>{title}</h3>
-        {action && <span>{action}</span>}
-      </div>
+      {(title || action) && (
+        <div className="card-head">
+          <h3>{title}</h3>
+          {action && <span>{action}</span>}
+        </div>
+      )}
       {children}
     </section>
   );

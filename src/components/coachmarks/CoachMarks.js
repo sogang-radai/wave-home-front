@@ -80,7 +80,17 @@ export function CoachMarks({ steps, active, onClose, onFinish, onDontShowAgain, 
   // 있다. 그래서 대상을 찾을 때까지(최대 2초) 매 프레임 재측정한다.
   useLayoutEffect(() => {
     if (!active || !step) return undefined;
-    document.querySelector(step.selector)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const target = document.querySelector(step.selector);
+    if (target) {
+      const r = target.getBoundingClientRect();
+      // Scrolling an already-visible target still moves scrollTop on
+      // overflow:hidden ancestors (e.g. the desktop dashboard, which never
+      // needs to scroll) — that shift was yanking the hero banner up into
+      // the topbar for cards further down the page. Only scroll when the
+      // target is actually out of view.
+      const fullyVisible = r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth;
+      if (!fullyVisible) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
 
     let frameId;
     let cancelled = false;

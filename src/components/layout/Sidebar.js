@@ -109,6 +109,38 @@ function SidebarIcon({ name }) {
     );
   }
 
+  if (name === 'home-healthcare') {
+    return (
+      <svg width="24" height="24" viewBox="0 0 512 512" aria-hidden="true">
+        <path
+          fill="currentColor"
+          fillRule="evenodd"
+          d="M248.959 107.967c-44.804-55.608-124.849-58.955-173.652-7.261c-34.192 36.217-43.081 89.085-26.668 133.961h87.489L192 122.964l64 127.98l32-63.98l23.851 47.703h151.512c16.412-44.875 7.523-97.744-26.668-133.961c-48.804-51.693-128.848-48.347-173.653 7.261l-7.041 8.739zM437.26 277.333H290.518L256 346.369l-64-128.001l-29.482 58.965H74.742q.281.302.565.603L255.91 469.237l.089.096H256l180.694-191.397q.283-.3.565-.603"
+          clipRule="evenodd"
+        />
+      </svg>
+    );
+  }
+
+  if (name === 'safe-homecare') {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M11.298 2.195a2 2 0 0 1 1.404 0l7 2.625A2 2 0 0 1 21 6.693v5.363a9 9 0 0 1-4.975 8.05l-3.354 1.677a1.5 1.5 0 0 1-1.342 0l-3.354-1.677A9 9 0 0 1 3 12.056V6.693A2 2 0 0 1 4.298 4.82zM12 4.068L5 6.693v5.363a7 7 0 0 0 3.87 6.26L12 19.883z" />
+      </svg>
+    );
+  }
+
+  if (name === 'senior-care') {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M13.5 5.5q-.825 0-1.412-.587T11.5 3.5t.588-1.412T13.5 1.5t1.413.588T15.5 3.5t-.587 1.413T13.5 5.5m3.65 8.6q-.15-.15-.15-.35v-.475q-1.35-.575-2.1-1.287t-1.325-1.913q-.275.7-.437 1.713t-.113 1.912l1.8 2.55q.1.125.138.275t.037.3V22q0 .425-.288.713T14 23t-.712-.288T13 22v-4l-1.775-2.55l-.2 3.25q0 .1-.2.55L8.6 22.2q-.25.35-.65.4t-.75-.2t-.4-.65T7 21l2-2.675V13q0-.775.125-1.687T9.5 9.625L8 10.45V13q0 .425-.288.713T7 14t-.712-.288T6 13V9.875q0-.275.125-.513T6.5 9l3.9-2.2q.625-.35 1.088-.537t.862-.188q.625 0 1.138.538T14.675 8.3q.8 1.35 1.45 2.025t1.4 1.025q.275-.2.475-.275t.475-.075q.625 0 1.075.45T20 12.5v10q0 .2-.15.35t-.35.15t-.35-.15t-.15-.35v-10q0-.2-.15-.35T18.5 12t-.35.15t-.15.35v1.25q0 .2-.15.35t-.35.15"
+        />
+      </svg>
+    );
+  }
+
   return (
     <svg {...common}>
       <path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
@@ -120,6 +152,8 @@ function SidebarIcon({ name }) {
 export function Sidebar({
   page,
   onSelect,
+  activeTab,
+  onSelectTab,
   onNavigateToChat,
   today,
   collapsed,
@@ -147,6 +181,11 @@ export function Sidebar({
 
   const handleSelect = (id) => {
     onSelect(id);
+    onMobileClose?.();
+  };
+
+  const handleSelectTab = (tabId) => {
+    onSelectTab?.(tabId);
     onMobileClose?.();
   };
 
@@ -187,9 +226,59 @@ export function Sidebar({
       <nav className="nav-list">
         {visiblePages.map((item) => (
           <Fragment key={item.id}>
-            {item.id === 'sleep' && <div className="nav-divider" role="separator" />}
             <button
               className={`nav-item ${page === item.id ? 'active' : ''}`}
+              data-coachmark={`nav-${item.id}`}
+              onClick={() => {
+                handleSelect(item.id);
+                if (collapsed) onCollapsedChange(false);
+              }}
+              title={collapsed ? item.label : undefined}
+            >
+              <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
+              <span className="nav-label">{item.label}</span>
+              {page === item.id && <i />}
+            </button>
+            {item.tabs && page === item.id && (
+              <div className="nav-subtabs">
+                {item.tabs.map(([tabId, tabLabel]) => (
+                  <button
+                    type="button"
+                    key={tabId}
+                    className={`nav-subtab-item ${activeTab === tabId ? 'active' : ''}`}
+                    onClick={() => handleSelectTab(tabId)}
+                  >
+                    {tabLabel}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Fragment>
+        ))}
+      </nav>
+
+      <div className="nav-upcoming">
+        {upcomingFeatures.map((feature) => (
+          <div className="nav-item nav-item--upcoming" key={feature.id}>
+            <span className="nav-icon"><SidebarIcon name={feature.icon} /></span>
+            <span className="nav-label">
+              <span>{feature.label}</span>
+              <span className="nav-info" tabIndex={0}>
+                <span className="nav-info-icon" aria-hidden="true">ⓘ</span>
+                <span className="nav-info-tooltip" role="tooltip">{feature.description}</span>
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {visibleSecondaryPages.length > 0 && (
+        <nav className="nav-list nav-list--secondary">
+          <div className="nav-divider" role="separator" />
+          {visibleSecondaryPages.map((item) => (
+            <button
+              key={item.id}
+              className={`nav-item nav-item--compact ${page === item.id ? 'active' : ''}`}
               data-coachmark={`nav-${item.id}`}
               onClick={() => {
                 if (item.id === 'chat') {
@@ -205,46 +294,9 @@ export function Sidebar({
               <span className="nav-label">{item.label}</span>
               {page === item.id && <i />}
             </button>
-          </Fragment>
-        ))}
-
-        {visibleSecondaryPages.length > 0 && (
-          <>
-            <div className="nav-divider" role="separator" />
-            {visibleSecondaryPages.map((item) => (
-              <button
-                key={item.id}
-                className={`nav-item nav-item--compact ${page === item.id ? 'active' : ''}`}
-                data-coachmark={`nav-${item.id}`}
-                onClick={() => {
-                  handleSelect(item.id);
-                  if (collapsed) onCollapsedChange(false);
-                }}
-                title={collapsed ? item.label : undefined}
-              >
-                <span className="nav-icon"><SidebarIcon name={item.icon} /></span>
-                <span className="nav-label">{item.label}</span>
-                {page === item.id && <i />}
-              </button>
-            ))}
-          </>
-        )}
-      </nav>
-
-      <div className="nav-upcoming">
-        <p className="nav-upcoming-title">확장 예정 기능</p>
-        {upcomingFeatures.map((feature) => (
-          <div className="nav-item nav-item--upcoming" key={feature.id}>
-            <span className="nav-label">
-              <span>{feature.label}</span>
-              <span className="nav-info" tabIndex={0}>
-                <span className="nav-info-icon" aria-hidden="true">ⓘ</span>
-                <span className="nav-info-tooltip" role="tooltip">{feature.description}</span>
-              </span>
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </nav>
+      )}
 
       <div className="sidebar-bottom">
         <p className="sidebar-date">{today}</p>

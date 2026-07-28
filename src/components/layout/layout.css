@@ -151,7 +151,8 @@ button.brand-group {
 .sidebar.collapsed .nav-demo-tag,
 .sidebar.collapsed .profile-text,
 .sidebar.collapsed .sidebar-date,
-.sidebar.collapsed .nav-item i {
+.sidebar.collapsed .nav-item i,
+.sidebar.collapsed .nav-subtabs {
   display: none;
 }
 
@@ -179,8 +180,14 @@ button.brand-group {
 
 /* Nav */
 .nav-list {
+  flex: 0 0 auto;
+  padding: 18px 10px 0;
+}
+
+.nav-list--secondary {
   flex: 1;
-  padding: 18px 10px;
+  padding-top: 0;
+  padding-bottom: 18px;
 }
 
 .nav-divider {
@@ -273,6 +280,37 @@ button.brand-group {
   height: 24px;
 }
 
+.nav-subtabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 14px 10px 52px;
+  margin-top: -4px;
+}
+
+.nav-subtab-item {
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.nav-subtab-item:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-subtab-item.active {
+  color: var(--wave);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Secondary nav under IoT — tighter spacing, smaller type/icons. */
 .nav-item--compact {
   height: 38px;
@@ -297,7 +335,7 @@ button.brand-group {
 
 /* Upcoming features (dimmed, non-interactive preview) */
 .nav-upcoming {
-  padding: 4px 10px 14px;
+  padding: 0 10px 14px;
 }
 
 .nav-upcoming-title {
@@ -316,15 +354,22 @@ button.brand-group {
   cursor: default;
 }
 
+.nav-item--upcoming .nav-icon {
+  color: inherit;
+}
+
 .nav-item--upcoming:hover {
   color: rgba(255, 255, 255, 0.45);
+}
+
+.nav-item--upcoming:hover .nav-icon {
+  color: inherit;
 }
 
 .nav-info {
   position: relative;
   display: inline-flex;
   align-items: center;
-  cursor: help;
 }
 
 .nav-info-icon {
@@ -763,6 +808,10 @@ button.brand-group {
   .sidebar.collapsed .sidebar-date,
   .sidebar.collapsed .nav-item i {
     display: block;
+  }
+
+  .sidebar.collapsed .nav-subtabs {
+    display: flex;
   }
 
   .sidebar.collapsed .nav-upcoming {

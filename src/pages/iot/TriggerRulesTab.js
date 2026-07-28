@@ -4,9 +4,10 @@ import { TrashIcon } from '../settings/SettingsUI';
 import iotApi from '../../api/iotApi';
 import { describeTrigger, describeSchedule, EXEC_MODE_LABELS, TRIGGER_KIND_LABELS } from './iotUtils';
 import { AutomationWizard } from './AutomationWizard';
+import { GestureSetsTab } from './GestureSetsTab';
 
 const SECTIONS = [
-  { id: 'trigger', title: '자동화', addLabel: '+ 새 자동화', initialMode: 'trigger', match: (rule) => !rule.schedule },
+  { id: 'trigger', title: '자동화를 위한 규칙', addLabel: '+ 새 규칙', initialMode: 'trigger', match: (rule) => !rule.schedule },
   { id: 'schedule', title: '예약', addLabel: '+ 새 예약', initialMode: 'schedule', match: (rule) => !!rule.schedule },
 ];
 
@@ -164,9 +165,9 @@ export function TriggerRulesTab() {
 
   return (
     <div className="automation-page">
-      <Card title="자동화·예약" wide>
+      <Card title="규칙 설정" wide>
         <p className="section-description">
-          기기 상태·제스처·적외선 신호를 감지하여 가전을 제어하는 <strong className="wave-term">자동화</strong>와 정해진 시각에 가전을 제어하는 <strong className="wave-term">예약</strong>을 관리해요.
+          기기 상태·제스처·적외선 신호를 감지하여 가전을 제어하는 <strong className="wave-term">자동화 규칙</strong>과 정해진 시각에 가전을 제어하는 <strong className="wave-term">예약</strong>을 관리해요.
         </p>
 
         <input
@@ -207,6 +208,8 @@ export function TriggerRulesTab() {
 
         {toast && <div className="iot-toast">{toast}</div>}
       </Card>
+
+      <GestureSetsTab />
     </div>
   );
 }

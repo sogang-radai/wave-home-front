@@ -50,40 +50,41 @@ export function GestureSetsTab() {
             </article>
           ))}
         </div>
-      </Card>
 
-      {definition && (
-        <Card title={definition.name} wide>
-          <p className="section-description">{definition.description}</p>
-          <div className="gesture-card-grid">
-            {definition.classes.map((c) => {
-              const ruleCount = c.kind === 'trigger' ? linkedRuleCount(c.classId) : 0;
-              return (
-                <article className="gesture-control-card" key={c.classId}>
-                  <div className="gesture-thumb-wrap">
-                    <img src={c.thumbnail} alt={c.name} />
-                  </div>
-                  <div className="gesture-card-body">
-                    <span className={`status-chip ${c.kind === 'state' ? 'inactive' : 'active'}`}>
-                      {c.kind === 'state' ? '상태' : '감지'}
-                    </span>
-                    <h3>{c.name}</h3>
-                    <p>
-                      {c.kind === 'state'
-                        ? `유지 ${c.trigger.highHoldMs}ms · 쿨다운 ${c.trigger.cooldownMs}ms`
-                        : `홀드 ${c.trigger.highHoldMs}ms · 쿨다운 ${c.trigger.cooldownMs}ms`}
-                    </p>
-                    {c.kind === 'trigger' && (
-                      <span className="rule-link-badge">연결된 자동화 {ruleCount}개</span>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-            {definition.classes.length === 0 && <p className="panel-empty">아직 정의된 클래스가 없습니다.</p>}
+        {definition && (
+          <div className="gesture-set-definition">
+            <h4 className="gesture-set-definition-title">{definition.name}</h4>
+            <p className="section-description">{definition.description}</p>
+            <div className="gesture-card-grid">
+              {definition.classes.map((c) => {
+                const ruleCount = c.kind === 'trigger' ? linkedRuleCount(c.classId) : 0;
+                return (
+                  <article className="gesture-control-card" key={c.classId}>
+                    <div className="gesture-thumb-wrap">
+                      <img src={c.thumbnail} alt={c.name} />
+                    </div>
+                    <div className="gesture-card-body">
+                      <span className={`status-chip ${c.kind === 'state' ? 'inactive' : 'active'}`}>
+                        {c.kind === 'state' ? '상태' : '감지'}
+                      </span>
+                      <h3>{c.name}</h3>
+                      <p>
+                        {c.kind === 'state'
+                          ? `유지 ${c.trigger.highHoldMs}ms · 쿨다운 ${c.trigger.cooldownMs}ms`
+                          : `홀드 ${c.trigger.highHoldMs}ms · 쿨다운 ${c.trigger.cooldownMs}ms`}
+                      </p>
+                      {c.kind === 'trigger' && (
+                        <span className="rule-link-badge">연결된 자동화 {ruleCount}개</span>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+              {definition.classes.length === 0 && <p className="panel-empty">아직 정의된 클래스가 없습니다.</p>}
+            </div>
           </div>
-        </Card>
-      )}
+        )}
+      </Card>
     </div>
   );
 }

@@ -9,18 +9,30 @@
   margin-top: 40px;
 }
 
+/* Matches the alarm page's intro title+description pattern (see
+   .alarm-page-intro-title / .alarm-page-intro-desc) — no card box,
+   just the same type scale/color/spacing. */
 .insight-section-title {
-  margin: 0 0 16px;
-  color: var(--ink-soft);
-  font-size: 15px;
+  margin: 0 0 4px;
+  padding-left: 2px;
+  color: var(--ink);
+  font-size: 22px;
   font-weight: 800;
+}
+
+.insight-section-desc {
+  margin: 0 0 16px;
+  padding-left: 2px;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .insight-card {
   display: flex;
   flex-direction: column;
-  min-height: 168px;
-  padding: 18px 20px 16px;
+  min-height: 140px;
+  padding: 16px 18px 14px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface);
@@ -40,11 +52,16 @@
 }
 
 .insight-card-head {
-  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .insight-card-label {
   display: inline-block;
+  flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--wave-15);
@@ -80,7 +97,8 @@
 }
 
 .insight-card-title {
-  margin: 0 0 10px;
+  margin: 0;
+  min-width: 0;
   color: var(--ink);
   font-size: 16px;
   font-weight: 800;
@@ -108,8 +126,8 @@
 .insight-card-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
 

@@ -56,4 +56,18 @@ export const initialAlarms = [
     createdAt: '2026-06-22 07:30:00',
     updatedAt: '2026-06-22 07:30:00',
   },
+  {
+    id: 5,
+    name: '모닝 루틴 알림',
+    timeMinute: 6 * 60 + 30, // 06:30, 매일 반복 — 대시보드 "예정된 알람" 카드가 요일과 무관하게 항상 채워지도록 함
+    daysOfWeek: [],
+    repeatWeekly: true,
+    smartWake: false,
+    radarDeviceId: null,
+    deviceId: hexId(11), // 침실 조명
+    method: { type: 'light_on', brightness: 50 },
+    enabled: true,
+    createdAt: '2026-07-01 08:00:00',
+    updatedAt: '2026-07-01 08:00:00',
+  },
 ];

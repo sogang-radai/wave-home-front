@@ -20,6 +20,17 @@
   background-color: #f2f2f7;
 }
 
+/* No-scroll only applies on desktop, where the dashboard is sized to fit
+   the viewport in one screen. On mobile the same content doesn't fit, so
+   .content needs to keep scrolling there (see layout.css's mobile
+   overflow-y: auto) — scoping this behind min-width keeps it from
+   out-specificity-ing that rule and locking the mobile page in place. */
+@media (min-width: 761px) {
+  .content.dashboard-active {
+    overflow: hidden;
+  }
+}
+
 .content.dashboard-active::before {
   content: "";
   position: absolute;
@@ -53,28 +64,19 @@
   box-shadow: 0 12px 40px rgba(31, 41, 55, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-/* "어젯밤 수면" opts out of the glass treatment — solid white like the
-   전력 관리 card, instead of the translucent/blurred dashboard cards. */
 .dashboard-page .dashboard-sleep-card .card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: 0 1px 8px var(--wave-10);
+  padding: 24px 18px 18px 24px;
 }
 
-/* Tighter title-to-content gap so the taller (donut + today-plan) card
-   doesn't run any longer than it needs to. */
 .dashboard-sleep-card .card-head {
   margin-bottom: 8px;
 }
 
-.dashboard-page .dashboard-sleep-card .card.clickable:hover,
-.dashboard-page .dashboard-sleep-card .card.clickable:focus-visible {
-  background: var(--surface);
-  border-color: var(--wave);
-  box-shadow: 0 6px 20px var(--wave-25);
+/* "예정된 알람" only — shorter bottom padding than "어젯밤 수면" shares by
+   default, since 활성화된 제스처 목록 dynamically matches this card's height.
+   Matches the specificity of the rule above (3 classes) so it actually wins. */
+.dashboard-page .dashboard-sleep-card .dashboard-alarms-card {
+  padding-bottom: 8px;
 }
 
 .calendar-popup-grid button.muted-day {
@@ -122,7 +124,7 @@
 /* Pull the dashboard's hero card up closer to the topbar — .content's
    standard 28px top padding otherwise leaves it looking too far down. */
 .dashboard-page .hero {
-  margin-top: -14px;
+  margin-top: -20px;
 }
 
 .hero > div:first-child {
@@ -135,6 +137,8 @@
   margin: 8px 0 12px;
   font-size: 26px;
   line-height: 1.28;
+  font-weight: 700;
+  color: var(--ink);
   letter-spacing: 0;
 }
 
@@ -142,8 +146,8 @@
   max-width: 900px;
   margin: 0;
   color: var(--sub);
-  font-size: 15px;
-  line-height: 1.75;
+  font-size: 13px;
+  line-height: 1.7;
   letter-spacing: -0.01em;
 }
 
@@ -207,222 +211,92 @@
   gap: 14px;
 }
 
-.state-grid-row {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+/* 홈 현황 카드를 어젯밤 수면 카드와 같은 높이로 맞추고(JS가 min-height를 주입),
+   내부를 Apple Health/Settings 스타일의 세로 리스트로 늘어뜨려 남는 세로 공간을
+   자연스럽게 채운다. */
+.dashboard-status-card {
+  display: flex;
+  flex-direction: column;
 }
 
-/* ~20% smaller than the default Metric value/dot for the 3-up 홈 현황 row. */
+.dashboard-gestures-card {
+  padding: 18px 18px 18px 24px;
+}
+
+.dashboard-gestures-card .card-head {
+  margin-bottom: 8px;
+}
+
+.dashboard-status-card .state-grid-row {
+  flex: 1;
+  align-content: space-evenly;
+}
+
+.state-grid-row {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+/* Apple Settings/Health-style rows: label left, value right on the same
+   line, detail text wraps to its own full-width line below, thin divider
+   between rows instead of separate tinted tiles. */
+.state-grid-row .metric {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 12px;
+  row-gap: 4px;
+  min-height: 0;
+  padding: 16px 2px;
+  border-radius: 0;
+  background: none;
+  border-bottom: 1px solid var(--wave-10);
+}
+
+.state-grid-row .metric:last-child {
+  border-bottom: none;
+}
+
+.state-grid-row .metric p {
+  order: 1;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .state-grid-row .metric strong {
-  font-size: 18px;
+  order: 2;
+  margin: 0;
+  font-size: 16px;
+  text-align: right;
 }
 
 .state-grid-row .metric-dot {
-  width: 8px;
-  height: 8px;
-  margin-right: 6px;
-}
-
-.state-grid-row .metric-dot.online {
-  box-shadow: 0 0 0 3px var(--good-15);
-}
-
-.state-grid-row .metric-dot.idle {
-  box-shadow: 0 0 0 3px var(--warn-15);
+  width: 9px;
+  height: 9px;
 }
 
 /* Prefer breaking between phrases, not mid-phrase ("침실 하방" / "레이더로"). */
 .state-grid-row .metric-detail {
+  order: 3;
+  flex: 0 0 100%;
   word-break: keep-all;
   overflow-wrap: normal;
   line-height: 1.4;
-}
-
-
-.weekly-plan-nav-desc {
-  margin: 0;
   color: var(--sub);
-  font-size: 1.05rem;
-  line-height: 1.6;
-  font-weight: 600;
 }
 
-.weekly-plan-nav-cta {
-  display: inline-block;
-  margin-top: 18px;
-  font-size: 1rem;
-  font-weight: 800;
-}
 
-/* Lavender/pink treatment for the todo + weekly-plan cards, Apple Health
-   cycle-tracking style: soft plum-to-pink on the glance card, a bolder
-   purple-to-pink gradient on the CTA card. Each now lives in its own
-   standalone wrapper (no longer a fixed first-child/last-child pair) so
-   they can be positioned independently in the dashboard layout. */
-.dashboard-todo-card .card {
-  border: none;
-  background:
-    radial-gradient(circle at 12% 78%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 60%),
-    radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 55%),
-    radial-gradient(circle at 45% 0%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 50%),
-    linear-gradient(160deg, #5a3554 0%, #8c3b61 55%, #b44e69 100%);
-  box-shadow: 0 4px 20px rgba(140, 59, 97, 0.3);
-}
-
-.dashboard-todo-card .card-head h3 {
-  color: #fff;
-}
-
-.dashboard-todo-card .card-head > span {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-}
-
-.dashboard-todo-card .card.clickable:hover,
-.dashboard-todo-card .card.clickable:focus-visible {
-  background: linear-gradient(160deg, #4c3047 0%, #753653 55%, #9b425b 100%);
-  border-color: transparent;
-  box-shadow: 0 8px 28px rgba(140, 59, 97, 0.38);
-}
-
-.dashboard-todo-card .todo {
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.dashboard-todo-card .todo:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.dashboard-todo-card .todo-empty {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.dashboard-todo-card .todo p {
-  color: #fff;
-}
-
-.dashboard-todo-card .todo.done p {
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.dashboard-todo-card .todo span {
-  border-color: rgba(255, 255, 255, 0.55);
-  border-radius: 6px;
-  color: #8c2153;
-}
-
-.dashboard-todo-card .todo span.checked {
-  border-color: #fff;
-  background: #fff;
-}
-
-/* Weeklyplan card sits narrower (2/3 its old width) and taller, with the
-   three promo cards stacked in a column beside it, filling the height. */
-.dashboard-weeklyplan-row {
-  display: flex;
-  gap: 20px;
-  align-items: stretch;
-}
-
-.dashboard-weeklyplan-card {
-  display: flex;
-  flex: 0 0 25%;
-}
-
-.dashboard-weeklyplan-stack {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-/* One outer card (title = "WaveChat에게 이런 질문을 해보세요") holding a
-   2-column grid of solid white sub-blocks — same pattern as the 홈 현황
-   card's metric grid, just with clickable chat-prompt blocks instead. */
-.dashboard-weeklyplan-stack .card {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-}
-
-.dashboard-promo-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  flex: 1;
-}
-
-.dashboard-promo-block {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 16px;
-  border-radius: 16px;
-  background: var(--surface);
-  transition: box-shadow 0.15s ease;
-}
-
-.dashboard-promo-block:hover,
-.dashboard-promo-block:focus-visible {
-  box-shadow: 0 4px 14px var(--wave-15);
-}
-
-.dashboard-promo-block strong {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.dashboard-promo-block p {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--ink-65);
-}
-
-.dashboard-weeklyplan-card .card {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  justify-content: center;
-  border: none;
-  background: linear-gradient(135deg, #6a4fc7 0%, #b9a4f0 55%, #ffc2d4 100%);
-  box-shadow: 0 4px 20px rgba(106, 79, 199, 0.35);
-}
-
-.dashboard-weeklyplan-card .card-head h3 {
-  color: #fff;
-}
-
-.dashboard-weeklyplan-card .card-head > span {
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-}
-
-.dashboard-weeklyplan-card .weekly-plan-nav-desc {
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.dashboard-weeklyplan-card .weekly-plan-nav-cta {
-  color: #fff;
-}
-
-.dashboard-weeklyplan-card .card.clickable:hover,
-.dashboard-weeklyplan-card .card.clickable:focus-visible {
-  background: linear-gradient(135deg, #57429e 0%, #9a7fd6 55%, #f7a9c4 100%);
-  border-color: transparent;
-  box-shadow: 0 8px 28px rgba(106, 79, 199, 0.45);
-}
-
-/* Overview grid: 어젯밤 수면 / 전력 관리+예정된 알람 / 활성화된 제스처 목록+오늘 할일.
+/* Overview grid: 어젯밤 수면+예정된 알람 / 전력 관리 / 홈 현황+활성화된 제스처 목록.
    Each column is its own independent flex stack so a shorter column's
    second card sits directly against its first — a CSS grid row's track
    height would otherwise match the tallest column, leaving dead space
    under the shorter ones. */
 .dashboard-overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.18fr) minmax(300px, 0.95fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
   margin-top: -4px;
@@ -435,102 +309,94 @@
   min-width: 0;
 }
 
-/* Row 4+: everything else, in a flexible 3-column grid. */
-/* Only two items live here now: 현재 상태 and the weeklyplan row. 4fr/5fr
-   makes 현재 상태 4/3 as wide as its old 1-of-3-columns share (1/3 → 4/9),
-   with the weeklyplan row taking up the rest. */
-.dashboard-remaining-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  align-items: start;
-  margin-top: -4px;
+.dashboard-col-title {
+  margin: 0 4px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .dashboard-sleep-card {
   width: 100%;
-  max-width: 470px;
+  max-width: 380px;
 }
 
 .dashboard-posture-card {
   width: 100%;
+  max-width: 380px;
   min-width: 0;
 }
 
 .dashboard-power-card {
   width: 100%;
-  min-height: 340px;
+  max-width: 380px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: 0 1px 8px var(--wave-10);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 8px 32px rgba(31, 41, 55, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   font: inherit;
   color: var(--ink);
   text-align: left;
   cursor: pointer;
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
 .dashboard-power-card:hover,
 .dashboard-power-card:focus-visible {
-  border-color: var(--wave);
-  box-shadow: 0 6px 20px var(--wave-25);
-}
-
-.dashboard-power-card > span {
-  color: var(--ink-soft);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.dashboard-power-card > strong {
-  display: block;
-  margin: 18px 0 6px;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.dashboard-power-card > p {
-  margin: 0 0 16px;
-  color: var(--sub);
-  font-size: 12px;
-  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 40px rgba(31, 41, 55, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .dashboard-power-chart {
-  height: 96px;
-  margin: 4px 0 16px;
+  height: 140px;
+  margin: 4px 0 10px;
   padding: 8px 0 0;
   border-radius: 14px;
   background: var(--wave-05);
 }
 
-.dashboard-power-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+.dashboard-power-summary-row + .dashboard-power-summary-row {
+  margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--wave-15);
 }
 
-.dashboard-power-meta span {
-  padding: 4px 7px;
-  border-radius: 8px;
-  background: var(--wave-05);
-  color: var(--sub);
-  font-size: 12px;
+.dashboard-power-summary-label {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--ink-soft);
+  font-size: 15px;
   font-weight: 700;
 }
 
-.dashboard-power-meta .dashboard-power-cost {
-  margin-left: auto;
+.dashboard-power-summary-values {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.dashboard-power-insight {
-  width: 100%;
-  font: inherit;
+.dashboard-power-summary-values span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-power-summary-values strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .dashboard-side-card {
@@ -543,77 +409,6 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* ── Todo list ──────────────────────────────────────────────────────────── */
-
-.todo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.todo-empty {
-  margin: 0;
-  color: var(--sub);
-  font-size: 0.8rem;
-}
-
-.todo {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 12px;
-  min-height: 42px;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--wave-05);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
-}
-
-.todo:hover {
-  background: var(--wave-10);
-}
-
-.todo.done {
-  opacity: 0.6;
-}
-
-.todo.done:hover {
-  background: var(--wave-05);
-}
-
-.todo span {
-  width: 21px;
-  height: 21px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--wave-35);
-  border-radius: 50%;
-  color: var(--surface);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.todo span.checked {
-  border-color: var(--wave);
-  background: var(--wave);
-}
-
-.todo p {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.todo.done p {
-  text-decoration: line-through;
-  color: var(--sub);
 }
 
 /* ── Promo cards ────────────────────────────────────────────────────────── */
@@ -795,14 +590,14 @@
 
   .dashboard-grid,
   .dashboard-overview-grid,
-  .dashboard-remaining-grid,
   .main-grid,
   .empty-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .dashboard-sleep-card,
-  .dashboard-posture-card {
+  .dashboard-posture-card,
+  .dashboard-power-card {
     width: 100%;
     max-width: none;
     min-width: 0;
@@ -830,8 +625,8 @@
 
   .hero p {
     max-width: none;
-    font-size: 14px;
-    line-height: 1.7;
+    font-size: 13px;
+    line-height: 1.6;
   }
 
   .state-grid,

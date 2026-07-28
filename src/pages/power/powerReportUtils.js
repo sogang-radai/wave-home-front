@@ -1,5 +1,10 @@
 import { getNow } from '../../lib/demoClock';
 
+// 한국전력 주택용(저압) 누진제 2단계(201~400kWh) 근사 단가 — 데모용 상수.
+// 실제 요금은 기본요금·단계 구간·계절별 조정이 있으나, 여기서는 "선택 구간
+// 누적 사용량 × 2단계 전력량요금"의 단순 근사치로 예상 요금을 보여준다.
+export const TIER2_WON_PER_KWH = 214.6;
+
 const PERIOD_LABELS = {
   hour: '1시간',
   day: '일간',

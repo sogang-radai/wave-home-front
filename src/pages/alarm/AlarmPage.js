@@ -91,21 +91,13 @@ export function AlarmPage() {
 
   return (
     <div className="page-stack alarm-page" ref={rootRef}>
-      <Card title="알람">
+      <div className="alarm-page-intro">
+        <h2 className="alarm-page-intro-title">수면 및 장치 알람</h2>
+        <p className="alarm-page-intro-desc">취침·기상 시간을 관리하면서, 일어날 때 조명 같은 기기를 함께 제어할 수 있는 알람이에요.</p>
+      </div>
+
+      <Card title="알람 목록" action={`${alarms.length}개`} wide className="alarm-section-card">
         <p className="alarm-banner">{bannerLabel}</p>
-      </Card>
-
-      <Card title="알람 설정" wide>
-        <AlarmEditor
-          alarm={selectedAlarm}
-          devices={eligibleDevices}
-          radarDevices={radarDevices}
-          onSave={saveAlarm}
-          onDelete={deleteAlarm}
-        />
-      </Card>
-
-      <Card title="알람 목록" action={`${alarms.length}개`} wide>
         {alarms.length === 0 && <p className="panel-empty">등록된 알람이 없습니다.</p>}
         <div className="alarm-card-grid">
           {alarms.map((alarm) => (
@@ -118,6 +110,16 @@ export function AlarmPage() {
             />
           ))}
         </div>
+      </Card>
+
+      <Card title="알람 설정" wide className="alarm-section-card">
+        <AlarmEditor
+          alarm={selectedAlarm}
+          devices={eligibleDevices}
+          radarDevices={radarDevices}
+          onSave={saveAlarm}
+          onDelete={deleteAlarm}
+        />
       </Card>
 
       {toast && <div className="iot-toast">{toast}</div>}

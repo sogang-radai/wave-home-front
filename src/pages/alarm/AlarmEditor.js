@@ -198,6 +198,7 @@ export function AlarmEditor({ alarm, devices, radarDevices, onSave, onDelete }) 
                   <InfoTooltip
                     wide
                     panel
+                    placement="bottom"
                     text={
                       '목표 시각 최대 30분 전부터 수면 단계(얕은 수면·REM·각성)를 보고 '
                       + '개운하게 일어날 수 있는 순간에 알람을 울립니다.\n\n'

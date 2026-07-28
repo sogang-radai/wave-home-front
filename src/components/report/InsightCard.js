@@ -42,8 +42,8 @@ export function InsightCard({ id, label, kind, title, text, approved, actionable
     <article className={`insight-card${approved ? ' applied' : ''}${plainFooter ? ' plain-footer' : ''}`}>
       <header className="insight-card-head">
         <span className={badgeClassName}>{badgeLabel}</span>
+        <h4 className="insight-card-title">{title}</h4>
       </header>
-      <h4 className="insight-card-title">{title}</h4>
       <p className="insight-card-text">{text}</p>
       {scheduleSummary && <p className="insight-card-schedule">🕒 {scheduleSummary}</p>}
       {actionable && (

@@ -26,6 +26,14 @@ function HeroNavChevron({ direction }) {
   );
 }
 
+function DownChevron() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 const SLEEP_STAGE_GUIDE = [
   {
     label: '얕은 수면',
@@ -133,55 +141,65 @@ function buildMovementTicks(movementLevels) {
     .filter(Boolean);
 }
 
-export function SleepHypnogram({ segments, timeLabels, movementLevels }) {
+export function SleepHypnogram({ segments, timeLabels, movementLevels, stageBreakdown }) {
   const { shapes } = buildHypnogramShapes(segments);
   const movementTicks = buildMovementTicks(movementLevels);
 
   return (
     <div className="sleep-hypnogram">
-      <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="sleep-hypnogram-chart" preserveAspectRatio="none">
-        {[LANE_Y.awake, LANE_Y.rem, LANE_Y.light, LANE_Y.deep].map((y) => (
-          <line key={y} x1="0" y1={y} x2={CHART_W} y2={y} className="sleep-hypnogram-grid" />
-        ))}
-        {shapes.map((shape) => (
-          shape.type === 'segment' ? (
-            <path key={shape.key} d={shape.d} fill={shape.fill} />
-          ) : (
-            <rect
-              key={shape.key}
-              x={shape.x}
-              y={shape.y}
-              width={shape.width}
-              height={shape.height}
-              fill={shape.fill}
-            />
-          )
-        ))}
-      </svg>
+      <div className="sleep-hypnogram-main">
+        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="sleep-hypnogram-chart" preserveAspectRatio="none">
+          {[LANE_Y.awake, LANE_Y.rem, LANE_Y.light, LANE_Y.deep].map((y) => (
+            <line key={y} x1="0" y1={y} x2={CHART_W} y2={y} className="sleep-hypnogram-grid" />
+          ))}
+          {shapes.map((shape) => (
+            shape.type === 'segment' ? (
+              <path key={shape.key} d={shape.d} fill={shape.fill} />
+            ) : (
+              <rect
+                key={shape.key}
+                x={shape.x}
+                y={shape.y}
+                width={shape.width}
+                height={shape.height}
+                fill={shape.fill}
+              />
+            )
+          ))}
+        </svg>
 
-      <div className="sleep-movement-plot">
-        <span className="sleep-movement-label">뒤척임</span>
-        <div className="sleep-movement-line" />
-        <div className="sleep-movement-ticks">
-          {movementTicks.map((tick) => (
-            <span
-              key={tick.key}
-              className="sleep-movement-tick"
-              style={{
-                left: `${tick.left}%`,
-                height: `${tick.height}px`,
-                opacity: tick.opacity,
-              }}
-            />
+        <div className="sleep-movement-plot">
+          <span className="sleep-movement-label">뒤척임</span>
+          <div className="sleep-movement-line" />
+          <div className="sleep-movement-ticks">
+            {movementTicks.map((tick) => (
+              <span
+                key={tick.key}
+                className="sleep-movement-tick"
+                style={{
+                  left: `${tick.left}%`,
+                  height: `${tick.height}px`,
+                  opacity: tick.opacity,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="sleep-hypnogram-times">
+          {timeLabels.map((label) => (
+            <span key={label}>{label}</span>
           ))}
         </div>
       </div>
 
-      <div className="sleep-hypnogram-times">
-        {timeLabels.map((label) => (
-          <span key={label}>{label}</span>
-        ))}
-      </div>
+      {stageBreakdown && (
+        <div className="sleep-hypnogram-breakdown">
+          {stageBreakdown.map((stage) => (
+            <SleepStageBreakdownRow stage={stage} key={stage.label} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -246,6 +264,12 @@ export function SleepStageBreakdownRow({ stage }) {
           style={{ width: `${stage.percent}%`, background: STAGE_COLORS[stage.tone] }}
         />
       </div>
+      {stage.tone === 'deep' && (
+        <div className="mt-1 flex items-center justify-end gap-1.5 text-[11px] text-[var(--sub)]">
+          <span className="inline-block h-2.5 w-4 rounded-sm bg-[repeating-linear-gradient(45deg,#cbd8df_0px,#cbd8df_2px,transparent_2px,transparent_4px)]" />
+          일반적인 범위
+        </div>
+      )}
     </div>
   );
 }
@@ -271,6 +295,7 @@ export function SleepStatusReport({ onReportDateChange, dateNavTarget }) {
   const [report, setReport] = useState(null);
   const [reportError, setReportError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [factorsExpanded, setFactorsExpanded] = useState(false);
   const [transition, setTransition] = useState({
     phase: 'idle',
     dir: 0,
@@ -503,50 +528,67 @@ export function SleepStatusReport({ onReportDateChange, dateNavTarget }) {
               </button>
             </>
           )}
-          <div className="sleep-score-hero-top">
-            <div className="sleep-score-hero-number">
-              {report.score}<span className={`tag ${cls}`}>{label}</span>
-            </div>
-          </div>
-          <div className="sleep-score-hero-times">
-            <strong>{formatHm(report.timeInBedMinutes)}</strong>
-            <span>수면 시간 · {formatClockLabel(report.sleepWindow.start)} - {formatClockLabel(report.sleepWindow.end)}</span>
-          </div>
-          <div className="sleep-score-hero-actual">
-            <strong>{formatHm(report.actualSleepMinutes)}</strong>
-            <span>실제 수면 시간</span>
-          </div>
-          <div className="sleep-score-factor-panel">
-            <div className="sleep-score-factor-head">
-              <strong>수면 점수 요인</strong>
-            </div>
-            <div className="sleep-factor-scroll">
-              {report.scoreFactors.map((factor) => (
-                <div className={`sleep-factor-card compact ${factor.tone}`} key={factor.key}>
-                  <span>{factor.label}</span>
-                  <strong>{factor.value}</strong>
-                  <em className={`sleep-factor-tag ${factor.tone}`}>{factor.tag}</em>
+          <div className="sleep-score-hero-main">
+            <div className="sleep-score-hero-stats">
+              <div className="sleep-score-hero-top">
+                <div className="sleep-score-hero-number">
+                  {report.score}<span className={`tag ${cls}`}>{label}</span>
                 </div>
-              ))}
+              </div>
+              <div className="sleep-score-hero-times">
+                <strong>{formatHm(report.timeInBedMinutes)}</strong>
+                <span>수면 시간 · {formatClockLabel(report.sleepWindow.start)} - {formatClockLabel(report.sleepWindow.end)}</span>
+              </div>
+              <div className="sleep-score-hero-actual">
+                <strong>{formatHm(report.actualSleepMinutes)}</strong>
+                <span>실제 수면 시간</span>
+              </div>
             </div>
-          </div>
-        </section>
 
-        {report.analysis.some((item) => item.description?.trim()) && (
-          <Card title="어젯밤 일일 수면 리포트">
-            <p className="report-summary-only">
-              {report.analysis.find((item) => item.label === 'AI 분석')?.description
+            {report.analysis.some((item) => item.description?.trim()) && (
+              <div className="sleep-score-hero-report">
+                <strong>어젯밤 일일 수면 리포트</strong>
+                <p>
+                  {report.analysis.find((item) => item.label === 'AI 분석')?.description
                 || report.analysis[0]?.description
                 || '리포트 준비 중입니다.'}
-            </p>
-          </Card>
-        )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="sleep-score-factor-panel">
+            <button
+              type="button"
+              className="sleep-score-factor-head"
+              onClick={() => setFactorsExpanded((value) => !value)}
+              aria-expanded={factorsExpanded}
+            >
+              {factorsExpanded && <strong>수면 점수 요인</strong>}
+              <span className="sleep-score-factor-toggle">
+                {!factorsExpanded && <span className="sleep-score-factor-toggle-text">자세히 보기</span>}
+                <span className="sleep-score-factor-chevron"><DownChevron /></span>
+              </span>
+            </button>
+            {factorsExpanded && (
+              <div className="sleep-factor-scroll">
+                {report.scoreFactors.map((factor) => (
+                  <div className={`sleep-factor-card compact ${factor.tone}`} key={factor.key}>
+                    <span>{factor.label}</span>
+                    <strong>{factor.value}</strong>
+                    <em className={`sleep-factor-tag ${factor.tone}`}>{factor.tag}</em>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
 
         <Card
           title={(
             <span className="sleep-card-title-with-info">
               수면 단계
-              <InfoTooltip wide panel>
+              <InfoTooltip wide panel placement="bottom">
                 <div className="sleep-stage-info">
                   <p className="sleep-stage-info-lead">
                     수면은 하룻밤에 여러 번 반복되는 주기로 이뤄져요. 한 주기는 대략 90분 안팎입니다.
@@ -576,76 +618,80 @@ export function SleepStatusReport({ onReportDateChange, dateNavTarget }) {
             segments={report.hypnogram.segments}
             timeLabels={timeLabels}
             movementLevels={report.hypnogram.movementLevels}
+            stageBreakdown={report.stageBreakdown}
           />
-          <div className="mt-6 flex flex-col gap-4">
-            {report.stageBreakdown.map((stage) => (
-              <SleepStageBreakdownRow stage={stage} key={stage.label} />
-            ))}
-          </div>
-          <div className="mt-4 flex items-center justify-end gap-1.5 text-[11px] text-[var(--sub)]">
-            <span className="inline-block h-2.5 w-4 rounded-sm bg-[repeating-linear-gradient(45deg,#cbd8df_0px,#cbd8df_2px,transparent_2px,transparent_4px)]" />
-            일반적인 범위
-          </div>
-        </Card>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 sleep-vitals-grid">
-          <Card title="코골이" action={`${report.snoringEpisodes.length}회 감지`}>
-            <div className="sleep-vitals-card-body">
-              <div className="sleep-snore-summary">
-                <div className="big-number">
-                  <small>어젯밤 총 코골이 시간</small>
-                  {report.snoringEpisodes.reduce((sum, item) => sum + item.durationMinutes, 0)}<span>분</span>
+          <div className="sleep-vitals-inline-grid">
+            <div className="sleep-vitals-inline-section">
+              <div className="sleep-vitals-inline-head">
+                <strong>코골이</strong>
+                <span>{report.snoringEpisodes.length}회 감지</span>
+              </div>
+              <div className="sleep-vitals-card-body">
+                <div className="sleep-snore-summary">
+                  <div className="big-number">
+                    <small>어젯밤 총 코골이 시간</small>
+                    {report.snoringEpisodes.reduce((sum, item) => sum + item.durationMinutes, 0)}<span>분</span>
+                  </div>
+                </div>
+                <div className="sleep-snore-list sleep-custom-scroll">
+                  {report.snoringEpisodes.map((item) => (
+                    <div key={item.time} className="sleep-snore-item">
+                      <span>{item.time}</span>
+                      <span>{item.durationMinutes}분</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="sleep-snore-list sleep-custom-scroll">
-                {report.snoringEpisodes.map((item) => (
-                  <div key={item.time} className="sleep-snore-item">
-                    <span>{item.time}</span>
-                    <span>{item.durationMinutes}분</span>
-                  </div>
-                ))}
+            </div>
+
+            <div className="sleep-vitals-inline-section">
+              <div className="sleep-vitals-inline-head">
+                <strong>심박수</strong>
+                <span>평균 {Math.round(avgHeart)}bpm</span>
+              </div>
+              <div className="sleep-vitals-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={report.stageLog.map((d) => ({ day: d.time, value: d.heartRate }))} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[45, 85]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                      labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
+                      itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                      formatter={(value) => [`${value} bpm`, '심박']}
+                    />
+                    <Line type="linear" dataKey="value" stroke="#e57373" strokeWidth={2} dot={{ fill: '#e57373', r: 3, strokeWidth: 0 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
-          </Card>
 
-          <Card title="심박수" action={`평균 ${Math.round(avgHeart)}bpm`}>
-            <div className="sleep-vitals-chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={report.stageLog.map((d) => ({ day: d.time, value: d.heartRate }))} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[45, 85]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-                    labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
-                    itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
-                    formatter={(value) => [`${value} bpm`, '심박']}
-                  />
-                  <Line type="linear" dataKey="value" stroke="#e57373" strokeWidth={2} dot={{ fill: '#e57373', r: 3, strokeWidth: 0 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="sleep-vitals-inline-section">
+              <div className="sleep-vitals-inline-head">
+                <strong>호흡수</strong>
+                <span>평균 {avgBreath.toFixed(1)}회/분</span>
+              </div>
+              <div className="sleep-vitals-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={report.stageLog.map((d) => ({ day: d.time, value: d.breathRate }))} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[8, 22]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                      labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
+                      itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
+                      formatter={(value) => [`${value}회/분`, '호흡']}
+                    />
+                    <Line type="linear" dataKey="value" stroke="#64b5f6" strokeWidth={2} dot={{ fill: '#64b5f6', r: 3, strokeWidth: 0 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </Card>
-
-          <Card title="호흡수" action={`평균 ${avgBreath.toFixed(1)}회/분`}>
-            <div className="sleep-vitals-chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={report.stageLog.map((d) => ({ day: d.time, value: d.breathRate }))} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--wave-10)" />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[8, 22]} tick={{ fontSize: 10, fill: 'var(--sub)' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid var(--wave-20)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-                    labelStyle={{ color: 'var(--ink)', fontWeight: 800 }}
-                    itemStyle={{ color: 'var(--ink)', fontWeight: 700 }}
-                    formatter={(value) => [`${value}회/분`, '호흡']}
-                  />
-                  <Line type="linear" dataKey="value" stroke="#64b5f6" strokeWidth={2} dot={{ fill: '#64b5f6', r: 3, strokeWidth: 0 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
       </>
     );
   })();
