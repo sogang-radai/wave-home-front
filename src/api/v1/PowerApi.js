@@ -43,4 +43,8 @@ export class PowerApi {
   async updateInsight(insightId, { approved }) {
     return insightsApi.updateInsight(insightId, { approved });
   }
+
+  async applyInsight(insightId) {
+    return insightsApi.apply(insightId);
+  }
 }

@@ -1,7 +1,6 @@
 import { delay } from '../mock/utils';
 import { InsightsApi } from '../mock/InsightsApi';
 import { PowerApi as RealPowerApi } from '../v1/PowerApi';
-import { guardDemoWrite } from '../../lib/demoGuard';
 import {
   findDemoPlug,
   generatePowerPeriodTrend,
@@ -81,10 +80,19 @@ export class PowerApi {
     }
   }
 
+  // 다른 데모 방문자와 공유되는 상태를 바꾸지 않는 작업(사용자별 approved 플래그,
+  // 본인 세션 내 schedule_task/automation_rule 생성)이라 실제 백엔드로 그대로
+  // 보낸다 - guardDemoWrite 로 막던 이전 동작은 "실행"을 눌러도 규칙 설정·루틴
+  // 플래너에 전혀 반영되지 않는 문제가 있었다.
   async updateInsight(insightId, { approved }) {
-    if (!guardDemoWrite()) return null;
     await delay();
     requireActiveAccount();
-    return insightsApi.updateInsight(insightId, { approved });
+    return realPowerApi.updateInsight(insightId, { approved });
+  }
+
+  async applyInsight(insightId) {
+    await delay();
+    requireActiveAccount();
+    return realPowerApi.applyInsight(insightId);
   }
 }

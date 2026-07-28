@@ -897,7 +897,7 @@ function App() {
           onOpenWaveAi={handleHeaderWaveAiOpen}
           waveAiDisabled={chatMode !== 'page' || page === 'chat'}
         />
-        <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}${page === 'main' ? ' dashboard-active' : ''}`}>
+        <main className={`content${page === 'chat' && chatMode === 'page' ? ' chat-active' : ''}${page === 'main' ? ' dashboard-active' : ''}${page === 'weeklyPlan' ? ' weekly-plan-active' : ''}`}>
           {page === 'main' && (
             <MainPage
               onNavigate={setPage}

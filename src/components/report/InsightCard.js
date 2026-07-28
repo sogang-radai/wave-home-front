@@ -32,11 +32,35 @@ function formatScheduleTask(scheduleTaskJson) {
   return [dayLabel, timeRange, title].filter(Boolean).join(' ');
 }
 
-export function InsightCard({ id, label, kind, title, text, approved, actionable, actionType, scheduleTaskJson, onToggle, plainFooter }) {
+/** automation_rule 용 — ruleJson.schedule(예: {repeat:'daily'|'weekly'|'once', time:'HH:MM',
+ * dayOfWeek?}) 또는 ruleJson.trigger 를 formatScheduleTask 와 같은 "🕒 ..." 형태로 요약한다.
+ * schedule_task 만 지원하던 기존 배지가 automation_rule 항목(오늘 sleep_report 액션 2개처럼)
+ * 에서는 아예 안 뜨던 문제를 고친다. ruleJson.name(그 규칙의 이름)을 뒤에 붙여서 "매일
+ * 23:00 · 쾌적한 수면 환경 유지"처럼 어떤 규칙인지도 함께 보이게 한다. */
+function formatAutomationRule(ruleJson) {
+  if (!ruleJson) return null;
+  const { schedule, trigger, name } = ruleJson;
+  let timing = null;
+  if (schedule?.time) {
+    const repeatLabel = schedule.repeat === 'weekly' && schedule.dayOfWeek
+      ? `매주 ${SCHEDULE_DAY_LABELS[schedule.dayOfWeek] || schedule.dayOfWeek}요일`
+      : schedule.repeat === 'once' ? '1회' : '매일';
+    timing = `${repeatLabel} ${schedule.time}`;
+  } else if (trigger) {
+    timing = '조건 발생 시 자동 실행';
+  }
+  return [timing, name].filter(Boolean).join(' · ') || null;
+}
+
+export function InsightCard({ id, label, kind, title, text, approved, actionable, actionType, scheduleTaskJson, ruleJson, onToggle, plainFooter }) {
   const kindMeta = INSIGHT_KIND_META[kind];
   const badgeLabel = kindMeta?.label || label;
   const badgeClassName = `insight-card-label${kindMeta ? ` ${kindMeta.className}` : ''}`;
-  const scheduleSummary = actionType === 'schedule_task' ? formatScheduleTask(scheduleTaskJson) : null;
+  const scheduleSummary = actionType === 'schedule_task'
+    ? formatScheduleTask(scheduleTaskJson)
+    : actionType === 'automation_rule'
+      ? formatAutomationRule(ruleJson)
+      : null;
 
   return (
     <article className={`insight-card${approved ? ' applied' : ''}${plainFooter ? ' plain-footer' : ''}`}>

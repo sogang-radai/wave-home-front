@@ -1,10 +1,12 @@
-import { WeeklyPlanApi as MockWeeklyPlanApi } from '../mock/WeeklyPlanApi';
 import { WeeklyPlanApi as RealWeeklyPlanApi } from '../v1/WeeklyPlanApi';
 
 const realWeeklyPlanApi = new RealWeeklyPlanApi();
-const mockWeeklyPlanApi = new MockWeeklyPlanApi();
 
-/** Demo: task writes use the server's isolated runtime session; insight decisions stay in-memory. */
+/** Demo: task writes use the server's isolated runtime session. Insight approve/apply also
+ * go to the real backend now — applying a weekly_plan recommendation is what actually creates
+ * the schedule_task/automation_rule, so "실행" needs to hit the real endpoint to sync with
+ * the routine planner calendar and rule settings (previously simulated in memory only, which
+ * looked like it worked but never persisted anything). */
 export class WeeklyPlanApi {
   getTasks(query) {
     return realWeeklyPlanApi.getTasks(query);
@@ -31,10 +33,10 @@ export class WeeklyPlanApi {
   }
 
   updateInsight(insightId, payload) {
-    return mockWeeklyPlanApi.updateInsight(insightId, payload);
+    return realWeeklyPlanApi.updateInsight(insightId, payload);
   }
 
   applyInsight(insightId) {
-    return mockWeeklyPlanApi.applyInsight(insightId);
+    return realWeeklyPlanApi.applyInsight(insightId);
   }
 }

@@ -1,12 +1,13 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   CAT_STYLE, CAL_H, CAL_END_MIN,
-  minToY, yToMin, snapMin, fmtTime, getWeekDatesFromAnchor, addCalendarDays,
+  minToY, yToMin, snapMin, fmtTime, getWeekDatesFromAnchor, addCalendarDays, getMondayOfWeek,
   PLAN_WEEKDAYS, PLAN_CAT_STYLE,
 } from '../../data/weeklyPlanData';
 import weeklyPlanApi from '../../api/weeklyPlanApi';
 import goalsApi from '../../api/goalsApi';
 import settingsApi from '../../api/settingsApi';
+import sleepApi from '../../api/sleepApi';
 import { DateNavigatorBar } from '../../components/calendar/DateNavigatorBar';
 import { getToday, isSameDay, normalizeDate } from '../../components/calendar/calendarUtils';
 import { getNow } from '../../lib/demoClock';
@@ -83,19 +84,39 @@ function buildPopupState({
   };
 }
 
-export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onAddTodoFromInsight, onRefreshTodos }) {
+export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onRefreshTodos }) {
   const isMobile = useMobileLayout();
-  const [weekStartDate, setWeekStartDate] = useState(getToday);
+  const [weekStartDate, setWeekStartDate] = useState(() => getMondayOfWeek(getToday()));
   const weekDates = useMemo(() => getWeekDatesFromAnchor(weekStartDate), [weekStartDate]);
   const [recommendationGroups, setRecommendationGroups] = useState([]);
   const [agentReport, setAgentReport] = useState(null);
   const [updatingRecommendationId, setUpdatingRecommendationId] = useState(null);
+  const [sleepTrend, setSleepTrend] = useState([]);
+  const [previousNightWakeMinute, setPreviousNightWakeMinute] = useState(null);
 
   useEffect(() => {
     weeklyPlanApi.getRecommendations()
       .then((items) => setRecommendationGroups(normalizeRecommendationGroups(items)))
       .catch(() => setRecommendationGroups([]));
   }, []);
+
+  // 실제 취침/기상 시각(onsetMinute/wakeMinute) — 달력에 지난 수면 기록을
+  // 어두운 블록으로 겹쳐 보여주기 위함. GET /sleep/reports/weekly 의 trend 배열에
+  // 이미 포함되어 있어 별도 API 호출 없이 이 하나로 충분하다. previousNightWakeMinute
+  // 는 이 주 첫날 전날 밤에 시작된 수면이 자정을 넘겨 첫날 새벽까지 이어지는
+  // 경우만 채워진다(trend 는 정확히 이 주 7일 범위만 조회하므로 그 전날 세션은
+  // 원래 안 잡힘 — 백엔드가 별도로 보정해서 내려준다).
+  useEffect(() => {
+    sleepApi.getWeeklyReport(formatDateParam(weekStartDate))
+      .then((report) => {
+        setSleepTrend(report?.trend || []);
+        setPreviousNightWakeMinute(report?.previousNightWakeMinute ?? null);
+      })
+      .catch(() => {
+        setSleepTrend([]);
+        setPreviousNightWakeMinute(null);
+      });
+  }, [weekStartDate]);
 
   useEffect(() => {
     const endOfWeek = weekDates[weekDates.length - 1]?.fullDate;
@@ -115,11 +136,12 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     );
   };
 
-  const getRecommendationDay = (item) => {
-    if (item.period === 'weekly') return weekDates[0]?.label || '월';
-    return weekDates.find((day) => day.isToday)?.label || weekDates[0]?.label || '월';
-  };
-
+  // "실행"은 이제 항상 POST /insights/{id}/apply 를 호출한다 - actionType 에 따라
+  // 서버가 실제 schedule_task(루틴 플래너 캘린더에 반영) 또는 automation_rule(규칙
+  // 설정에 반영)을 만들고 insight.approved 도 함께 true 로 표시해준다. 예전에는
+  // schedule_task 만 클라이언트가 직접 만들고(automation_rule 은 아무 것도 안 만듦)
+  // approved 플래그만 별도로 토글해서, 자동화 규칙 추천은 "추가"를 눌러도 실제로는
+  // 아무 데도 반영되지 않았다.
   const toggleRecommendation = async (id) => {
     const current = recommendationGroups.flatMap((group) => group.items).find((item) => item.id === id);
     if (!current) return;
@@ -129,13 +151,19 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     setUpdatingRecommendationId(id);
     try {
       if (isApplied) {
-        await Promise.all(linkedTasks.map((todo) => onDeleteTodo(todo.id)));
+        // schedule_task 는 실제로 만든 항목을 지워서 되돌릴 수 있지만, automation_rule
+        // 은 만들어진 규칙을 여기서 삭제하지 않는다 - approved 표시만 되돌린다.
+        if (linkedTasks.length > 0) {
+          await Promise.all(linkedTasks.map((todo) => onDeleteTodo(todo.id)));
+        }
         await weeklyPlanApi.updateInsight(id, { approved: false });
         setRecommendationApproved(id, false);
       } else {
-        await onAddTodoFromInsight(id, getRecommendationDay(current));
-        await weeklyPlanApi.updateInsight(id, { approved: true });
+        await weeklyPlanApi.applyInsight(id);
         setRecommendationApproved(id, true);
+        if (current.actionType === 'schedule_task' && onRefreshTodos) {
+          await onRefreshTodos();
+        }
       }
     } finally {
       setUpdatingRecommendationId(null);
@@ -274,6 +302,27 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
   const [nowMin, setNowMin] = useState(() => { const n = getNow(); return n.getHours() * 60 + n.getMinutes(); });
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const eventsRef = useRef(null);
+  const calendarScrollRef = useRef(null);
+  const blueCardRef = useRef(null);
+  const [blueCardHeight, setBlueCardHeight] = useState(null);
+
+  // "오늘 할 일" 카드 높이를 "자동화 규칙 적용" 카드(자연스러운 콘텐츠 높이)에
+  // 맞춘다 — 반대로 맞추면(오늘 할 일이 늘어나면) 자동화 카드가 억지로 늘어나
+  // 하단에 빈 공간이 생긴다. ResizeObserver 로 자동화 카드의 실제 렌더 높이를
+  // 재서 오늘 할 일 카드에 그대로 적용하고, 넘치는 할 일 목록은 내부 스크롤로
+  // 처리한다(today-todo-list 의 overflow-y:auto).
+  useEffect(() => {
+    if (!blueCardRef.current) {
+      setBlueCardHeight(null);
+      return undefined;
+    }
+    const el = blueCardRef.current;
+    const update = () => setBlueCardHeight(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [recommendationGroups]);
   const popupInputRef = useRef(null);
   const moveDragRef = useRef(null);
   moveDragRef.current = moveDrag;
@@ -282,6 +331,23 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
     const tick = () => { const n = getNow(); setNowMin(n.getHours() * 60 + n.getMinutes()); };
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
+  }, []);
+
+  // 처음 진입했을 때 달력만 00:00이 아니라 06:00에 맞춰 스크롤되어 있도록 한다.
+  // 달력은 이제 페이지 전체가 아니라 weekly-plan-calendar-scroll 자체가 스크롤
+  // 컨테이너이므로(overflow-y: auto), eventsRef 의 그 컨테이너 기준 위치 + 06:00
+  // 오프셋을 계산해서 컨테이너의 scrollTop 을 직접 옮긴다.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const scrollContainer = calendarScrollRef.current;
+      if (!scrollContainer || !eventsRef.current) return;
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const eventsTop = eventsRef.current.getBoundingClientRect().top;
+      const target = eventsTop - containerTop + scrollContainer.scrollTop + minToY(6 * 60);
+      scrollContainer.scrollTo({ top: target, behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Navigating to a different week resets the selected day: back to "today"
@@ -476,37 +542,33 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
 
   return (
     <div className="page-stack" style={{ paddingBottom: 32 }}>
-      <section className="hero card">
-        <div>
-          <h2>{agentReport?.headline || '주간 계획 리포트'}</h2>
-          <p>{agentReport?.body?.trim() ? agentReport.body : '리포트 준비 중입니다.'}</p>
-        </div>
-      </section>
+      <div className="weekly-plan-banner">
+        <h3 className="weekly-plan-banner-header">{agentReport?.headline || '자동화 규칙 적용 리포트'}</h3>
+        <p className="weekly-plan-banner-body">{agentReport?.body?.trim() ? agentReport.body : '리포트 준비 중입니다.'}</p>
+      </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-8 bg-white rounded-3xl shadow-sm border border-slate-100 weekly-plan-shell${isMobile ? ' weekly-plan-shell--mobile' : ' p-8'}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-5 gap-5 bg-white rounded-3xl shadow-sm border border-slate-100 weekly-plan-shell${isMobile ? ' weekly-plan-shell--mobile' : ' p-5'}`}>
 
-        {/* Left: Calendar (3 cols) */}
+        {/* Left: Calendar (3 of 5 cols) */}
         <div className="lg:col-span-3">
           <DateNavigatorBar
             mode="week"
             label={dateRange}
             rangeStartDate={weekStartDate}
-            onPrevDay={() => setWeekStartDate((d) => addCalendarDays(d, -1))}
-            onPrevWeek={() => setWeekStartDate((d) => addCalendarDays(d, -7))}
-            onNextWeek={() => setWeekStartDate((d) => addCalendarDays(d, 7))}
-            onNextDay={() => setWeekStartDate((d) => addCalendarDays(d, 1))}
-            onSelectWeek={(date) => setWeekStartDate(normalizeDate(date))}
-            showTodayReset={!isSameDay(weekStartDate, getToday())}
-            onTodayReset={() => setWeekStartDate(getToday())}
-            className={isMobile ? 'mb-4' : 'mb-8'}
+            onPrev={() => setWeekStartDate((d) => addCalendarDays(d, -7))}
+            onNext={() => setWeekStartDate((d) => addCalendarDays(d, 7))}
+            onSelectWeek={(date) => setWeekStartDate(getMondayOfWeek(normalizeDate(date)))}
+            showTodayReset={!isSameDay(weekStartDate, getMondayOfWeek(getToday()))}
+            onTodayReset={() => setWeekStartDate(getMondayOfWeek(getToday()))}
+            className={isMobile ? 'mb-2' : 'mb-3'}
           />
 
-          <div className="relative">
+          <div className="relative weekly-plan-calendar-scroll" ref={calendarScrollRef}>
             <div>
               <div>
 
                 {/* Sticky day header */}
-                <div className={`weekly-plan-sticky-header sticky top-0 bg-white pb-2${isMobile ? ' weekly-plan-sticky-header--mobile' : ''}`} style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
+                <div className={`weekly-plan-sticky-header sticky top-0 bg-white pb-1${isMobile ? ' weekly-plan-sticky-header--mobile' : ''}`} style={{ zIndex: 50, borderBottom: '1px solid #f1f5f9' }}>
                   <div className="grid" style={{ gridTemplateColumns: `${timeColWidth}px repeat(7, 1fr)` }}>
                     <div />
                     {weekDates.map((d, i) => {
@@ -516,18 +578,22 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                         key={`${d.label}-${d.date}`}
                         type="button"
                         onClick={() => setSelectedDayIdx(i)}
-                        className="text-center py-2 rounded-lg transition-colors"
+                        className="text-center py-0.5 rounded-lg transition-colors"
                         style={{ background: i === selectedDayIdx ? '#eff6ff' : 'transparent' }}
                       >
-                        <p className="text-xs font-semibold" style={{ color: d.isToday ? '#2563eb' : isSunday ? '#dc2626' : '#64748b' }}>{d.label}</p>
-                        <p className="text-sm font-bold mt-0.5" style={{ color: d.isToday ? '#2563eb' : isSunday ? '#dc2626' : '#1e293b' }}>{d.date}</p>
+                        <p
+                          className="text-base font-bold whitespace-nowrap"
+                          style={{ color: d.isToday ? '#2563eb' : isSunday ? '#dc2626' : '#1e293b' }}
+                        >
+                          {d.date}({d.label})
+                        </p>
                       </button>
                     );})}
                   </div>
                 </div>
 
                 {/* Calendar body */}
-                <div className={`grid pt-3${isMobile ? ' weekly-plan-calendar-grid--mobile' : ''}`} style={{ gridTemplateColumns: `${timeColWidth}px 1fr` }}>
+                <div className={`grid pt-1${isMobile ? ' weekly-plan-calendar-grid--mobile' : ''}`} style={{ gridTemplateColumns: `${timeColWidth}px 1fr` }}>
                   {/* Time labels */}
                   <div
                     className={`relative font-semibold text-slate-400${isMobile ? ' weekly-plan-time-col--mobile' : ' text-xs'}`}
@@ -665,6 +731,53 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                       </button>
                     )}
 
+                    {/* Sleep history overlay — actual recorded bedtime/wake times as a
+                        dark background block, drawn beneath the todo blocks. A night
+                        that wraps past midnight (onset one day, wake the next) becomes
+                        two segments: onset..24:00 on its own night_date column, and
+                        00:00..wake on the following column. Purely decorative
+                        (pointerEvents: none) so it never steals clicks from the
+                        day-cell "+" button or drag-to-create. */}
+                    {previousNightWakeMinute != null && (
+                      <div
+                        key="sleep-carryover"
+                        className="sleep-history-block"
+                        style={{
+                          left: `${1}%`,
+                          width: `${colW - 2}%`,
+                          top: minToY(0),
+                          height: Math.max(4, minToY(previousNightWakeMinute)),
+                        }}
+                      />
+                    )}
+                    {weekDates.flatMap((d, dayIdx) => {
+                      const dateStr = formatDateParam(d.fullDate);
+                      const point = sleepTrend.find((p) => p.date === dateStr);
+                      if (!point || point.onsetMinute == null || point.wakeMinute == null) return [];
+
+                      const segments = point.wakeMinute < point.onsetMinute
+                        ? [
+                          { dayIdx, startMin: point.onsetMinute, endMin: CAL_END_MIN },
+                          ...(dayIdx + 1 < weekDates.length
+                            ? [{ dayIdx: dayIdx + 1, startMin: 0, endMin: point.wakeMinute }]
+                            : []),
+                        ]
+                        : [{ dayIdx, startMin: point.onsetMinute, endMin: point.wakeMinute }];
+
+                      return segments.map((seg, i) => (
+                        <div
+                          key={`sleep-${dateStr}-${i}`}
+                          className="sleep-history-block"
+                          style={{
+                            left: `${seg.dayIdx * colW + 1}%`,
+                            width: `${colW - 2}%`,
+                            top: minToY(seg.startMin),
+                            height: Math.max(4, minToY(seg.endMin) - minToY(seg.startMin)),
+                          }}
+                        />
+                      ));
+                    })}
+
                     {/* Todo blocks */}
                     {(() => {
                       const CAT_ORDER = { '자세': 0, '수면': 1, '식습관': 2, '멘탈': 3 };
@@ -776,127 +889,128 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
         </div>
 
         {/* Right panel */}
-        <div className="lg:col-span-1 lg:border-l border-slate-100 lg:pl-6 flex flex-col gap-6">
-          {/* Selected day's todos (defaults to today) */}
-          {(() => {
-            const selectedDate = weekDates[selectedDayIdx] || weekDates[0];
-            const heading = selectedDate.isToday ? '오늘 할 일' : `${selectedDate.month}월 ${selectedDate.date}일 할 일`;
-            const emptyLabel = selectedDate.isToday ? '오늘' : `${selectedDate.month}월 ${selectedDate.date}일`;
-            const dayTodos = todos.filter((t) => t.day === selectedDate.label);
-            const doneCount = dayTodos.filter((t) => t.done).length;
-            const remaining = dayTodos.length - doneCount;
-            return (
-              <div className="bg-slate-50 rounded-2xl p-4 min-h-[120px]">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-bold text-slate-800 text-sm">{heading}</h2>
-                  {dayTodos.length > 0 && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: remaining > 0 ? '#dbeafe' : '#dcfce7', color: remaining > 0 ? '#0294d8' : '#15803d' }}>
-                      {remaining > 0 ? `${remaining}개 남음` : '모두 완료!'}
-                    </span>
-                  )}
-                </div>
-                {dayTodos.length > 0 && <p className="text-xs text-slate-400 mb-2">{doneCount}/{dayTodos.length}개 완료</p>}
-                <div className="space-y-1.5">
-                  {dayTodos.length === 0 && <p className="text-xs text-slate-400 text-center py-4">{emptyLabel} 일정이 없습니다</p>}
-                  {dayTodos.map((t) => {
-                    const cs = CAT_STYLE[t.cat] || CAT_STYLE['멘탈'];
-                    return (
+        <div className="lg:col-span-2 lg:border-l border-slate-100 lg:pl-6 flex flex-col gap-6">
+          {/* 오늘 할 일 + 자동화 규칙 적용을 한 줄에 절반씩 배치 */}
+          <div className="flex gap-4 items-start">
+            {/* Selected day's todos (defaults to today) */}
+            <div className="min-w-0" style={{ flex: '1 1 0%' }}>
+            {(() => {
+              const selectedDate = weekDates[selectedDayIdx] || weekDates[0];
+              const heading = selectedDate.isToday ? '오늘 할 일' : `${selectedDate.month}월 ${selectedDate.date}일 할 일`;
+              const emptyLabel = selectedDate.isToday ? '오늘' : `${selectedDate.month}월 ${selectedDate.date}일`;
+              const dayTodos = todos.filter((t) => t.day === selectedDate.label);
+              const doneCount = dayTodos.filter((t) => t.done).length;
+              const remaining = dayTodos.length - doneCount;
+              return (
+                <div
+                  className="today-todo-card"
+                  style={blueCardHeight ? { height: blueCardHeight } : undefined}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="today-todo-card-title">{heading}</h2>
+                    {dayTodos.length > 0 && (
+                      <span className="today-todo-badge">
+                        {remaining > 0 ? `${remaining}개 남음` : '모두 완료!'}
+                      </span>
+                    )}
+                  </div>
+                  {dayTodos.length > 0 && <p className="today-todo-progress">{doneCount}/{dayTodos.length}개 완료</p>}
+                  <div className="today-todo-list">
+                    {dayTodos.length === 0 && <p className="today-todo-empty">{emptyLabel} 일정이 없습니다</p>}
+                    {dayTodos.map((t) => (
                       <div
                         key={t.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-xl cursor-pointer transition-all"
-                        style={{ background: t.done ? '#f8fafc' : 'white', opacity: t.done ? 0.6 : 1 }}
+                        className={`today-todo-row${t.done ? ' is-done' : ''}`}
                         onClick={() => onToggleTodo(t.id)}
                       >
-                        <div className="w-3 h-3 rounded-full shrink-0 flex items-center justify-center" style={{ background: t.done ? '#94a3b8' : cs.bg, border: t.done ? 'none' : `1.5px solid ${cs.text}40` }}>
-                          {t.done && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                        <div className={`today-todo-checkbox${t.done ? ' is-checked' : ''}`}>
+                          {t.done && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
                         </div>
-                        <p className="text-xs flex-1 min-w-0 leading-snug" style={{ textDecoration: t.done ? 'line-through' : 'none', color: t.done ? '#94a3b8' : '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {t.title}
-                        </p>
-                        {t.startMin !== undefined && (
-                          <span className="text-[10px] shrink-0" style={{ color: '#94a3b8' }}>{fmtTime(t.startMin)}</span>
-                        )}
+                        <p className="today-todo-title">{t.title}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            </div>
+
+            {/* 자동화 규칙 적용 */}
+            {recommendationGroups.some((group) => group.items?.length > 0) && (
+            <div ref={blueCardRef} className="min-w-0 plan-blue-card" style={{ flex: '1 1 0%' }}>
+              <h2 className="plan-purple-card-title">자동화 규칙 적용</h2>
+              <div>
+                {(() => {
+                  return recommendationGroups.map(({ key, label, items }) => {
+                    const visible = items.filter((item) => !dismissed.has(item.id));
+                    if (visible.length === 0) return null;
+                    return (
+                      <div key={key} className="plan-blue-group">
+                        <h3 className="plan-purple-group-label">{label}</h3>
+                        <div>
+                          {visible.map((item) => {
+                            const isApproved = item.approved || todos.some((todo) => todo.sourceInsightId === item.id);
+                            const isUpdating = updatingRecommendationId === item.id;
+                            const isHovering = isApproved && hoverApprovedId === item.id;
+                            return (
+                              <div key={item.id} className="group plan-purple-row">
+                                <p className="flex-1 min-w-0 text-xs" style={{ color: '#fff' }}>{item.title}</p>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {isApproved ? (
+                                    <button
+                                      type="button"
+                                      onMouseEnter={() => setHoverApprovedId(item.id)}
+                                      onMouseLeave={() => setHoverApprovedId(null)}
+                                      onClick={() => toggleRecommendation(item.id)}
+                                      disabled={isUpdating}
+                                      className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
+                                      style={{ background: isHovering ? '#fee2e2' : 'rgba(255,255,255,0.92)', color: isHovering ? '#dc2626' : '#16a34a', opacity: isUpdating ? 0.6 : 1 }}
+                                    >
+                                      {isUpdating ? '처리 중' : isHovering ? '제거' : '적용됨'}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleRecommendation(item.id)}
+                                      disabled={isUpdating}
+                                      className="text-[11px] font-semibold px-2 py-1 rounded-lg"
+                                      style={{ background: 'rgba(255,255,255,0.18)', color: '#fff', opacity: isUpdating ? 0.6 : 1 }}
+                                      onMouseEnter={(ev) => { ev.currentTarget.style.background = 'rgba(255,255,255,0.92)'; ev.currentTarget.style.color = '#2563eb'; }}
+                                      onMouseLeave={(ev) => { ev.currentTarget.style.background = 'rgba(255,255,255,0.18)'; ev.currentTarget.style.color = '#fff'; }}
+                                    >
+                                      {isUpdating ? '처리 중' : '실행'}
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setDismissed((prev) => new Set([...prev, item.id]))}
+                                    className="p-0.5 rounded transition-opacity opacity-0 group-hover:opacity-100"
+                                    style={{ color: 'rgba(255,255,255,0.6)' }}
+                                    onMouseEnter={(ev) => { ev.currentTarget.style.color = '#fff'; }}
+                                    onMouseLeave={(ev) => { ev.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                                    aria-label="삭제"
+                                  >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
-                  })}
-                </div>
+                  });
+                })()}
               </div>
-            );
-          })()}
-
-          {/* AI recommended actions */}
-          {recommendationGroups.some((group) => group.items?.length > 0) && (
-          <div>
-            <h2 className="font-bold text-slate-800 text-sm mb-3">AI 맞춤 추천 계획</h2>
-            <div className="pr-1">
-              {(() => {
-                return recommendationGroups.map(({ key, label, items }) => {
-                  const visible = items.filter((item) => !dismissed.has(item.id));
-                  if (visible.length === 0) return null;
-                  return (
-                    <div key={key} className="mb-4">
-                      <h3 className="text-xs font-bold text-slate-600 mb-1.5 px-1">{label}</h3>
-                      <div className="space-y-1.5">
-                        {visible.map((item) => {
-                          const isApproved = item.approved || todos.some((todo) => todo.sourceInsightId === item.id);
-                          const isUpdating = updatingRecommendationId === item.id;
-                          const isHovering = isApproved && hoverApprovedId === item.id;
-                          return (
-                            <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                              <p className="flex-1 min-w-0 text-xs text-slate-700 leading-snug">{item.title}</p>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {isApproved ? (
-                                  <button
-                                    type="button"
-                                    onMouseEnter={() => setHoverApprovedId(item.id)}
-                                    onMouseLeave={() => setHoverApprovedId(null)}
-                                    onClick={() => toggleRecommendation(item.id)}
-                                    disabled={isUpdating}
-                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
-                                    style={{ background: isHovering ? '#fee2e2' : '#dcfce7', color: isHovering ? '#dc2626' : '#16a34a', opacity: isUpdating ? 0.6 : 1 }}
-                                  >
-                                    {isUpdating ? '처리 중' : isHovering ? '제거' : '추가됨'}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleRecommendation(item.id)}
-                                    disabled={isUpdating}
-                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg"
-                                    style={{ background: '#f1f5f9', color: '#64748b', opacity: isUpdating ? 0.6 : 1 }}
-                                    onMouseEnter={(ev) => { ev.currentTarget.style.background = '#dbeafe'; ev.currentTarget.style.color = '#2563eb'; }}
-                                    onMouseLeave={(ev) => { ev.currentTarget.style.background = '#f1f5f9'; ev.currentTarget.style.color = '#64748b'; }}
-                                  >
-                                    {isUpdating ? '처리 중' : '추가'}
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => setDismissed((prev) => new Set([...prev, item.id]))}
-                                  className="p-0.5 rounded transition-opacity opacity-0 group-hover:opacity-100"
-                                  style={{ color: '#cbd5e1' }}
-                                  onMouseEnter={(ev) => { ev.currentTarget.style.color = '#64748b'; }}
-                                  onMouseLeave={(ev) => { ev.currentTarget.style.color = '#cbd5e1'; }}
-                                  aria-label="삭제"
-                                >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
             </div>
+            )}
           </div>
-          )}
 
-          {/* 목표 기반 습관 코칭 */}
-          <div>
-            <h2 className="font-bold text-slate-800 text-sm mb-3">목표 코칭</h2>
+          {/* 목표 기반 습관 코칭 — 하나의 카드 안에서 모든 내용이 이어지도록,
+              내부 블록마다 따로 배경/테두리를 주지 않고(카드 안의 카드 금지)
+              plan-purple-row 구분선 정도로만 섹션을 나눈다. */}
+          <div className="plan-purple-card">
+            <h2 className="plan-purple-card-title">목표 코칭</h2>
             {!activeGoal ? (
               <div className="goal-coach-card">
                 <p>이루고 싶은 목표를 적어보세요. WaveAI가 당신의 목표를 지원해드릴게요.</p>
@@ -955,23 +1069,23 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+              <div>
+                <div className="plan-purple-row">
                   <span
                     className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                    style={{ background: '#dbeafe', color: '#2cb3f1' }}
+                    style={{ background: 'rgba(255,255,255,0.92)', color: '#7c3aed' }}
                   >
                     {GOAL_CATEGORY_OPTIONS.find((opt) => opt.value === activeGoal.category)?.label || activeGoal.category}
                   </span>
-                  <p className="flex-1 min-w-0 text-xs font-medium text-slate-700 truncate">{activeGoal.title}</p>
+                  <p className="flex-1 min-w-0 text-xs font-medium truncate" style={{ color: '#fff' }}>{activeGoal.title}</p>
                   <button
                     type="button"
                     onClick={archiveActiveGoal}
                     disabled={goalFormBusy}
                     className="p-0.5 rounded shrink-0"
-                    style={{ color: '#cbd5e1' }}
-                    onMouseEnter={(ev) => { ev.currentTarget.style.color = '#64748b'; }}
-                    onMouseLeave={(ev) => { ev.currentTarget.style.color = '#cbd5e1'; }}
+                    style={{ color: 'rgba(255,255,255,0.6)' }}
+                    onMouseEnter={(ev) => { ev.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={(ev) => { ev.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
                     aria-label="목표 보관"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -979,38 +1093,38 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                 </div>
 
                 {goalFormBusy && !goalCoaching && (
-                  <div className="goal-coach-loading" role="status" aria-live="polite">
+                  <div className="plan-purple-row" role="status" aria-live="polite">
                     <span className="goal-coach-spinner goal-coach-spinner--on-light" aria-hidden="true" />
                     <div>
-                      <p className="goal-coach-loading-title">맞춤 코칭 생성 중…</p>
-                      <p className="goal-coach-loading-sub">목표에 맞는 첫걸음을 WaveAI가 준비하고 있어요.</p>
+                      <p className="text-xs font-bold" style={{ color: '#fff' }}>맞춤 코칭 생성 중…</p>
+                      <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.78)' }}>목표에 맞는 첫걸음을 WaveAI가 준비하고 있어요.</p>
                     </div>
                   </div>
                 )}
 
                 {goalCoaching && (
-                  <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
-                    <p className="text-xs text-slate-600 leading-relaxed">{goalCoaching.pastSummary}</p>
+                  <div className="plan-purple-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.92)' }}>{goalCoaching.pastSummary}</p>
                     {typeof goalCoaching.projectedMetrics?.completionRate === 'number' && (
-                      <p className="text-xs font-semibold" style={{ color: '#2cb3f1' }}>
+                      <p className="text-xs font-semibold" style={{ color: '#fff' }}>
                         완료율 {Math.round(goalCoaching.projectedMetrics.completionRate * 100)}%
                         {goalCoaching.projectedMetrics.trend && ` · ${GOAL_TREND_LABEL[goalCoaching.projectedMetrics.trend] || goalCoaching.projectedMetrics.trend}`}
                       </p>
                     )}
-                    <p className="text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-2">{goalCoaching.projection}</p>
+                    <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.78)' }}>{goalCoaching.projection}</p>
                   </div>
                 )}
 
                 {goalCoaching?.recommendations?.some((item) => !goalDismissed.has(item.id)) && (
-                  <div className="space-y-1.5">
+                  <div>
                     {goalCoaching.recommendations.filter((item) => !goalDismissed.has(item.id)).map((item) => {
                       const isBusy = goalRecBusyId === item.id;
                       return (
-                        <div key={item.id} className="group flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <div key={item.id} className="group plan-purple-row">
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-slate-700 leading-snug">{item.title}</p>
+                            <p className="text-xs leading-snug" style={{ color: '#fff' }}>{item.title}</p>
                             {item.text && (
-                              <p className="text-[11px] text-slate-400 leading-snug mt-0.5">{item.text}</p>
+                              <p className="text-[11px] leading-snug mt-0.5" style={{ color: 'rgba(255,255,255,0.72)' }}>{item.text}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
@@ -1022,8 +1136,8 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                                 className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-all"
                                 style={
                                   item.approved
-                                    ? { background: '#dcfce7', color: '#16a34a', opacity: isBusy ? 0.6 : 1 }
-                                    : { background: '#f1f5f9', color: '#64748b', opacity: isBusy ? 0.6 : 1 }
+                                    ? { background: 'rgba(255,255,255,0.92)', color: '#16a34a', opacity: isBusy ? 0.6 : 1 }
+                                    : { background: 'rgba(255,255,255,0.18)', color: '#fff', opacity: isBusy ? 0.6 : 1 }
                                 }
                               >
                                 {isBusy ? '처리 중' : item.approved ? '적용됨' : '추가'}
@@ -1033,9 +1147,9 @@ export function WeeklyPlanPage({ todos, onToggleTodo, onAddTodo, onUpdateTodo, o
                               type="button"
                               onClick={() => setGoalDismissed((prev) => new Set([...prev, item.id]))}
                               className="p-0.5 rounded transition-opacity opacity-0 group-hover:opacity-100"
-                              style={{ color: '#cbd5e1' }}
-                              onMouseEnter={(ev) => { ev.currentTarget.style.color = '#64748b'; }}
-                              onMouseLeave={(ev) => { ev.currentTarget.style.color = '#cbd5e1'; }}
+                              style={{ color: 'rgba(255,255,255,0.6)' }}
+                              onMouseEnter={(ev) => { ev.currentTarget.style.color = '#fff'; }}
+                              onMouseLeave={(ev) => { ev.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
                               aria-label="삭제"
                             >
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>

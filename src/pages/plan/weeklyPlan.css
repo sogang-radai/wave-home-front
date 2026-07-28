@@ -1,3 +1,284 @@
+/* ── Calendar's own scroll container — previously the whole page (.content)
+   scrolled to reveal the calendar; now the day-grid scrolls independently
+   within a bounded box, so the banner/right-panel stay put while you scroll
+   through hours. The sticky day-header sticks to the top of *this* box
+   (position: sticky resolves against the nearest scrolling ancestor). ────── */
+
+.weekly-plan-calendar-scroll {
+  max-height: 640px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.weekly-plan-shell--mobile .weekly-plan-calendar-scroll {
+  max-height: 480px;
+}
+
+/* ── Sleep history overlay on the weekly calendar ─────────────────────────── */
+
+.sleep-history-block {
+  position: absolute;
+  z-index: 2;
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.16);
+  border: 1px solid rgba(30, 41, 59, 0.22);
+  pointer-events: none;
+}
+
+/* Routine planner header sits directly above this page's banner (unlike
+   most pages, which have more content between the topbar and the first
+   card) — pull .content's default top padding in to close that gap. */
+.content.weekly-plan-active {
+  padding-top: 10px;
+}
+
+/* ── AI report banner — same visual treatment as the power page's
+   .power-report-banner (PowerPage.css), so the top-of-page banner reads
+   consistently across pages. ────────────────────────────────────────────── */
+
+.weekly-plan-banner {
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--wave-20), var(--wave-08));
+  border: 1px solid var(--wave-35);
+  min-height: 100px;
+}
+
+.weekly-plan-banner-header {
+  margin: 8px 0 12px;
+  font-size: 26px;
+  line-height: 1.28;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.weekly-plan-banner-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--sub);
+  letter-spacing: -0.01em;
+}
+
+/* ── "오늘 할 일" card — Apple Health style: one solid gradient card, plain
+   list rows inside it (no card-in-card), square checkboxes. ─────────────── */
+
+.today-todo-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 22px;
+  padding: 18px 16px;
+  min-height: 120px;
+  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  box-shadow: 0 10px 24px -8px rgba(37, 99, 235, 0.45);
+  color: #fff;
+}
+
+.today-todo-card-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.today-todo-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.today-todo-progress {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.today-todo-empty {
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.today-todo-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.today-todo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 4px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  transition: opacity 0.12s ease;
+}
+
+.today-todo-row:last-child {
+  border-bottom: none;
+}
+
+.today-todo-row.is-done {
+  opacity: 0.55;
+}
+
+.today-todo-checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.today-todo-checkbox.is-checked {
+  background: #fff;
+  border-color: #fff;
+}
+
+.today-todo-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #fff;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.today-todo-row.is-done .today-todo-title {
+  text-decoration: line-through;
+}
+
+.today-todo-time {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ── "목표 코칭" — Apple Health style purple gradient card. ──────────────── */
+
+.plan-purple-card {
+  border-radius: 22px;
+  padding: 18px 16px;
+  background: linear-gradient(135deg, #7c3aed 0%, #c084fc 100%);
+  box-shadow: 0 10px 24px -8px rgba(124, 58, 237, 0.4);
+  color: #fff;
+}
+
+/* ── "자동화 규칙 적용" — same blue family as today-todo-card, since the two
+   sit side by side at equal width/height and are meant to read as a pair. ── */
+
+.plan-blue-card {
+  box-sizing: border-box;
+  border-radius: 22px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+  box-shadow: 0 10px 24px -8px rgba(37, 99, 235, 0.45);
+  color: #fff;
+}
+
+.plan-purple-card-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+}
+
+.plan-purple-group-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 6px;
+  padding: 0 2px;
+}
+
+/* One card, no card-in-card: every inner section (goal summary row, loading
+   status, coaching text, recommendation items) is a plain plan-purple-row —
+   a border-bottom divider, no background/rounded box of its own — so the
+   whole thing reads as one continuous card instead of stacked cards. */
+.plan-purple-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.plan-purple-row:last-child {
+  border-bottom: none;
+}
+
+/* 자동화 규칙 적용 카드는 항목별 구분선 대신, 그룹(수면/전력) 사이에만 구분선
+   하나를 둔다 — 즉 두 번째 그룹("전력") 라벨 바로 위에만 bar가 보인다. */
+.plan-blue-card .plan-purple-row {
+  border-bottom: none;
+  padding: 6px 2px;
+}
+
+.plan-blue-group {
+  margin-bottom: 10px;
+}
+
+.plan-blue-group:not(:first-child) {
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.32);
+}
+
+/* goal-coach-card (empty-state "write a goal" form) no longer gets its own
+   background/border here — it should read as part of the same purple card,
+   not a card nested inside it. The textarea/tags/submit below still have
+   their own light surfaces since they're real form controls, not decoration. */
+.plan-purple-card .goal-coach-card {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+}
+
+.plan-purple-card .goal-coach-card > p {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.plan-purple-card .goal-coach-textarea {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: transparent;
+  color: #1e1b2e;
+}
+
+.plan-purple-card .goal-coach-tag {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.plan-purple-card .goal-coach-tag.is-active {
+  background: #fff;
+  color: #7c3aed;
+}
+
+.plan-purple-card .goal-coach-submit {
+  background: #fff;
+  color: #7c3aed;
+}
+
 /* Goal coaching card (weekly plan sidebar) */
 
 .goal-coach-card {

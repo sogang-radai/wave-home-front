@@ -106,11 +106,16 @@ export function getWeekDates(weekOffset = 0) {
   return getWeekDatesFromAnchor(monday);
 }
 
+// 항상 월~일(달력 주) 고정 — anchorDate 가 주중 어느 요일이든 그 주의 월요일로
+// 스냅한 뒤 7일을 만든다. "오늘" 버튼이 setWeekStartDate(getToday()) 를 그대로
+// 호출해도(요일 정렬 없이) 여기서 스냅되므로 자연스럽게 "이번 주"로 이동한다.
 export function getWeekDatesFromAnchor(anchorDate) {
   const today = getNow();
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const start = new Date(anchorDate);
   start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  start.setDate(start.getDate() + (day === 0 ? -6 : 1 - day));
 
   return Array.from({ length: 7 }, (_, index) => {
     const d = new Date(start);
@@ -135,6 +140,10 @@ export function addCalendarDays(date, days) {
   return next;
 }
 
+// weekStartDate 상태 자체도 이 값으로 맞춰둬야 한다 - getWeekDatesFromAnchor 가
+// 화면 표시용으로만 스냅해주고, weekStartDate 원본이 월요일이 아니면
+// formatDateParam(weekStartDate) 로 만드는 API 쿼리(수면 주간 리포트 등)가
+// 화면에 실제로 보이는 월~일 범위와 어긋난다. (getMondayOfWeek 를 그 용도로도 쓴다.)
 export function getMondayOfWeek(date) {
   const d = new Date(date);
   const day = d.getDay();

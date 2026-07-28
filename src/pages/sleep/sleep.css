@@ -8,6 +8,23 @@
   gap: 12px;
 }
 
+/* The slot has no content of its own before the portal lands, so as a flex
+   item it just shrink-wraps around whatever gets portaled in — meaning
+   there's no spare width for justify-content to redistribute. Give it the
+   row's remaining space explicitly so DateNavigatorBar's own centering
+   (justify-center by default) actually has room to be overridden below. */
+.sleep-tabs-date-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* DateNavigatorBar centers its own content (justify-center) by default —
+   here it's portaled into a slot on its own, so centering just leaves it
+   floating with empty space on both sides. Left-align it within the slot. */
+.sleep-tabs-date-slot > div {
+  justify-content: flex-start;
+}
+
 /* "수면 인사이트" is now its own standalone tab (right under the tabs row),
    not trailing other content — the shared .insight-section top margin
    (meant to separate it from content above, e.g. on 전력 관리) would just

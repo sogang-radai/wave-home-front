@@ -19,7 +19,6 @@ export function SleepPage({ tab = 'analysis', setTab }) {
   const [weeklyReport, setWeeklyReport] = useState(null);
   const [sleepGoalHours, setSleepGoalHours] = useState(7.5);
   const [dailyInsights, setDailyInsights] = useState([]);
-  const [weeklyInsights, setWeeklyInsights] = useState([]);
 
   const handleReportDateChange = useCallback((nextDate) => {
     setReportDate(nextDate);
@@ -37,24 +36,26 @@ export function SleepPage({ tab = 'analysis', setTab }) {
   }, []);
 
   // 최신 발행일 코호트만 (과거 날짜·에이전트 배치가 누적돼도 카드가 무한히 늘지 않음).
+  // sleep_report는 이제 항상 action 2개 + tip 2개만 생성되므로(goal 없음) "다음 주
+  // 목표" 코호트를 더 이상 따로 조회/병합하지 않는다 — goal 만 필터링하는
+  // period:'weekly' 조회를 남겨두면 이 계약이 생기기 전에 만들어진 옛 goal 행이
+  // 계속 함께 표시되는 문제가 있었다.
   useEffect(() => {
     sleepApi.getInsights({ period: 'daily' }).then(setDailyInsights);
-    sleepApi.getInsights({ period: 'weekly' }).then(setWeeklyInsights);
   }, [reportDate]);
 
   const toggleInsight = async (id) => {
-    const current = [...dailyInsights, ...weeklyInsights].find((item) => item.id === id);
+    const current = dailyInsights.find((item) => item.id === id);
     if (!current) return;
     const nextApproved = !current.approved;
     const result = await sleepApi.updateInsight(id, { approved: nextApproved });
     if (result === null) return;
     setDailyInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
-    setWeeklyInsights((prev) => prev.map((item) => (item.id === id ? { ...item, approved: nextApproved } : item)));
   };
 
   // 실행 제안(action)이 위쪽 행, 팁(tip)이 아래쪽 행에 오도록 정렬 — 2열 그리드라
   // 정렬만 맞으면 4개일 때 항상 1행 실행 제안 2개 / 2행 팁 2개로 배치된다.
-  const allInsights = [...dailyInsights, ...weeklyInsights]
+  const allInsights = [...dailyInsights]
     .sort((a, b) => (a.kind === 'action' ? 0 : 1) - (b.kind === 'action' ? 0 : 1));
 
   return (
@@ -89,7 +90,7 @@ export function SleepPage({ tab = 'analysis', setTab }) {
           {allInsights.length > 0 && (
             <div className="insight-list">
               {allInsights.map((item) => (
-                <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} actionType={item.actionType} scheduleTaskJson={item.scheduleTaskJson} onToggle={toggleInsight} plainFooter />
+                <InsightCard key={item.id} id={item.id} approved={item.approved} actionable={item.actionable} label={item.label} kind={item.kind} title={item.title} text={item.text} actionType={item.actionType} scheduleTaskJson={item.scheduleTaskJson} ruleJson={item.ruleJson} onToggle={toggleInsight} plainFooter />
               ))}
             </div>
           )}
