@@ -67,7 +67,7 @@ export function SleepPage({ tab = 'analysis', setTab }) {
           items={[
             ['analysis', '수면 분석'],
             ['insight', '수면 인사이트'],
-            ['alarm', '수면 및 장치 알람'],
+            ['alarm', '스마트 알람'],
           ]}
         />
         <div ref={setDateNavSlot} className="sleep-tabs-date-slot" />

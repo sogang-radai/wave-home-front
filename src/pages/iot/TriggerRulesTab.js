@@ -7,7 +7,7 @@ import { AutomationWizard } from './AutomationWizard';
 import { GestureSetsTab } from './GestureSetsTab';
 
 const SECTIONS = [
-  { id: 'trigger', title: '자동화를 위한 규칙', addLabel: '+ 새 규칙', initialMode: 'trigger', match: (rule) => !rule.schedule },
+  { id: 'trigger', title: '자동화 규칙', addLabel: '+ 새 규칙', initialMode: 'trigger', match: (rule) => !rule.schedule },
   { id: 'schedule', title: '예약', addLabel: '+ 새 예약', initialMode: 'schedule', match: (rule) => !!rule.schedule },
 ];
 

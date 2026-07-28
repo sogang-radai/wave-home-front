@@ -219,10 +219,10 @@ export function IrCommandsTab() {
     <div className="ir-command-page">
       <Card title="리모컨 등록" wide>
         <p className="section-description">
-          에어컨·TV 리모컨의 <strong className="wave-term">적외선 리모컨</strong>을 등록해서 리모컨 없이도 WaveHome이 제어하도록 해요.
+          구형 에어컨·TV의 <strong className="wave-term">리모컨</strong>을 등록해서 WaveHome이 제어하도록 해요.
         </p>
         <p className="section-description">
-          <strong className="wave-term">WaveChat</strong>에게 말로 설명해도 등록할 수 있어요. 예를 들어 "삼성 에어컨 리모컨 등록해줘"처럼 말해보세요.
+          <strong className="wave-term">WaveChat</strong>에서 "삼성 에어컨 리모컨 등록해줘"라고 말 한마디로 등록할 수도 있어요.
         </p>
 
         <input

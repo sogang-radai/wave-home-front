@@ -78,7 +78,7 @@ export const initialChatConversations = [
   },
   {
     id: 4,
-    title: '스마트 기상 알람',
+    title: '스마트 알람',
     messages: [
       { role: 'user', text: '요즘 알람 맞고 일어나도 개운하지 않아. 스마트 기상이 뭐 하는 거야?' },
       {

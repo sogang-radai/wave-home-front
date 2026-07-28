@@ -7,7 +7,7 @@ export const pages = [
     tabs: [
       ['analysis', '수면 분석'],
       ['insight', '수면 인사이트'],
-      ['alarm', '수면 및 장치 알람'],
+      ['alarm', '스마트 알람'],
     ],
   },
   // { id: 'posture', label: '자세 관리', icon: 'posture' },

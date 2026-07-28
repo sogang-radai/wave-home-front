@@ -92,8 +92,8 @@ export function AlarmPage() {
   return (
     <div className="page-stack alarm-page" ref={rootRef}>
       <div className="alarm-page-intro">
-        <h2 className="alarm-page-intro-title">수면 및 장치 알람</h2>
-        <p className="alarm-page-intro-desc">취침·기상 시간을 관리하면서, 일어날 때 조명 같은 기기를 함께 제어할 수 있는 알람이에요.</p>
+        <h2 className="alarm-page-intro-title">스마트 알람</h2>
+        <p className="alarm-page-intro-desc">알림과 집 안의 기기로 취침·기상 시간을 안내하며, 얕은 수면 단계에서 개운하게 깨워주는 알람이에요.</p>
       </div>
 
       <Card title="알람 목록" action={`${alarms.length}개`} wide className="alarm-section-card">

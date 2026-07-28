@@ -3,7 +3,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     {
       selector: '[data-coachmark="nav-sleep"]',
       title: '수면 관리',
-      description: '매일 아침 AI 리포트를 볼 수 있어요. 수면 단계·호흡·코골이 기록은 수면 분석 탭에서, AI가 짚어주는 실행 제안·팁은 수면 인사이트 탭에서 확인해보세요. 수면 및 장치 알람 탭에서 기상과 함께 조명 같은 기기도 제어하는 알람을 관리할 수 있어요.',
+      description: '매일 아침 AI 리포트를 볼 수 있어요. 수면 단계·호흡·코골이 기록은 수면 분석 탭에서, AI가 짚어주는 실행 제안·팁은 수면 인사이트 탭에서 확인해보세요. 스마트 알람 탭에서 기상과 함께 조명 같은 기기도 제어하는 알람을 관리할 수 있어요.',
       placement: 'right',
     },
     {
