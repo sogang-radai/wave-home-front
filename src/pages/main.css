@@ -18,16 +18,37 @@
   position: relative;
   isolation: isolate;
   background-color: #f2f2f7;
+  /* layout.css reserves a permanent scrollbar gutter on .content for pages
+     that scroll .content itself. The dashboard instead scrolls its inner
+     .dashboard-page (see the overflow-y: auto rule below) as a fallback for
+     when useFitZoom can't shrink enough — .content itself never scrolls
+     here, so its reserved gutter just sits empty next to the inner
+     scrollbar and reads as a second, redundant scrollbar. */
+  scrollbar-gutter: auto;
 }
 
-/* No-scroll only applies on desktop, where the dashboard is sized to fit
-   the viewport in one screen. On mobile the same content doesn't fit, so
-   .content needs to keep scrolling there (see layout.css's mobile
-   overflow-y: auto) — scoping this behind min-width keeps it from
-   out-specificity-ing that rule and locking the mobile page in place. */
+/* Desktop dashboard sizes its hero/gaps/charts off viewport height (see the
+   clamp()s below) so it fits one screen on common viewport heights without
+   scrolling. We don't force overflow: hidden to make that happen — window
+   chrome eats a different amount of vertical space per OS/browser (this is
+   what clipped the bottom of the dashboard on Windows at 100% zoom, since
+   the sizing was tuned against a taller Mac viewport), so .content just
+   keeps its default overflow: auto and scrolls as a fallback on anything
+   shorter than the clamp()s' floor instead of silently cutting content off.
+   Scoped to min-width so it doesn't touch mobile's own .content padding
+   (layout.css), which already fits its stacked, scrolling layout. */
 @media (min-width: 761px) {
   .content.dashboard-active {
-    overflow: hidden;
+    /* Top is shorter than bottom on purpose — this is what actually pulls
+       the hero up near the topbar now (see .dashboard-page .hero below).
+       The old approach used a negative margin-top on the hero instead, but
+       that broke once .dashboard-page became a scroll container (see
+       useFitZoom's overflow-y: auto below): a negative margin pulls content
+       above the scroll container's own top edge, which is outside its
+       scrollable range, so the hero's top just got clipped with no way to
+       scroll back up to it. */
+    padding-top: clamp(4px, 0.8vh, 8px);
+    padding-bottom: clamp(12px, 2.4vh, 28px);
   }
 }
 
@@ -65,7 +86,7 @@
 }
 
 .dashboard-page .dashboard-sleep-card .card {
-  padding: 24px 18px 18px 24px;
+  padding: clamp(14px, 2.2vh, 24px) 18px clamp(10px, 1.6vh, 18px) 24px;
 }
 
 .dashboard-sleep-card .card-head {
@@ -121,10 +142,62 @@
   border-color: var(--wave-35);
 }
 
-/* Pull the dashboard's hero card up closer to the topbar — .content's
-   standard 28px top padding otherwise leaves it looking too far down. */
+/* .card's base 24px top padding reads as too much air above the headline. */
 .dashboard-page .hero {
-  margin-top: -20px;
+  padding-top: 14px;
+}
+
+/* Desktop-only: shrink the hero's floor on short viewports (e.g. Windows at
+   100% zoom, where browser chrome leaves less height than on Mac) — this is
+   a first pass before useFitZoom (see .dashboard-fit-inner below) takes the
+   result and scales it the rest of the way to fit. Scoped to min-width so it
+   can't out-specificity the ≤760px block below, which already gives the
+   mobile hero min-height: auto. */
+@media (min-width: 761px) {
+  .dashboard-page .hero {
+    min-height: clamp(90px, 15vh, 164px);
+  }
+}
+
+/* useFitZoom (src/hooks/useFitZoom.js) measures .dashboard-page against
+   .dashboard-fit-inner and sets the inner's `zoom` inline style so the whole
+   overview section — cards, gaps, and text together — shrinks to fit one
+   screen instead of needing to scroll. .dashboard-page must have a real,
+   content-independent height for that "available space" measurement to mean
+   anything (otherwise it would just hug its zoomed child and always report
+   "it fits"); overflow-y: auto is the fallback for anything shorter than
+   MIN_ZOOM's floor. Desktop-only — mobile already scrolls its stacked
+   layout freely and opts out via useFitZoom(!isMobile).
+
+   The scrollbar itself is hidden (not the scrolling): useFitZoom's
+   SAFETY_MARGIN means this fallback essentially never actually needs to
+   engage, so a visible track/thumb here reads as a stray leftover rather
+   than a real affordance — scrolling still works via wheel/trackpad/keyboard
+   on the rare viewport short enough to hit MIN_ZOOM. */
+@media (min-width: 761px) {
+  .dashboard-page.page-stack {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .dashboard-page.page-stack::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.dashboard-fit-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 761px) {
+  .dashboard-fit-inner {
+    gap: clamp(10px, 2vh, 20px);
+  }
 }
 
 .hero > div:first-child {
@@ -220,7 +293,7 @@
 }
 
 .dashboard-gestures-card {
-  padding: 18px 18px 18px 24px;
+  padding: clamp(12px, 1.8vh, 18px) 18px clamp(12px, 1.8vh, 18px) 24px;
 }
 
 .dashboard-gestures-card .card-head {
@@ -248,7 +321,7 @@
   column-gap: 12px;
   row-gap: 4px;
   min-height: 0;
-  padding: 16px 2px;
+  padding: clamp(8px, 1.6vh, 16px) 2px;
   border-radius: 0;
   background: none;
   border-bottom: 1px solid var(--wave-10);
@@ -305,7 +378,7 @@
 .dashboard-overview-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: clamp(6px, 1vh, 8px);
   min-width: 0;
 }
 
@@ -318,23 +391,20 @@
 
 .dashboard-sleep-card {
   width: 100%;
-  max-width: 380px;
 }
 
 .dashboard-posture-card {
   width: 100%;
-  max-width: 380px;
   min-width: 0;
 }
 
 .dashboard-power-card {
   width: 100%;
-  max-width: 380px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 24px;
+  gap: clamp(8px, 1.4vh, 14px);
+  padding: clamp(14px, 2.2vh, 24px) 24px;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 24px;
@@ -355,9 +425,15 @@
   box-shadow: 0 12px 40px rgba(31, 41, 55, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
+/* Two of these stack per card (실시간/이번 주) — they're the main lever for
+   making the 전력 관리 column's natural height line up with 수면 관리's
+   (어젯밤 수면 + 예정된 알람), now that cards size to their own content
+   instead of being force-stretched to match. Still shrinks on short
+   viewports (see .dashboard-page .hero above for why). The
+   ResponsiveContainer inside is height="100%", so it tracks this. */
 .dashboard-power-chart {
-  height: 140px;
-  margin: 4px 0 10px;
+  height: clamp(150px, 22.6vh, 280px);
+  margin: 4px 0 clamp(6px, 1vh, 10px);
   padding: 8px 0 0;
   border-radius: 14px;
   background: var(--wave-05);
@@ -365,13 +441,13 @@
 
 .dashboard-power-summary-row + .dashboard-power-summary-row {
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: clamp(8px, 1.4vh, 14px);
   border-top: 1px solid var(--wave-15);
 }
 
 .dashboard-power-summary-label {
   display: block;
-  margin-bottom: 18px;
+  margin-bottom: clamp(8px, 1.6vh, 18px);
   color: var(--ink-soft);
   font-size: 15px;
   font-weight: 700;

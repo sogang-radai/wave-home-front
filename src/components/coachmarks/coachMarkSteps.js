@@ -33,7 +33,7 @@ export function buildDashboardCoachMarkSteps({ showHomeTwin = true } = {}) {
     },
     {
       selector: '[data-coachmark="nav-weeklyPlan"]',
-      title: '루틴 플래너',
+      title: 'AI 목표 플래너',
       description: '할 일과 일정을 한 주 단위로 관리하고, AI가 제안하는 루틴을 확인할 수 있어요.',
       placement: 'right',
     },

@@ -17,7 +17,7 @@ const cards = [
     target: "main",
   },
   {
-    eyebrow: "루틴 플래너",
+    eyebrow: "AI 목표 플래너",
     title: "지속가능한 스케줄을 관리해주는 목표 달성 코치",
     description:
       "목표를 등록하면 이를 지킬 수 있도록 하루 일정을 자동으로 짜드립니다. 진행 상황에 맞춰 일정을 조정해드려요.",

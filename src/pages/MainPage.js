@@ -11,6 +11,8 @@ import powerApi from '../api/powerApi';
 import { findAction } from '../api/mock/deviceClassRegistry';
 import { TIER2_WON_PER_KWH, formatAnchorDate } from './power/powerReportUtils';
 import { useElementHeight } from '../hooks/useElementHeight';
+import { useFitZoom } from '../hooks/useFitZoom';
+import { useMobileLayout } from '../hooks/useMobileLayout';
 import './main.css';
 
 const GESTURES_PER_PAGE = 1;
@@ -106,11 +108,16 @@ export function MainPage({
   const [gestureSetDefsById, setGestureSetDefsById] = useState({});
   const [gesturePage, setGesturePage] = useState(0);
   const [alarmPage, setAlarmPage] = useState(0);
-  // 카드 세로 길이를 서로 맞추기 위해 기준이 되는 카드/컬럼의 실제 렌더 높이를 추적한다:
-  // 홈 현황 ← 어젯밤 수면, 활성화된 제스처 목록 ← 예정된 알람, 전력 관리 ← 가전 제어 컬럼 전체.
+  // 실시간 홈 현황 카드를 어젯밤 수면 카드와 같은 세로 길이로 맞춘다 — 이 카드의
+  // state-grid-row는 align-content: space-evenly라 늘어난 높이만큼 3개 지표
+  // 행이 고르게 벌어져 채워지고, 전력 카드 때처럼 아래쪽에 빈 여백만 남는 형태가
+  // 아니라서 여기서는 다시 맞춰준다.
   const [sleepCardRef, sleepCardHeight] = useElementHeight();
-  const [alarmsCardRef, alarmsCardHeight] = useElementHeight();
-  const [gestureColRef, gestureColHeight] = useElementHeight();
+  const isMobile = useMobileLayout();
+  // Scales the whole overview section (cards, gaps, text) down together so it
+  // always fits the viewport in one screen instead of needing to scroll —
+  // padding/gap tweaks alone can't keep up with every window size, this does.
+  const { outerRef: fitOuterRef, innerRef: fitInnerRef, zoom: fitZoom } = useFitZoom(!isMobile);
 
   useEffect(() => {
     // 데모/실서버 모두 /sleep/today/summary → sleep_session DB 조회.
@@ -226,7 +233,8 @@ export function MainPage({
   );
 
   return (
-    <div className="page-stack dashboard-page">
+    <div className="page-stack dashboard-page" ref={fitOuterRef}>
+    <div className="dashboard-fit-inner" ref={fitInnerRef} style={{ zoom: fitZoom }}>
       <section className="hero card">
         {dailyMessage && (
           <div>
@@ -299,7 +307,7 @@ export function MainPage({
             </Card>
           </div>
 
-          <div className="dashboard-sleep-card" ref={alarmsCardRef}>
+          <div className="dashboard-sleep-card">
             <Card title="예정된 알람" action={`${upcomingAlarms.length}개`} onClick={onGoToAlarms} data-coachmark="card-alarms" className="dashboard-alarms-card">
               <div className="mt-2 flex flex-col gap-1">
                 {upcomingAlarms.length === 0 && (
@@ -358,10 +366,7 @@ export function MainPage({
           </div>
         </div>
 
-        <div
-          className="dashboard-overview-col"
-          style={gestureColHeight ? { minHeight: `${gestureColHeight}px` } : undefined}
-        >
+        <div className="dashboard-overview-col">
           <p className="dashboard-col-title">전력 관리</p>
           <button
             type="button"
@@ -374,7 +379,7 @@ export function MainPage({
               <span className="dashboard-power-summary-label">실시간 사용량</span>
               {powerChartData.length > 0 && (
                 <div className="dashboard-power-chart">
-                  <ResponsiveContainer width="100%" height={140}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={powerChartData} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
                       <XAxis dataKey="label" hide />
                       <Tooltip
@@ -406,7 +411,7 @@ export function MainPage({
               <span className="dashboard-power-summary-label">이번 주 사용량</span>
               {weekTrend.length > 0 && (
                 <div className="dashboard-power-chart">
-                  <ResponsiveContainer width="100%" height={140}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={weekTrend} margin={{ top: 6, right: 0, bottom: 0, left: 0 }}>
                       <XAxis dataKey="label" hide />
                       <Tooltip
@@ -436,14 +441,14 @@ export function MainPage({
           </button>
         </div>
 
-        <div className="dashboard-overview-col" ref={gestureColRef}>
+        <div className="dashboard-overview-col">
           <p className="dashboard-col-title">가전 제어</p>
           <div className="dashboard-posture-card">
             <Card
               title="실시간 홈 현황"
               data-coachmark="card-status"
               className="dashboard-status-card"
-              style={sleepCardHeight ? { minHeight: `${sleepCardHeight}px` } : undefined}
+              style={sleepCardHeight ? { minHeight: `${sleepCardHeight / fitZoom - 48}px` } : undefined}
             >
               <div className="state-grid state-grid-row">
                 {currentState && (
@@ -476,7 +481,6 @@ export function MainPage({
               onClick={onGoToGestures}
               data-coachmark="card-gestures"
               className="dashboard-gestures-card"
-              style={alarmsCardHeight ? { minHeight: `${alarmsCardHeight}px` } : undefined}
             >
               <div className="mt-1 flex flex-col gap-1">
                 {activeGestureRules.length === 0 && (
@@ -542,6 +546,7 @@ export function MainPage({
 
         </div>
       </section>
+    </div>
     </div>
   );
 }

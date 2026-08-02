@@ -258,6 +258,7 @@ export function Sidebar({
       </nav>
 
       <div className="nav-upcoming">
+        <p className="nav-upcoming-title">확장 예정 기능</p>
         {upcomingFeatures.map((feature) => (
           <div className="nav-item nav-item--upcoming" key={feature.id}>
             <span className="nav-icon"><SidebarIcon name={feature.icon} /></span>
