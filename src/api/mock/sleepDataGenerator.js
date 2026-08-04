@@ -1,5 +1,4 @@
 import {
-  sleepScoreFactors,
   sleepStageBreakdown,
   sleepHypnogramSegments,
   sleepStageLog,
@@ -7,6 +6,7 @@ import {
   sleepDailyAnalysis,
   movementTicks,
 } from '../../data/sleepData';
+import { evaluateSleepScore } from '../../lib/sleepScore';
 
 const SEED = 0x5e1ee;
 const RANGE_DAYS = 21;
@@ -55,13 +55,8 @@ function shouldSkipNight(index) {
   return index % 7 === SKIP_DAYS_BY_WEEK[weekIndex];
 }
 
-function cloneWithVariance(base, variance = 0.1) {
+function cloneWithVariance(base) {
   return JSON.parse(JSON.stringify(base));
-}
-
-function varyScore(base, index) {
-  const delta = Math.round((rng() - 0.5) * 16);
-  return Math.max(55, Math.min(95, base + delta - (index % 3)));
 }
 
 function varyMinutes(minutes, spread = 8) {
@@ -72,17 +67,6 @@ function buildIso(nightDate, hour, minute) {
   const wakeDate = hour < 12 ? addLocalDays(nightDate, 1) : nightDate;
   const d = hour < 12 ? wakeDate : nightDate;
   return `${formatNightDate(d)}T${pad2(hour)}:${pad2(minute)}:00${TZ}`;
-}
-
-function toScoreFactor(item, index) {
-  const keys = ['duration', 'deepSleep', 'remSleep', 'awake', 'sleepLatency'];
-  return {
-    key: keys[index] || item.label,
-    label: item.label,
-    value: item.value,
-    tag: item.tag,
-    tone: item.tone,
-  };
 }
 
 function toStageBreakdown(item) {
@@ -129,6 +113,16 @@ function toAnalysisItem(item) {
   return { label: item[0], value: item[1], description: item[2] };
 }
 
+function stageTotalsFromSegments(segments) {
+  const totals = { deep: 0, rem: 0, awake: 0, light: 0 };
+  segments.forEach((seg) => {
+    const minutes = seg.minutes ?? seg.durationMinutes ?? 0;
+    const key = seg.stage in totals ? seg.stage : 'light';
+    totals[key] += minutes * 60;
+  });
+  return totals;
+}
+
 function buildSessionReport(nightDate, sessionId, label, scoreOffset = 0, timeShift = 0) {
   const bedHour = 23;
   const bedMin = Math.max(0, Math.min(59, 11 + timeShift));
@@ -142,8 +136,17 @@ function buildSessionReport(nightDate, sessionId, label, scoreOffset = 0, timeSh
     minutes: varyMinutes(seg.minutes),
   }));
 
-  const actualSleepMinutes = segments.reduce((sum, seg) => sum + (seg.minutes || seg.durationMinutes), 0);
-  const score = varyScore(82, scoreOffset);
+  const stageTotalsSeconds = stageTotalsFromSegments(segments);
+  const asleepSeconds = stageTotalsSeconds.deep
+    + stageTotalsSeconds.rem
+    + stageTotalsSeconds.light;
+  const awakeExtraMinutes = 20 + Math.round(rng() * 25) + Math.max(0, scoreOffset);
+  const timeInBedSeconds = asleepSeconds + stageTotalsSeconds.awake + awakeExtraMinutes * 60;
+  const { score, scoreFactors } = evaluateSleepScore({
+    asleepSeconds,
+    timeInBedSeconds,
+    stageTotalsSeconds,
+  });
 
   return {
     sessionId,
@@ -151,9 +154,9 @@ function buildSessionReport(nightDate, sessionId, label, scoreOffset = 0, timeSh
     date: formatNightDate(nightDate),
     score,
     sleepWindow: { start: startIso, end: endIso },
-    timeInBedMinutes: actualSleepMinutes + 60 + Math.round(rng() * 30),
-    actualSleepMinutes,
-    scoreFactors: cloneWithVariance(sleepScoreFactors).map(toScoreFactor),
+    timeInBedMinutes: Math.round(timeInBedSeconds / 60),
+    actualSleepMinutes: Math.round(asleepSeconds / 60),
+    scoreFactors,
     stageBreakdown: cloneWithVariance(sleepStageBreakdown).map(toStageBreakdown),
     hypnogram: {
       start: startIso,
@@ -161,7 +164,7 @@ function buildSessionReport(nightDate, sessionId, label, scoreOffset = 0, timeSh
       segments: segments.map(toHypnogramSegment),
       movementLevels: movementTicks.map((h) => Math.max(8, Math.min(95, h + Math.round((rng() - 0.5) * 20)))),
     },
-    stageLog: cloneWithVariance(sleepStageLog).map((item, i) => toStageLogPoint({
+    stageLog: cloneWithVariance(sleepStageLog).map((item) => toStageLogPoint({
       ...item,
       heart: item.heart + Math.round((rng() - 0.5) * 6),
       breath: item.breath + Math.round((rng() - 0.5) * 3),

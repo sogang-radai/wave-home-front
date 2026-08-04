@@ -42,11 +42,11 @@ export const sleepStageLog = [
 ];
 
 export const sleepScoreFactors = [
-  { label: '실제 수면 시간', value: '5시간 36분', tag: '주의', tone: 'attention' },
-  { label: '깊은 수면', value: '45분', tag: '좋음', tone: 'good' },
-  { label: 'REM 수면', value: '1시간 9분', tag: '좋음', tone: 'good' },
-  { label: '각성', value: '49분', tag: '좋음', tone: 'good' },
-  { label: '수면 잠복기', value: '6분', tag: '최고', tone: 'excellent' },
+  { key: 'duration', label: '실제 수면 시간', value: '5시간 36분', tag: '주의', tone: 'attention' },
+  { key: 'efficiency', label: '수면 효율', value: '88%', tag: '좋음', tone: 'good' },
+  { key: 'deepSleep', label: '깊은 수면', value: '45분', tag: '좋음', tone: 'good' },
+  { key: 'remSleep', label: 'REM 수면', value: '1시간 9분', tag: '좋음', tone: 'good' },
+  { key: 'awake', label: '각성', value: '49분', tag: '좋음', tone: 'good' },
 ];
 
 export const sleepStageBreakdown = [
