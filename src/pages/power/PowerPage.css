@@ -702,3 +702,42 @@
     font-size: 9px;
   }
 }
+
+/* Insight tab: monthly cost trend card */
+.power-cost-trend-card {
+  margin-top: 20px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 1px 8px var(--wave-10);
+}
+
+.power-cost-trend-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.power-cost-trend-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.power-cost-trend-total {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.power-cost-trend-caption {
+  margin: 6px 0 0;
+  color: var(--sub);
+  font-size: 11px;
+  line-height: 1.5;
+}

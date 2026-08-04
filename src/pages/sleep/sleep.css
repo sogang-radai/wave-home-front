@@ -1229,3 +1229,83 @@
   font-weight: 600;
   line-height: 1.45;
 }
+
+/* Insight tab: apnea screening card */
+.apnea-screening-card {
+  margin-top: 20px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 1px 8px var(--wave-10);
+}
+
+.apnea-screening-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.apnea-screening-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.apnea-screening-badge {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--wave-15);
+  color: var(--sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.apnea-screening-summary {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.apnea-screening-summary--ok {
+  color: var(--good-text);
+}
+
+.apnea-screening-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.apnea-screening-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--warn-15);
+  color: var(--warn-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.apnea-screening-stats {
+  margin: 0;
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.apnea-screening-disclaimer {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.5;
+}

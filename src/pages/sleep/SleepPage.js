@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Tabs } from '../../components/ui/Tabs';
 import { InsightCard } from '../../components/report/InsightCard';
+import { SleepApneaScreeningCard } from './SleepApneaScreeningCard';
 import { SleepDailyReport } from './SleepDailyReport';
 import { SleepWeeklyReport } from './SleepWeeklyReport';
 import { AlarmPage } from '../alarm/AlarmPage';
@@ -94,6 +95,7 @@ export function SleepPage({ tab = 'analysis', setTab }) {
               ))}
             </div>
           )}
+          <SleepApneaScreeningCard reportDate={reportDate} />
         </div>
       )}
 

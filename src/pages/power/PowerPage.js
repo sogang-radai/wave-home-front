@@ -18,6 +18,7 @@ import { deviceDotClass, deviceDotTitle } from '../iot/iotUtils';
 import { IS_DEMO_MODE, USE_CLIENT_POWER_SIM } from '../../api/config';
 import { generatePowerComboTrend, generatePowerPeriodTrend } from '../../data/homeData';
 import { InsightCard } from '../../components/report/InsightCard';
+import { MonthlyCostTrendCard } from './MonthlyCostTrendCard';
 import { getNow } from '../../lib/demoClock';
 import { TIER2_WON_PER_KWH, formatAnchorDate, resolvePowerReportRequest } from './powerReportUtils';
 import { useMobileLayout } from '../../hooks/useMobileLayout';
@@ -173,11 +174,11 @@ export function PowerPage({ tab = 'analysis', setTab }) {
   const [plugsLoading, setPlugsLoading] = useState(true);
   const [plugsError, setPlugsError] = useState('');
   const [selectedPlugId, setSelectedPlugId] = useState(() => loadLS(LS_SOURCE, 'all'));
-  const [rangeTab, setRangeTab] = useState(() => loadLS(LS_RANGE, 'min1'));
+  const [rangeTab, setRangeTab] = useState(() => loadLS(LS_RANGE, 'month'));
   const [metricTab, setMetricTab] = useState(() => {
-    const stored = loadLS(LS_METRIC, 'w');
+    const stored = loadLS(LS_METRIC, 'wh');
     // 'va' was a combined tab before V/A became separate tabs — fall back cleanly.
-    return METRIC_TABS.some((t) => t.id === stored) ? stored : 'w';
+    return METRIC_TABS.some((t) => t.id === stored) ? stored : 'wh';
   });
   const [disabledSources, setDisabledSources] = useState([]);
   const [liveValues, setLiveValues] = useState({}); // plugId -> { w, v, a }
@@ -696,6 +697,7 @@ export function PowerPage({ tab = 'analysis', setTab }) {
               ))}
             </div>
           )}
+          <MonthlyCostTrendCard />
         </div>
       )}
     </div>
