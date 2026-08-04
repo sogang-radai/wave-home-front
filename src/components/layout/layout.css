@@ -460,6 +460,7 @@ button.brand-group {
 
 /* TopBar */
 .workspace {
+  position: relative;
   min-width: 0;
   flex: 1;
   display: flex;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import alarmApi from '../../api/alarmApi';
 import iotApi from '../../api/iotApi';
@@ -14,7 +14,7 @@ export function AlarmPage() {
   const [selectedAlarmId, setSelectedAlarmId] = useState(null);
   const [toast, setToast] = useState('');
   const [now, setNow] = useState(() => getNow());
-  const rootRef = useRef(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const load = () => alarmApi.getAlarms().then((list) => setAlarms(sortAlarmsByTime(list)));
 
@@ -29,17 +29,6 @@ export function AlarmPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Clicking outside the whole editor+grid area deselects the current alarm
-  // and returns the wizard to "add" mode — same UX as the trigger wizard.
-  useEffect(() => {
-    if (!selectedAlarmId) return undefined;
-    const onDocMouseDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setSelectedAlarmId(null);
-    };
-    document.addEventListener('mousedown', onDocMouseDown);
-    return () => document.removeEventListener('mousedown', onDocMouseDown);
-  }, [selectedAlarmId]);
-
   const eligibleDevices = useMemo(
     () => withWaveHomeDevice(devices.filter(isAlarmEligibleDevice)),
     [devices],
@@ -49,9 +38,19 @@ export function AlarmPage() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2000); };
 
+  // Alarm settings only ever show inside the popup now — selecting an alarm
+  // (or hitting "알람 추가하기") is what opens it, and it's the only way in.
   const selectAlarm = (alarm) => {
-    setSelectedAlarmId((prev) => (prev === alarm.id ? null : alarm.id));
+    setSelectedAlarmId(alarm.id);
+    setEditorOpen(true);
   };
+
+  const startAddAlarm = () => {
+    setSelectedAlarmId(null);
+    setEditorOpen(true);
+  };
+
+  const closeEditor = () => setEditorOpen(false);
 
   const saveAlarm = async (payload, id) => {
     if (id) {
@@ -64,6 +63,7 @@ export function AlarmPage() {
       showToast('알람을 추가했습니다.');
     }
     setSelectedAlarmId(null);
+    setEditorOpen(false);
     await load();
   };
 
@@ -76,6 +76,7 @@ export function AlarmPage() {
   const deleteAlarm = async (id) => {
     await alarmApi.deleteAlarm(id);
     if (selectedAlarmId === id) setSelectedAlarmId(null);
+    setEditorOpen(false);
     showToast('알람을 삭제했습니다.');
     load();
   };
@@ -90,7 +91,7 @@ export function AlarmPage() {
   }, [alarms, now]);
 
   return (
-    <div className="page-stack alarm-page" ref={rootRef}>
+    <div className="page-stack alarm-page">
       <div className="alarm-page-intro">
         <h2 className="alarm-page-intro-title">스마트 알람</h2>
         <p className="alarm-page-intro-desc">알림과 집 안의 기기로 취침·기상 시간을 안내하며, 얕은 수면 단계에서 개운하게 깨워주는 알람이에요.</p>
@@ -104,23 +105,41 @@ export function AlarmPage() {
             <AlarmCard
               key={alarm.id}
               alarm={alarm}
-              selected={selectedAlarmId === alarm.id}
+              selected={editorOpen && selectedAlarmId === alarm.id}
               onSelect={selectAlarm}
               onToggleEnabled={toggleEnabled}
             />
           ))}
+          <button
+            type="button"
+            className="alarm-card alarm-card--add"
+            onClick={startAddAlarm}
+          >
+            <span className="alarm-card-add-icon" aria-hidden="true">+</span>
+            <span className="alarm-card-add-label">알람 추가하기</span>
+          </button>
         </div>
       </Card>
 
-      <Card title="알람 설정" wide className="alarm-section-card">
-        <AlarmEditor
-          alarm={selectedAlarm}
-          devices={eligibleDevices}
-          radarDevices={radarDevices}
-          onSave={saveAlarm}
-          onDelete={deleteAlarm}
-        />
-      </Card>
+      {editorOpen && (
+        <div className="alarm-editor-overlay" onClick={closeEditor}>
+          <div className="alarm-editor-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="alarm-editor-modal-head">
+              <h3>알람 설정</h3>
+              <button type="button" className="alarm-editor-modal-close" onClick={closeEditor} aria-label="닫기">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <AlarmEditor
+              alarm={selectedAlarm}
+              devices={eligibleDevices}
+              radarDevices={radarDevices}
+              onSave={saveAlarm}
+              onDelete={deleteAlarm}
+            />
+          </div>
+        </div>
+      )}
 
       {toast && <div className="iot-toast">{toast}</div>}
     </div>

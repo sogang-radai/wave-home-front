@@ -1,3 +1,14 @@
+/* .page-stack's shared max-width: 1292px + margin: 0 auto centers the page
+   in a column on wide windows, leaving dead space on both sides and
+   squeezing the alarm-card-grid's 3 columns narrower than they need to be.
+   Left-align this page instead and let the grid use the full width.
+   (Two classes so this reliably beats .page-stack regardless of CSS
+   import/bundling order, since both are single-class selectors otherwise.) */
+.page-stack.alarm-page {
+  max-width: none;
+  margin: 0;
+}
+
 /* ── Intro / banner ──────────────────────────────────────────────────────── */
 
 /* Matches 가전 제어("제어") page's title+description pattern (see
@@ -33,6 +44,65 @@
 .alarm-section-card .card-head h3 {
   color: var(--ink);
   font-size: 18px;
+}
+
+/* ── Alarm settings popup ────────────────────────────────────────────────── */
+/* "알람 설정" no longer sits inline under the list — it only shows up here,
+   opened by "알람 추가하기" or by clicking an existing alarm card. */
+
+/* position: absolute (not fixed) — its containing block is .workspace
+   (layout.css, position: relative), which is the flex sibling that already
+   excludes the sidebar and fills whatever width is left, however wide the
+   sidebar currently is (expanded/collapsed/off-canvas on mobile). That
+   means the overlay never covers the sidebar and needs no breakpoint- or
+   collapsed-state-specific math to know where the sidebar ends — .workspace
+   never scrolls (100vh, overflow: hidden) so this reads as fixed in practice. */
+.alarm-editor-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 6vh 16px;
+  background: rgba(11, 30, 45, 0.32);
+}
+
+.alarm-editor-modal {
+  width: 100%;
+  max-width: 1100px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(11, 30, 45, 0.3);
+}
+
+.alarm-editor-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.alarm-editor-modal-head h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.alarm-editor-modal-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: var(--sub);
+}
+
+.alarm-editor-modal-close:hover {
+  background: var(--wave-10);
+  color: var(--ink);
 }
 
 /* ── Editor header ───────────────────────────────────────────────────────── */
@@ -897,6 +967,38 @@
   bottom: 14px;
   z-index: 1;
   margin: 0;
+}
+
+/* Sits at the end of the alarm grid, same footprint as .alarm-card, so it
+   reads as "one more card" rather than a separate button. */
+.alarm-card--add {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px dashed var(--wave-40);
+  background: var(--wave-05);
+  color: var(--sub);
+  font: inherit;
+}
+
+.alarm-card--add:hover,
+.alarm-card--add:focus-visible {
+  border-color: var(--wave);
+  background: var(--wave-10);
+  color: var(--ink);
+}
+
+.alarm-card-add-icon {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--wave-deep);
+}
+
+.alarm-card-add-label {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 @media (max-width: 1100px) {
